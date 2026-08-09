@@ -1,0 +1,108 @@
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-BlackSlanted.otf")
+    format("opentype");
+  font-weight: 900;
+  font-style: italic;
+}
+
+/* 700 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Bold.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-BoldSlanted.otf") format("opentype");
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* 600 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-ExtraBold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-ExtraBoldSlanted.otf")
+    format("opentype");
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* 500 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-SemiBoldSlanted.otf")
+    format("opentype");
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* 400 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-MediumSlanted.otf")
+    format("opentype");
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* 300 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Slanted.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* 200 */
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TomatoGrotesk";
+  src: url("/fonts/TomatoFont/TomatoGrotesk-LightSlanted.otf")
+    format("opentype");
+  font-weight: 300;
+  font-style: italic;
+}
