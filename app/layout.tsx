@@ -4,7 +4,7 @@ import "./globals.css";
 const title = "AwaOwn — Shop. Sell. Earn.";
 const description =
   "Discover verified merchants across Nigeria, grow your business with a powerful vendor dashboard, and earn real money sharing products you love, all from one platform.";
-const siteUrl = "https://awaown.vercel.app";
+const siteUrl = "https://awaown-ten.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
