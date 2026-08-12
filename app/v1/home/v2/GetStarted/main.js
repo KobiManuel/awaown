@@ -41,7 +41,7 @@ const GetStarted = () => {
               You can download the App from the{" "}
               <br className="hidden md:visible" />
               <Link
-                href="https://apps.apple.com/gb/app/awashop/id6478110425"
+                href="#"
                 className="underline font-[700]"
               >
                 App Store
