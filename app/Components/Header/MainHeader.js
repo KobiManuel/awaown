@@ -30,7 +30,7 @@ const MainHeader = ({ onMenuClick }) => {
         >
           <Image
             src="/v2/images/awa-logo.webp"
-            alt="Optimall"
+            alt="AwaOwn"
             fill
             className="object-contain object-left"
             priority
@@ -60,7 +60,7 @@ const MainHeader = ({ onMenuClick }) => {
             <div className="leading-tight">
               <p className="text-[12px] text-shop-text">Need Help?</p>
               <p className="text-[14px] font-semibold text-shop-accent-1">
-                9876-543-210
+                +234 803 210 5000
               </p>
             </div>
           </div>

@@ -60,7 +60,7 @@ const Footer = () => {
         <div className="col-span-2 flex flex-col gap-4">
           <Image
             src="/v2/images/awa-logo.webp"
-            alt="Optimall"
+            alt="AwaOwn"
             width={160}
             height={44}
             className="h-10 w-auto object-contain"
@@ -69,10 +69,10 @@ const Footer = () => {
             Contact Us
           </p>
           <div className="flex flex-col gap-1 text-[13px] text-shop-text">
-            <p>Optimall Mega Store</p>
-            <p>507-Union Trade Ipsum Doler Centre, France</p>
-            <p>demo@example.com</p>
-            <p>+81 520-150-001</p>
+            <p>AwaOwn Marketplace</p>
+            <p>12 Gwarinpa Estate, Abuja, Nigeria</p>
+            <p>hello@awaown.com</p>
+            <p>+234 803 210 5000</p>
           </div>
           <a
             href="#"
@@ -103,7 +103,7 @@ const Footer = () => {
       <div className="border-t border-shop-border">
         <div className="mx-auto flex w-full max-w-[1460px] flex-col-reverse items-center gap-4 px-4 py-6 md:flex-row md:justify-between md:px-8">
           <p className="text-[12px] text-shop-text/70">
-            © {year}, Optimall - Mega Shop. Powered by AwaOwn.
+            © {year}, AwaOwn. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             {socials.map(({ icon: Icon, label }) => (

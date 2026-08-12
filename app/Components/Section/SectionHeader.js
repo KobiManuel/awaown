@@ -1,9 +1,9 @@
 import React from "react";
 
 /**
- * The Optimall theme wraps every section title in a white rounded bar that
- * sits on top of the page's light blue-grey background. Optional right-side
- * slot for carousel arrows / "View All" links.
+ * Every section title sits in a white rounded bar on top of the page's
+ * light blue-grey background. Optional right-side slot for carousel arrows
+ * / "View All" links.
  */
 const SectionHeader = ({ title, children, className = "" }) => {
   return (

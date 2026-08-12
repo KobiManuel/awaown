@@ -5,7 +5,7 @@ import SectionHeader from "@/app/Components/Section/SectionHeader";
 const blogPosts = [
   {
     date: "May 26, 2025",
-    title: "Meet the Steve Jobs of the Optimall Industry",
+    title: "Meet the Steve Jobs of the AwaOwn Industry",
     excerpt:
       "Trends are patterns or shifts in behavior, preferences, or ideas that gain popularity within a specific industry or society.",
     image: "/images/hero-card-1.png",
@@ -19,14 +19,14 @@ const blogPosts = [
   },
   {
     date: "May 26, 2025",
-    title: "10 Things That'll Help You With Optimall",
+    title: "10 Things That'll Help You With AwaOwn",
     excerpt:
       "Welcome to the ultimate shopping event that you've been waiting for. Our upcoming shopping sale with big discounts.",
     image: "/images/hero-card-3.png",
   },
   {
     date: "May 26, 2025",
-    title: "12 Companies Leading the Way in Optimall",
+    title: "12 Companies Leading the Way in AwaOwn",
     excerpt:
       "Trends are patterns or shifts in behavior, preferences, or ideas that gain popularity within a specific industry.",
     image: "/images/hero-card-4.png",

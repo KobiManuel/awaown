@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 
 /**
- * Replicates the Optimall "sub-banner" hover behaviour: the photo lives in
+ * The "sub-banner" hover behaviour: the photo lives in
  * its own overflow-hidden layer and scales up on hover; the text overlay is
  * a separate absolutely-positioned sibling so it never scales or shifts.
  *

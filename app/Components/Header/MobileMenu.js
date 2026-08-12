@@ -30,7 +30,7 @@ const MobileMenu = ({ open, onClose }) => {
             <div className="flex items-center justify-between border-b border-shop-border p-4">
               <Image
                 src="/v2/images/awa-logo.webp"
-                alt="Optimall"
+                alt="AwaOwn"
                 width={130}
                 height={40}
                 className="h-8 w-auto object-contain"
