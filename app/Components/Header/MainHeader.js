@@ -26,7 +26,7 @@ const MainHeader = ({ onMenuClick }) => {
 
         <Link
           href="/"
-          className="relative h-10 w-[150px] shrink-0 md:h-12 md:w-[190px]"
+          className="relative h-12 w-45 shrink-0 md:h-16 md:w-60"
         >
           <Image
             src="/v2/images/awa-logo.webp"
