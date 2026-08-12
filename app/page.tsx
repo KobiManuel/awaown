@@ -1,33 +1,45 @@
 import Header from "@/app/Components/Header/header";
-import Hero from "@/app/Components/Hero/hero";
-import Banners from "@/app/Components/Banners/banners";
-import HowItWorks from "@/app/Sections/HowItWorks/main";
-import ShopByCategory from "@/app/Sections/ShopByCategory/main";
-import NewAndPopular from "@/app/Sections/NewAndPopular/main";
-import ForMerchants from "@/app/Sections/ForMerchants/main";
-import GetStarted from "@/app/home/v2/GetStarted/main";
-import ForAffiliates from "@/app/Sections/ForAffiliates/main";
+import HeroSection from "@/app/Components/Hero/HeroSection";
+import ThreeBannerRow from "@/app/Components/Banners/ThreeBannerRow";
+import TwoBannerRow from "@/app/Components/Banners/TwoBannerRow";
+import OneBannerRow from "@/app/Components/Banners/OneBannerRow";
+import LatestProducts from "@/app/Sections/LatestProducts/main";
+import ShopByCategories from "@/app/Sections/ShopByCategories/main";
+import DealOfWeek from "@/app/Sections/DealOfWeek/main";
+import BestSelling from "@/app/Sections/BestSelling/main";
+import FreeShipping from "@/app/Sections/FreeShipping/main";
+import FashionTabs from "@/app/Sections/FashionTabs/main";
+import ShopByBrands from "@/app/Sections/ShopByBrands/main";
 import Testimonials from "@/app/Sections/Testimonials/main";
-import Companies from "@/app/Components/v2/Companies/main";
-import FinalCTA from "@/app/Sections/FinalCTA/main";
+import FromBlog from "@/app/Sections/FromBlog/main";
+import Newsletter from "@/app/Sections/Newsletter/main";
 import Footer from "@/app/Components/Footer/footer";
+import PurchaseNotification from "@/app/Components/PurchaseNotification/main";
+import FloatingCategoryTrigger from "@/app/Components/Header/FloatingCategoryTrigger";
+import ScrollToTop from "@/app/Components/Header/ScrollToTop";
 
 export default function Home() {
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex min-h-screen w-full flex-col bg-shop-bg">
       <Header />
-      <Hero />
-      <Banners />
-      <HowItWorks />
-      <ShopByCategory />
-      <NewAndPopular />
-      <ForMerchants />
-      <GetStarted />
-      <ForAffiliates />
+      <HeroSection />
+      <ThreeBannerRow />
+      <LatestProducts />
+      <ShopByCategories />
+      <DealOfWeek />
+      <TwoBannerRow />
+      <BestSelling />
+      <FreeShipping />
+      <FashionTabs />
+      <ShopByBrands />
+      <OneBannerRow />
       <Testimonials />
-      <Companies />
-      <FinalCTA />
+      <FromBlog />
+      <Newsletter />
       <Footer />
+      <PurchaseNotification />
+      <FloatingCategoryTrigger />
+      <ScrollToTop />
     </div>
   );
 }

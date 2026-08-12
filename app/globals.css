@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("https://fonts.cdnfonts.com/css/bai-jamjuree");
 @import "tailwindcss";
 @import "./fonts.css";
 
@@ -31,6 +32,18 @@
   --awaown-green-light: #59c98c;
   --awaown-purple: #827cf1;
   --awaown-purple-deep: #5b72e8;
+
+  /* Shop (Optimall clone) brand */
+  --shop-accent-1: #6d28d9;
+  --shop-accent-1-dark: #5b21b6;
+  --shop-accent-1-light: #ede9fe;
+  --shop-accent-2: #111111;
+  --shop-accent-3: #dd3842;
+  --shop-bg: #edf3f5;
+  --shop-surface: #ffffff;
+  --shop-text: #555555;
+  --shop-heading: #1a1a1a;
+  --shop-border: #e5e5e5;
 }
 
 @theme inline {
@@ -73,6 +86,18 @@
   --color-awaown-purple: var(--awaown-purple);
   --color-awaown-purple-deep: var(--awaown-purple-deep);
 
+  --color-shop-accent-1: var(--shop-accent-1);
+  --color-shop-accent-1-dark: var(--shop-accent-1-dark);
+  --color-shop-accent-1-light: var(--shop-accent-1-light);
+  --color-shop-accent-2: var(--shop-accent-2);
+  --color-shop-accent-3: var(--shop-accent-3);
+  --color-shop-bg: var(--shop-bg);
+  --color-shop-surface: var(--shop-surface);
+  --color-shop-text: var(--shop-text);
+  --color-shop-heading: var(--shop-heading);
+  --color-shop-border: var(--shop-border);
+  --font-shop: "Bai Jamjuree", sans-serif;
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -114,4 +139,40 @@ p {
   .slider-md-width {
     width: 100%;
   }
+}
+
+@keyframes shop-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-shop-marquee {
+  animation: shop-marquee 22s linear infinite;
+}
+
+.shop-tooltip {
+  position: relative;
+}
+.shop-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%) translateX(4px);
+  white-space: nowrap;
+  background: var(--shop-accent-2);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.shop-tooltip:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }

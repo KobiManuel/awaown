@@ -1,96 +1,43 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { testimonies } from "./testimonies";
-import Testimony from "./item";
+import React, { useRef } from "react";
+import { Quote } from "lucide-react";
+import { testimonials } from "@/lib/shop-data";
+import SectionHeader from "@/app/Components/Section/SectionHeader";
+import CarouselArrows from "@/app/Components/Product/CarouselArrows";
 
-const Testimonial = () => {
-  const sliderRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [itemsPerView, setItemsPerView] = useState(3);
-
-  const updateItemsPerView = () => {
-    if (window.innerWidth >= 1024) {
-      setItemsPerView(3);
-    } else if (window.innerWidth >= 768) {
-      setItemsPerView(2);
-    } else {
-      setItemsPerView(1);
-    }
-  };
-
-  const scrollToSlide = (index) => {
-    const slider = sliderRef.current;
-    if (slider) {
-      const slideWidth = slider.clientWidth / itemsPerView;
-      const scrollPosition = slideWidth * index * itemsPerView;
-      slider.scrollTo({ left: scrollPosition, behavior: "smooth" });
-      setActiveIndex(index);
-    }
-  };
-
-  const handleScroll = () => {
-    const slider = sliderRef.current;
-    if (slider) {
-      const slideWidth = slider.clientWidth / itemsPerView;
-      const scrollPosition = slider.scrollLeft;
-      const newIndex = Math.round(scrollPosition / slideWidth);
-      setActiveIndex(newIndex);
-    }
-  };
-
-  useEffect(() => {
-    updateItemsPerView();
-    window.addEventListener("resize", updateItemsPerView);
-    const slider = sliderRef.current;
-    if (slider) slider.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("resize", updateItemsPerView);
-      if (slider) slider.removeEventListener("scroll", handleScroll);
-    };
-  }, [itemsPerView]);
-
-  const totalSlides = Math.ceil(testimonies.length / itemsPerView);
+const Testimonials = () => {
+  const trackRef = useRef(null);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1360px] flex-col items-center gap-[40px] px-5 pt-[60px] md:gap-[60px] md:pt-[100px]">
-      <div className="flex w-full flex-col items-center justify-center gap-[14px] text-center">
-        <span className="rounded-full border border-[#CDCBF9] bg-[#4361FF1A] px-3 py-1 text-[14px] font-medium text-[#827CF1]">
-          Testimonials
-        </span>
-        <h2 className="max-w-[600px] font-['TomatoGrotesk'] text-[32px] font-semibold leading-[38px] text-[#0A0A13] md:text-[48px] md:leading-[54px]">
-          Loved by merchants &amp; affiliates
-        </h2>
-      </div>
-
+    <div className="mx-auto mt-12 w-full max-w-[1460px] px-4 font-shop md:mt-16 md:px-8">
+      <SectionHeader title="What Our Clients Say">
+        <CarouselArrows targetSelector="[data-testimonial-track]" amount={340} />
+      </SectionHeader>
       <div
-        ref={sliderRef}
-        className="hide-scrollbar relative flex w-full max-w-[1100px] gap-[20px] overflow-x-auto scroll-smooth px-5 lg:px-0"
+        ref={trackRef}
+        data-testimonial-track
+        className="hide-scrollbar flex gap-5 overflow-x-auto pb-2"
       >
-        {testimonies.map((el, idx) => (
-          <Testimony
-            key={idx}
-            testimony={el.review}
-            reviewer={el.reviewer}
-            initials={el.initials}
-            slug={el.slug}
-            color={el.colorCode}
-          />
-        ))}
-      </div>
-
-      <div className="flex gap-[10px]">
-        {Array.from({ length: totalSlides }, (_, index) => (
+        {testimonials.map((t) => (
           <div
-            key={index}
-            className="cursor-pointer py-[10px]"
-            onClick={() => scrollToSlide(index)}
+            key={t.name}
+            className="flex w-[300px] shrink-0 flex-col gap-4 rounded-[12px] bg-white p-6 md:w-[320px]"
           >
-            <div
-              className={`h-[2px] w-[40px] rounded-[4px] ${
-                activeIndex === index ? "bg-[#343260]" : "bg-[#D9D9D9]"
-              }`}
-            ></div>
+            <Quote className="h-6 w-6 text-shop-accent-1" />
+            <p className="text-[14px] leading-[22px] text-shop-text">{t.quote}</p>
+            <div className="mt-auto flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-shop-accent-1-light text-[14px] font-semibold text-shop-accent-1">
+                {t.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-shop-heading">{t.name}</p>
+                <p className="text-[12px] text-shop-text/70">{t.role}</p>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -98,4 +45,4 @@ const Testimonial = () => {
   );
 };
 
-export default Testimonial;
+export default Testimonials;

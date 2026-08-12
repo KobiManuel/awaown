@@ -8,7 +8,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const logoPath = path.join(process.cwd(), "public/images/logo-white.png");
+  const logoPath = path.join(process.cwd(), "public/v2/images/awa-logo-white.png");
   const logoData = fs.readFileSync(logoPath).toString("base64");
   const logoSrc = `data:image/png;base64,${logoData}`;
 
@@ -23,7 +23,7 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           backgroundImage:
-            "linear-gradient(135deg, #0A6B3D 0%, #084F2D 45%, #0A0A13 100%)",
+            "linear-gradient(135deg, #6D28D9 0%, #5B21B6 45%, #1a0a33 100%)",
           padding: 80,
         }}
       >
@@ -35,7 +35,7 @@ export default async function Image() {
             width: 480,
             height: 480,
             borderRadius: 480,
-            background: "rgba(89, 201, 140, 0.35)",
+            background: "rgba(196, 181, 253, 0.3)",
             filter: "blur(0px)",
             display: "flex",
           }}
@@ -48,7 +48,7 @@ export default async function Image() {
             width: 520,
             height: 520,
             borderRadius: 520,
-            background: "rgba(130, 124, 241, 0.25)",
+            background: "rgba(233, 213, 255, 0.2)",
             display: "flex",
           }}
         />
@@ -56,7 +56,7 @@ export default async function Image() {
         <img
           src={logoSrc}
           width={440}
-          height={120}
+          height={124}
           style={{ objectFit: "contain", display: "flex" }}
         />
 

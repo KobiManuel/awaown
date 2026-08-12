@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# design reference screenshots (not site assets, don't ship/publish these)
+/public/v2/images/design-to-replicate/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

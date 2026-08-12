@@ -1,140 +1,135 @@
 import React from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { SocialIcons } from "./socials";
-import { VisaLogo, MastercardLogo, PaystackLogo } from "./payment-logos";
-import logo from "@/public/images/logo.png";
 
-const linkColumns = [
+const Facebook = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}>
+    <path d="M14.5 8.5H16.5V5.3C16.16 5.26 15 5.17 13.65 5.17C10.82 5.17 8.89 6.9 8.89 10.06V12.75H5.75V16.32H8.89V22.83H12.58V16.32H15.6L16.08 12.75H12.58V10.43C12.58 9.39 12.86 8.5 14.5 8.5Z" fill="currentColor" />
+  </svg>
+);
+const Instagram = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}>
+    <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="1.6" />
+    <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.6" />
+    <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" />
+  </svg>
+);
+const Youtube = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}>
+    <rect x="2" y="5" width="20" height="14" rx="4" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M10.5 9.5L15 12L10.5 14.5V9.5Z" fill="currentColor" />
+  </svg>
+);
+const Twitter = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}>
+    <path d="M20 6.5c-.6.3-1.3.5-2 .6.7-.4 1.3-1.1 1.5-2-.7.4-1.4.7-2.2.9a3.4 3.4 0 0 0-5.8 3.1A9.7 9.7 0 0 1 4.5 5.4a3.4 3.4 0 0 0 1 4.5c-.5 0-1-.2-1.5-.4v.1c0 1.6 1.2 3 2.7 3.3-.5.1-1 .2-1.5.1a3.4 3.4 0 0 0 3.2 2.4A6.9 6.9 0 0 1 3 16.9a9.7 9.7 0 0 0 5.3 1.6c6.3 0 9.8-5.3 9.8-9.8v-.4c.7-.5 1.3-1.1 1.9-1.8Z" fill="currentColor" />
+  </svg>
+);
+
+const columns = [
   {
     title: "Quick Links",
-    links: [
-      { label: "Shop", href: "/products" },
-      { label: "Browse Categories", href: "/products" },
-      { label: "Stores", href: "/products" },
-      { label: "Track Order", href: "#" },
-      { label: "FAQs", href: "#" },
-    ],
+    links: ["Privacy Policy", "Refund Policy", "Shipping Policy", "Terms of Service", "Policy for Buyers", "Policy for Sellers"],
   },
   {
-    title: "For Merchants",
-    links: [
-      { label: "Register as Merchant", href: "#for-merchants" },
-      { label: "Merchant Dashboard", href: "#" },
-      { label: "Merchant Guidelines", href: "#" },
-      { label: "Vendor Agreement", href: "#" },
-    ],
+    title: "Information",
+    links: ["Size Chart", "Contact", "About Us", "FAQs", "Shipping & Refund", "Sitemap"],
   },
   {
-    title: "For Affiliates",
-    links: [
-      { label: "Join Affiliate Program", href: "#for-affiliates" },
-      { label: "Affiliate Dashboard", href: "#" },
-      { label: "Affiliate Terms", href: "#" },
-    ],
+    title: "Your Account",
+    links: ["Search", "About Us", "Delivery Information", "Contact", "FAQs", "Shipping"],
   },
   {
-    title: "Support",
-    links: [
-      { label: "Contact Us", href: "mailto:hello@awaown.com" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms & Conditions", href: "#" },
-      { label: "Refund Policy", href: "#" },
-    ],
+    title: "Find Product",
+    links: ["Furniture", "Men's Clothes", "Leather Watch", "Electronics", "Sunglasses", "Jewellery"],
   },
 ];
 
 const socials = [
-  { key: "instagram", href: "#" },
-  { key: "facebook", href: "#" },
-  { key: "tiktok", href: "#" },
-  { key: "whatsapp", href: "#" },
+  { icon: Facebook, label: "Facebook" },
+  { icon: Instagram, label: "Instagram" },
+  { icon: Youtube, label: "YouTube" },
+  { icon: Twitter, label: "Twitter" },
 ];
 
 const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <div className="relative mt-[60px] overflow-hidden bg-[#07090C] text-white md:mt-[100px]">
-      <div className="pointer-events-none absolute -top-40 -left-40 h-[420px] w-[420px] rounded-full bg-awaown-green/25 blur-[120px]" />
-      <div className="pointer-events-none absolute -top-20 right-0 h-[380px] w-[380px] rounded-full bg-awaown-purple/20 blur-[130px]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-[300px] w-[500px] rounded-full bg-awaown-green-light/10 blur-[140px]" />
-
-      <div className="relative mx-auto grid w-full max-w-[1360px] grid-cols-2 gap-x-6 gap-y-12 px-5 py-16 md:grid-cols-6 md:px-10">
-        <div className="col-span-2 flex flex-col gap-5 md:col-span-2">
-          <Link href="/" className="relative h-20 w-[260px] md:h-24 md:w-[300px]">
-            <Image
-              src={logo}
-              alt="AwaOwn"
-              fill
-              className="object-contain object-left brightness-0 invert"
-            />
-          </Link>
-          <p className="max-w-[280px] text-[14px] leading-[22px] text-white/70">
-            Nigeria&apos;s trusted marketplace where shoppers save, merchants
-            grow, and affiliates earn, all in one platform.
+    <footer className="mt-16 border-t border-shop-border bg-white font-shop">
+      <div className="mx-auto grid w-full max-w-[1460px] grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 md:grid-cols-6 md:px-8">
+        <div className="col-span-2 flex flex-col gap-4">
+          <Image
+            src="/v2/images/awa-logo.webp"
+            alt="Optimall"
+            width={160}
+            height={44}
+            className="h-10 w-auto object-contain"
+          />
+          <p className="text-[13px] font-semibold uppercase tracking-wide text-shop-heading">
+            Contact Us
           </p>
-          <div className="flex gap-3">
-            {socials.map(({ key, href }) => {
-              const Icon = SocialIcons[key];
-              return (
-                <Link
-                  key={key}
-                  href={href}
-                  aria-label={key}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                >
-                  <Icon className="h-4 w-4" />
-                </Link>
-              );
-            })}
+          <div className="flex flex-col gap-1 text-[13px] text-shop-text">
+            <p>Optimall Mega Store</p>
+            <p>507-Union Trade Ipsum Doler Centre, France</p>
+            <p>demo@example.com</p>
+            <p>+81 520-150-001</p>
           </div>
+          <a
+            href="#"
+            className="mt-2 w-fit rounded-[4px] bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
+          >
+            Online Chat — Get Expert Help
+          </a>
         </div>
 
-        {linkColumns.map((col) => (
+        {columns.map((col) => (
           <div key={col.title} className="col-span-1 flex flex-col gap-3">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-white/50">
+            <p className="text-[13px] font-semibold uppercase tracking-wide text-shop-heading">
               {col.title}
             </p>
             {col.links.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-[14px] leading-[20px] text-white/85 hover:text-white"
+              <a
+                key={link}
+                href="#"
+                className="text-[13px] text-shop-text hover:text-shop-accent-1"
               >
-                {link.label}
-              </Link>
+                {link}
+              </a>
             ))}
           </div>
         ))}
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-[1360px] flex-col-reverse items-center gap-4 border-t border-white/10 px-5 py-6 md:flex-row md:justify-between md:px-10">
-        <p className="text-[13px] text-white/60">
-          © {year} AwaOwn. All rights reserved.
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 items-center rounded-[6px] bg-white px-2.5">
-            <VisaLogo className="h-3 w-auto" />
-          </span>
-          <span className="flex h-8 items-center rounded-[6px] bg-white px-2.5">
-            <MastercardLogo className="h-5 w-auto" />
-          </span>
-          <span className="flex h-8 items-center rounded-[6px] bg-white/10 px-2.5">
-            <PaystackLogo className="h-3 w-auto" />
-          </span>
-          <span className="rounded-[6px] bg-white/10 px-2.5 py-1 text-[11px] font-medium tracking-wide text-white/70">
-            BANK TRANSFER
-          </span>
+      <div className="border-t border-shop-border">
+        <div className="mx-auto flex w-full max-w-[1460px] flex-col-reverse items-center gap-4 px-4 py-6 md:flex-row md:justify-between md:px-8">
+          <p className="text-[12px] text-shop-text/70">
+            © {year}, Optimall - Mega Shop. Powered by AwaOwn.
+          </p>
+          <div className="flex items-center gap-4">
+            {socials.map(({ icon: Icon, label }) => (
+              <a
+                key={label}
+                href="#"
+                aria-label={label}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-shop-border text-shop-heading hover:border-shop-accent-1 hover:text-shop-accent-1"
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {["Visa", "Mastercard", "Amex", "PayPal", "Diners Club", "Discover"].map((p) => (
+              <span
+                key={p}
+                className="rounded-[4px] border border-shop-border px-2.5 py-1 text-[11px] font-medium text-shop-text"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
-
-      <div className="relative -mt-2 flex justify-center overflow-hidden md:-mt-4">
-        <p className="translate-y-[20%] select-none whitespace-nowrap font-['TomatoGrotesk'] text-[19vw] font-semibold leading-none tracking-tight text-white sm:translate-y-[28%] sm:text-[220px] md:text-[300px] lg:text-[360px]">
-          AwaOwn
-        </p>
-      </div>
-    </div>
+    </footer>
   );
 };
 
