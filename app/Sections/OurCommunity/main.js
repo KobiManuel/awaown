@@ -37,8 +37,8 @@ const IconChip = ({ icon: Icon, label }) => (
 const VendorSpotlight = () => (
   <div className="relative col-span-1 flex min-h-[280px] flex-col justify-end overflow-hidden rounded-[20px] p-6 md:col-span-2">
     <Image
-      src="/images/hero-card-1.png"
-      alt="Aria & Co. Boutique"
+      src="/assets/images/companies/fashion-vault.png"
+      alt="Fashion Vault"
       fill
       className="object-cover"
       sizes="(max-width: 768px) 100vw, 60vw"
@@ -47,7 +47,7 @@ const VendorSpotlight = () => (
     <div className="relative flex flex-col gap-3">
       <IconChip icon={Trophy} label="Vendor of the Week" />
       <h3 className="max-w-[380px] text-[22px] font-bold leading-[28px] text-white">
-        Aria &amp; Co. Boutique
+        Fashion Vault
       </h3>
       <p className="max-w-[380px] text-[13px] leading-[20px] text-white/75">
         Handcrafted accessories and boutique fashion, rated 4.9 by shoppers
