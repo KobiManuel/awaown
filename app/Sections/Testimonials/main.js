@@ -11,7 +11,7 @@ const Testimonials = () => {
 
   return (
     <div className="mx-auto mt-12 w-full max-w-[1460px] px-4 font-shop md:mt-16 md:px-8">
-      <SectionHeader title="What Our Clients Say">
+      <SectionHeader title="Reviews">
         <CarouselArrows targetSelector="[data-testimonial-track]" amount={340} />
       </SectionHeader>
       <div

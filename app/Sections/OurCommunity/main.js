@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 
-const blogPosts = [
+const communityPosts = [
   {
     date: "May 26, 2025",
     title: "Meet the Steve Jobs of the AwaOwn Industry",
@@ -47,12 +47,12 @@ const blogPosts = [
   },
 ];
 
-const FromBlog = () => {
+const OurCommunity = () => {
   return (
     <div className="mx-auto mt-12 w-full max-w-[1460px] px-4 font-shop md:mt-16 md:px-8">
-      <SectionHeader title="From The Blog" />
+      <SectionHeader title="Our Community" />
       <div className="hide-scrollbar flex gap-5 overflow-x-auto pb-2">
-        {blogPosts.map((post) => (
+        {communityPosts.map((post) => (
           <a
             href="#"
             key={post.title}
@@ -84,4 +84,4 @@ const FromBlog = () => {
   );
 };
 
-export default FromBlog;
+export default OurCommunity;

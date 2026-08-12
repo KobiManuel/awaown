@@ -11,7 +11,7 @@ import FreeShipping from "@/app/Sections/FreeShipping/main";
 import FashionTabs from "@/app/Sections/FashionTabs/main";
 import ShopByBrands from "@/app/Sections/ShopByBrands/main";
 import Testimonials from "@/app/Sections/Testimonials/main";
-import FromBlog from "@/app/Sections/FromBlog/main";
+import OurCommunity from "@/app/Sections/OurCommunity/main";
 import Newsletter from "@/app/Sections/Newsletter/main";
 import Footer from "@/app/Components/Footer/footer";
 import PurchaseNotification from "@/app/Components/PurchaseNotification/main";
@@ -34,7 +34,7 @@ export default function Home() {
       <ShopByBrands />
       <OneBannerRow />
       <Testimonials />
-      <FromBlog />
+      <OurCommunity />
       <Newsletter />
       <Footer />
       <PurchaseNotification />
