@@ -8,8 +8,8 @@ import ShopByCategories from "@/app/Sections/ShopByCategories/main";
 import DealOfWeek from "@/app/Sections/DealOfWeek/main";
 import BestSelling from "@/app/Sections/BestSelling/main";
 import FreeShipping from "@/app/Sections/FreeShipping/main";
-import FashionTabs from "@/app/Sections/FashionTabs/main";
-import ShopByBrands from "@/app/Sections/ShopByBrands/main";
+// import FashionTabs from "@/app/Sections/FashionTabs/main";
+// import ShopByBrands from "@/app/Sections/ShopByBrands/main";
 import Testimonials from "@/app/Sections/Testimonials/main";
 import OurCommunity from "@/app/Sections/OurCommunity/main";
 import Newsletter from "@/app/Sections/Newsletter/main";
@@ -30,8 +30,8 @@ export default function Home() {
       <TwoBannerRow />
       <BestSelling />
       <FreeShipping />
-      <FashionTabs />
-      <ShopByBrands />
+      {/* <FashionTabs /> */}
+      {/* <ShopByBrands /> */}
       <OneBannerRow />
       <Testimonials />
       <OurCommunity />

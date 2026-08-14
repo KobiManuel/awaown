@@ -13,9 +13,15 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
   return (
     <div className="flex min-h-screen w-full bg-shop-bg font-shop">
       {/* Branded panel */}
-      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-gradient-to-br from-shop-accent-1 to-shop-accent-1-dark p-12 text-white lg:flex">
-        <div className="pointer-events-none absolute -left-24 -top-24 h-[380px] w-[380px] rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -right-16 h-[420px] w-[420px] rounded-full bg-white/10 blur-3xl" />
+      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden p-12 text-white lg:flex">
+        <Image
+          src="/v2/images/floating-bg.png"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
 
         <Link href="/" className="relative z-10 w-fit">
           <div className="relative h-11 w-[150px] overflow-hidden rounded-[8px] bg-white/95 px-3 py-2">
@@ -28,7 +34,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
           </div>
         </Link>
 
-        <div className="relative z-10 flex max-w-[420px] flex-col gap-6">
+        <div className="relative z-10 flex max-w-[420px] flex-col gap-6 rounded-[20px] border border-white/20 bg-white/10 p-7 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl">
           <h2 className="text-[32px] font-semibold leading-[40px]">
             Nigeria&apos;s trusted marketplace, in one account.
           </h2>
