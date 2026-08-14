@@ -21,6 +21,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
           priority
           className="object-cover"
         />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
 
         <Link href="/" className="relative z-10 w-fit">
           <div className="relative h-11 w-[150px] overflow-hidden rounded-[8px] bg-white/95 px-3 py-2">
