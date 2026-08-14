@@ -1,75 +1,93 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, ArrowRight } from "lucide-react";
-import AuthLayout from "@/app/Components/Auth/AuthLayout";
-import FormField from "@/app/Components/Auth/FormField";
-import SocialButtons from "@/app/Components/Auth/SocialButtons";
+import Image from "next/image";
+import { ShoppingBag, Store, Users2, ArrowRight } from "lucide-react";
+import RoleCard from "@/app/Components/Auth/RoleCard";
 
-export const metadata = {
-  title: "Login — AwaOwn",
-  description: "Sign in to your AwaOwn account.",
-};
+type Role = "customer" | "merchant" | "member" | "";
 
-export default function LoginPage() {
+const roles: { id: Role; title: string; description: string; icon: React.ReactNode }[] = [
+  {
+    id: "customer",
+    title: "Customer",
+    description: "Shop from verified merchants and track every order.",
+    icon: <ShoppingBag className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
+  },
+  {
+    id: "merchant",
+    title: "Merchant",
+    description: "Open a store, list products and receive secure payouts.",
+    icon: <Store className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
+  },
+  {
+    id: "member",
+    title: "Member",
+    description: "Share products with your audience and make profit from every sale.",
+    icon: <Users2 className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
+  },
+];
+
+export default function LoginRolePage() {
+  const router = useRouter();
+  const [selected, setSelected] = useState<Role>("");
+
+  const handleContinue = () => {
+    if (!selected) return;
+    router.push(`/login/${selected}`);
+  };
+
   return (
-    <AuthLayout
-      eyebrow="Welcome back"
-      title="Sign in to your account"
-      subtitle="Enter your details to pick up right where you left off."
-    >
-      <form className="flex flex-col gap-5">
-        <FormField
-          label="Email address"
-          type="email"
-          name="email"
-          icon={<Mail className="h-4 w-4" />}
-          placeholder="you@example.com"
-          autoComplete="email"
-        />
-        <FormField
-          label="Password"
-          type="password"
-          name="password"
-          icon={<Lock className="h-4 w-4" />}
-          placeholder="Enter your password"
-          autoComplete="current-password"
-        />
+    <div className="flex min-h-screen w-full items-center justify-center bg-shop-bg p-4 font-shop">
+      <div className="w-full max-w-[480px] overflow-hidden rounded-[24px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col items-center gap-6 bg-gradient-to-b from-shop-accent-1/10 to-white px-6 py-10 sm:px-10">
+          <Link
+            href="/"
+            className="self-start text-[13px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            ← Go back
+          </Link>
 
-        <div className="flex items-center justify-between text-[13px]">
-          <label className="flex items-center gap-2 text-shop-text">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-shop-border accent-[#6d28d9]"
+          <div className="relative h-14 w-[190px]">
+            <Image
+              src="/v2/images/awa-logo.webp"
+              alt="AwaOwn"
+              fill
+              className="object-contain"
+              priority
             />
-            Remember me
-          </label>
-          <a href="#" className="font-medium text-shop-accent-1 hover:underline">
-            Forgot password?
-          </a>
+          </div>
+
+          <p className="text-center text-[19px] font-semibold text-shop-heading">
+            What brings you to AwaOwn?
+          </p>
+
+          <div className="flex w-full flex-col gap-3">
+            {roles.map((role) => (
+              <RoleCard
+                key={role.id}
+                icon={role.icon}
+                title={role.title}
+                description={role.description}
+                selected={selected === role.id}
+                onClick={() => setSelected(role.id)}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            disabled={!selected}
+            onClick={handleContinue}
+            className="flex w-full items-center justify-center gap-2 rounded-[8px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors enabled:hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
+          >
+            Continue
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
-
-        <button
-          type="submit"
-          className="flex items-center justify-center gap-2 rounded-[8px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
-        >
-          Sign In
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </form>
-
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-shop-border" />
-        <span className="text-[12px] text-shop-text/60">Or continue with</span>
-        <div className="h-px flex-1 bg-shop-border" />
       </div>
-
-      <SocialButtons />
-
-      <p className="mt-8 text-center text-[14px] text-shop-text">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-semibold text-shop-accent-1 hover:underline">
-          Sign up
-        </Link>
-      </p>
-    </AuthLayout>
+    </div>
   );
 }
