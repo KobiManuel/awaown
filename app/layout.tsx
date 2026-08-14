@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
+import ModalRoot from "@/app/Components/Modals/ModalRoot";
 
 const title = "AwaOwn — Shop. Sell. Earn.";
 const description =
@@ -46,7 +47,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>
+          {children}
+          <ModalRoot />
+        </ReduxProvider>
       </body>
     </html>
   );

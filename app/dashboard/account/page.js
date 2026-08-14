@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Package,
@@ -17,8 +16,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { formatPrice, dummyUser } from "@/lib/dashboard-data";
-import { logout } from "@/lib/store/authSlice";
-import TopUpSheet from "@/app/Components/Dashboard/TopUpSheet";
+import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 
 const links = [
   { href: "/dashboard/orders", label: "My Orders", icon: Package },
@@ -31,15 +29,8 @@ const links = [
 ];
 
 export default function AccountPage() {
-  const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user) || dummyUser;
-  const [topUpOpen, setTopUpOpen] = useState(false);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-  };
 
   return (
     <div className="flex flex-col gap-5 pb-4 font-shop">
@@ -68,14 +59,12 @@ export default function AccountPage() {
         </div>
         <button
           type="button"
-          onClick={() => setTopUpOpen(true)}
+          onClick={() => dispatch(openModal({ modalType: MODAL_TYPES.TOP_UP }))}
           className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-shop-accent-1"
         >
           Top Up
         </button>
       </div>
-
-      <TopUpSheet open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 
       <div className="flex flex-col gap-1 px-4">
         {links.map(({ href, label, icon: Icon }) => (
@@ -94,7 +83,7 @@ export default function AccountPage() {
 
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => dispatch(openModal({ modalType: MODAL_TYPES.LOGOUT }))}
           className="mt-2 flex items-center gap-3 rounded-[12px] px-2 py-3 text-left hover:bg-shop-bg"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50">
