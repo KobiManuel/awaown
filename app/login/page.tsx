@@ -9,12 +9,19 @@ import RoleCard from "@/app/Components/Auth/RoleCard";
 
 type Role = "customer" | "merchant" | "member" | "";
 
-const roles: { id: Role; title: string; description: string; icon: React.ReactNode }[] = [
+const roles: {
+  id: Role;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}[] = [
   {
     id: "customer",
     title: "Customer",
     description: "Shop from verified merchants and track every order.",
-    icon: <ShoppingBag className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
+    icon: (
+      <ShoppingBag className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
+    ),
   },
   {
     id: "merchant",
@@ -24,8 +31,9 @@ const roles: { id: Role; title: string; description: string; icon: React.ReactNo
   },
   {
     id: "member",
-    title: "Member",
-    description: "Share products with your audience and make profit from every sale.",
+    title: "Partner",
+    description:
+      "Share products with your audience and make profit from every sale.",
     icon: <Users2 className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
   },
 ];
