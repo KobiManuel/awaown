@@ -12,8 +12,8 @@ export default function OrdersPage() {
   const orders = useSelector((s) => s.orders.items);
 
   return (
-    <div className="flex flex-col gap-4 pb-4 font-shop">
-      <AppHeader title="My Orders" backHref="/dashboard/account" />
+    <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
+      <AppHeader title="My Orders" backHref="/dashboard/account" showBackOnDesktop />
 
       {orders.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -24,7 +24,7 @@ export default function OrdersPage() {
           <p className="text-[13px] text-shop-text">Your order history will show up here.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 px-4">
+        <div className="flex flex-col gap-3 px-4 lg:px-8">
           {orders.map((order) => (
             <Link
               key={order.id}

@@ -23,11 +23,11 @@ function ShopContent() {
   }, [category, query]);
 
   return (
-    <div className="flex flex-col gap-4 pb-4 font-shop">
+    <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader title="Shop" />
 
-      <div className="flex items-center gap-2 px-4">
-        <div className="flex flex-1 items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5">
+      <div className="flex items-center gap-2 px-4 lg:px-8">
+        <div className="flex flex-1 items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:max-w-[420px]">
           <Search className="h-4 w-4 text-shop-text/50" />
           <input
             type="text"
@@ -46,7 +46,7 @@ function ShopContent() {
         </button>
       </div>
 
-      <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4">
+      <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
         <button
           type="button"
           onClick={() => setCategory("all")}
@@ -74,7 +74,7 @@ function ShopContent() {
         ))}
       </div>
 
-      <div className="px-4">
+      <div className="px-4 lg:px-8">
         <p className="mb-3 text-[12px] text-shop-text/70">
           {filtered.length} product{filtered.length === 1 ? "" : "s"}
         </p>
@@ -83,7 +83,7 @@ function ShopContent() {
             No products match your search.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
             {filtered.map((product) => (
               <AppProductCard key={product.id} product={product} />
             ))}

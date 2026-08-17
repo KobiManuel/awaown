@@ -52,8 +52,8 @@ function OrderDetailContent() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-6 font-shop">
-      <AppHeader title={order.id} backHref="/dashboard/orders" />
+    <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
+      <AppHeader title={order.id} backHref="/dashboard/orders" showBackOnDesktop />
 
       {justPlaced && <PlacedBanner />}
 

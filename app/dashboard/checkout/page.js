@@ -64,11 +64,13 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 pb-6 font-shop">
-      <AppHeader title="Checkout" backHref="/dashboard/cart" />
+    <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
+      <AppHeader title="Checkout" backHref="/dashboard/cart" showBackOnDesktop />
 
+      <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-8 lg:px-8">
+      <div className="flex flex-col gap-5 lg:col-span-2">
       {/* Delivery address */}
-      <div className="flex flex-col gap-2.5 px-4">
+      <div className="flex flex-col gap-2.5 px-4 lg:px-0">
         <p className="text-[13px] font-semibold text-shop-heading">Delivery Address</p>
         {savedAddresses.map((addr) => {
           const active = addressId === addr.id;
@@ -104,7 +106,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Payment method */}
-      <div className="flex flex-col gap-2.5 px-4">
+      <div className="flex flex-col gap-2.5 px-4 lg:px-0">
         <p className="text-[13px] font-semibold text-shop-heading">Payment Method</p>
         {paymentMethods.map((method) => {
           const active = payment === method.id;
@@ -133,8 +135,11 @@ export default function CheckoutPage() {
         })}
       </div>
 
+      </div>
+
+      <div className="flex flex-col gap-4 px-4 lg:sticky lg:top-24 lg:col-span-1 lg:px-0">
       {/* Escrow explainer */}
-      <div className="mx-4 flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
+      <div className="flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
         <ShieldCheck className="h-5 w-5 shrink-0 text-shop-accent-1" strokeWidth={1.75} />
         <p className="text-[12px] leading-[18px] text-shop-text">
           Your payment is held securely in <strong className="text-shop-heading">Escrow</strong>{" "}
@@ -143,7 +148,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Summary */}
-      <div className="mx-4 flex flex-col gap-2 rounded-[14px] border border-shop-border p-4">
+      <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border p-4">
         <p className="mb-1 text-[13px] font-semibold text-shop-heading">Order Summary</p>
         {items.map((i) => (
           <div key={i.id} className="flex items-center justify-between text-[12.5px] text-shop-text">
@@ -171,22 +176,22 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="px-4">
-        <button
-          type="button"
-          onClick={handlePlaceOrder}
-          disabled={placing || items.length === 0}
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {placing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Placing your order...
-            </>
-          ) : (
-            `Place Order · ${formatPrice(total)}`
-          )}
-        </button>
+      <button
+        type="button"
+        onClick={handlePlaceOrder}
+        disabled={placing || items.length === 0}
+        className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {placing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Placing your order...
+          </>
+        ) : (
+          `Place Order · ${formatPrice(total)}`
+        )}
+      </button>
+      </div>
       </div>
     </div>
   );

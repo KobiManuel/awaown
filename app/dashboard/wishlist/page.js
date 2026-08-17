@@ -11,7 +11,7 @@ export default function WishlistPage() {
   const items = useSelector((s) => s.wishlist.items);
 
   return (
-    <div className="flex flex-col gap-4 pb-4 font-shop">
+    <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader title="Wishlist" />
 
       {items.length === 0 ? (
@@ -29,7 +29,7 @@ export default function WishlistPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 px-4">
+        <div className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5 lg:px-8">
           {items.map((item) => (
             <AppProductCard
               key={item.id}

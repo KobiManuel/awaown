@@ -92,10 +92,11 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 pb-6 font-shop">
+    <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title={product.title}
         backHref="/dashboard/shop"
+        showBackOnDesktop
         right={
           <button
             type="button"
@@ -113,8 +114,9 @@ export default function ProductDetailPage() {
         }
       />
 
+      <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pt-2">
       {/* Gallery */}
-      <div className="relative mx-4 aspect-square overflow-hidden rounded-[16px] bg-shop-bg">
+      <div className="relative mx-4 aspect-square overflow-hidden rounded-[16px] bg-shop-bg lg:mx-0 lg:sticky lg:top-28 lg:self-start">
         {discount && (
           <span className="absolute left-3 top-3 z-10 rounded-[4px] bg-shop-accent-3 px-2 py-1 text-[11px] font-semibold text-white">
             -{discount}%
@@ -126,12 +128,12 @@ export default function ProductDetailPage() {
           alt={product.title}
           fill
           className="object-contain p-8 transition-opacity duration-300"
-          sizes="480px"
+          sizes="(max-width: 1024px) 480px, 540px"
           priority
         />
       </div>
 
-      <div className="flex flex-col gap-4 px-4">
+      <div className="flex flex-col gap-4 px-4 lg:px-0">
         {/* Title + rating */}
         <div className="flex flex-col gap-1.5">
           <span className="text-[11.5px] font-medium uppercase tracking-wide text-shop-accent-1">
@@ -310,12 +312,13 @@ export default function ProductDetailPage() {
           <p className="text-[13px] leading-[21px] text-shop-text">{product.description}</p>
         </div>
       </div>
+      </div>
 
       {/* Related */}
       {related.length > 0 && (
-        <div className="flex flex-col gap-3 border-t border-shop-border px-4 pt-4">
+        <div className="flex flex-col gap-3 border-t border-shop-border px-4 pt-4 lg:px-8">
           <p className="text-[14px] font-semibold text-shop-heading">You may also like</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
             {related.map((p) => (
               <AppProductCard key={p.id} product={p} />
             ))}

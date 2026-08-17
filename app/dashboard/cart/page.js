@@ -28,7 +28,7 @@ export default function CartPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-4 font-shop">
+    <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader title="My Cart" />
 
       {items.length === 0 ? (
@@ -50,8 +50,8 @@ export default function CartPage() {
           </Link>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col gap-3 px-4">
+        <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-8 lg:px-8">
+          <div className="flex flex-col gap-3 px-4 lg:col-span-2 lg:px-0">
             {items.map((item) => (
               <div
                 key={item.id}
@@ -118,24 +118,24 @@ export default function CartPage() {
             ))}
           </div>
 
-          <div className="mx-4 flex flex-col gap-2 rounded-[14px] bg-shop-bg p-4">
-            <div className="flex items-center justify-between text-[13px] text-shop-text">
-              <span>Subtotal</span>
-              <span className="font-medium text-shop-heading">{formatPrice(subtotal)}</span>
+          <div className="mt-4 flex flex-col gap-4 px-4 lg:sticky lg:top-24 lg:col-span-1 lg:mt-0 lg:px-0">
+            <div className="flex flex-col gap-2 rounded-[14px] bg-shop-bg p-4">
+              <div className="flex items-center justify-between text-[13px] text-shop-text">
+                <span>Subtotal</span>
+                <span className="font-medium text-shop-heading">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex items-center justify-between text-[13px] text-shop-text">
+                <span>Shipping</span>
+                <span className="font-medium text-shop-heading">
+                  {shipping === 0 ? "Free" : formatPrice(shipping)}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">
+                <span>Total</span>
+                <span>{formatPrice(total)}</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-[13px] text-shop-text">
-              <span>Shipping</span>
-              <span className="font-medium text-shop-heading">
-                {shipping === 0 ? "Free" : formatPrice(shipping)}
-              </span>
-            </div>
-            <div className="mt-1 flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
-            </div>
-          </div>
 
-          <div className="px-4">
             <Link
               href="/dashboard/checkout"
               className="flex w-full items-center justify-center rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
@@ -143,7 +143,7 @@ export default function CartPage() {
               Proceed to Checkout
             </Link>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

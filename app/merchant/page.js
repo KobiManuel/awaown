@@ -1,0 +1,105 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useSelector } from "react-redux";
+import {
+  BadgeCheck,
+  TrendingUp,
+  ShoppingBag,
+  Package,
+  Star,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
+import { merchantProfile, merchantStats, formatPrice, MERCHANT_ORDER_STATUS_LABEL, MERCHANT_ORDER_STATUS_TONE } from "@/lib/merchant-data";
+
+const StatCard = ({ icon: Icon, label, value }) => (
+  <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light">
+      <Icon className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
+    </div>
+    <p className="text-[18px] font-bold text-shop-heading">{value}</p>
+    <p className="text-[12px] text-shop-text">{label}</p>
+  </div>
+);
+
+export default function MerchantHome() {
+  const orders = useSelector((s) => s.merchant.orders);
+  const recentOrders = orders.slice(0, 3);
+
+  return (
+    <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
+      <div className="flex items-center justify-between px-4 pt-5 lg:px-8 lg:pt-8">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
+              {merchantProfile.storeName}
+            </p>
+            {merchantProfile.verified && (
+              <BadgeCheck className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
+            )}
+          </div>
+          <p className="text-[13px] text-shop-text">Welcome back, {merchantProfile.ownerName}</p>
+        </div>
+        <Link
+          href="/merchant/products"
+          className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-4 py-2.5 text-[12.5px] font-semibold text-white"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add Product
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:gap-5 lg:px-8">
+        <StatCard icon={TrendingUp} label="Revenue Today" value={formatPrice(merchantStats.revenueToday)} />
+        <StatCard icon={ShoppingBag} label="Orders Today" value={merchantStats.ordersToday} />
+        <StatCard icon={Package} label="Total Products" value={merchantStats.totalProducts} />
+        <StatCard icon={Star} label="Store Rating" value={merchantStats.avgRating} />
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 pb-6 lg:px-8">
+        <div className="flex items-center justify-between">
+          <p className="text-[14px] font-semibold text-shop-heading lg:text-[16px]">
+            Recent Orders
+          </p>
+          <Link href="/merchant/orders" className="text-[12px] font-semibold text-shop-accent-1">
+            View all
+          </Link>
+        </div>
+        <div className="flex flex-col gap-3">
+          {recentOrders.map((order) => (
+            <Link
+              key={order.id}
+              href="/merchant/orders"
+              className="flex items-center gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
+            >
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
+                <Image
+                  src={order.items[0].image}
+                  alt={order.items[0].title}
+                  fill
+                  className="object-contain p-1.5"
+                  sizes="48px"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-shop-heading">
+                  {order.customerName}
+                </p>
+                <p className="text-[11.5px] text-shop-text/70">{order.id}</p>
+              </div>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${MERCHANT_ORDER_STATUS_TONE[order.status]}`}
+              >
+                {MERCHANT_ORDER_STATUS_LABEL[order.status]}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-shop-text/40" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,32 +5,31 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Package,
-  Heart,
-  MapPin,
-  Wallet,
-  Store,
-  Users2,
+  TrendingUp,
+  Banknote,
+  Bell,
   HelpCircle,
   Settings,
   LogOut,
   ChevronRight,
 } from "lucide-react";
-import { formatPrice, dummyUser } from "@/lib/dashboard-data";
+import { partnerProfile, formatPrice } from "@/lib/partner-data";
+import { dummyUser } from "@/lib/dashboard-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 
 const links = [
-  { href: "/dashboard/orders", label: "My Orders", icon: Package },
-  { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart },
-  { href: "#", label: "Saved Addresses", icon: MapPin },
-  { href: "/login/merchant", label: "Become a Merchant", icon: Store },
-  { href: "/login/member", label: "Become a Member", icon: Users2 },
+  { href: "/partner/products", label: "Products to Resell", icon: Package },
+  { href: "/partner/earnings", label: "Earnings History", icon: TrendingUp },
+  { href: "/partner/withdraw", label: "Withdraw", icon: Banknote },
+  { href: "#", label: "Notifications", icon: Bell },
   { href: "#", label: "Help Centre", icon: HelpCircle },
   { href: "#", label: "Settings", icon: Settings },
 ];
 
-export default function AccountPage() {
+export default function PartnerAccountPage() {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user) || dummyUser;
+  const walletBalance = useSelector((s) => s.partner.walletBalance);
 
   return (
     <div className="flex flex-col gap-5 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[640px] lg:pb-10">
@@ -41,29 +40,21 @@ export default function AccountPage() {
         <div>
           <p className="text-[16px] font-semibold text-shop-heading">{user.name}</p>
           <p className="text-[12.5px] text-shop-text">{user.email}</p>
-          <p className="text-[12.5px] text-shop-text">{user.phone}</p>
+          <p className="text-[12.5px] text-shop-text">Referral code: {partnerProfile.referralCode}</p>
         </div>
       </div>
 
       <div className="mx-4 flex items-center justify-between rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-4 text-white lg:mx-0">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-            <Wallet className="h-5 w-5" strokeWidth={1.75} />
-          </div>
-          <div>
-            <p className="text-[11.5px] text-white/75">Wallet Balance</p>
-            <p className="text-[16px] font-semibold">
-              {formatPrice(user.walletBalance ?? dummyUser.walletBalance)}
-            </p>
-          </div>
+        <div>
+          <p className="text-[11.5px] text-white/75">Wallet Balance</p>
+          <p className="text-[16px] font-semibold">{formatPrice(walletBalance)}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => dispatch(openModal({ modalType: MODAL_TYPES.TOP_UP }))}
+        <Link
+          href="/partner/withdraw"
           className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-shop-accent-1"
         >
-          Top Up
-        </button>
+          Withdraw
+        </Link>
       </div>
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">

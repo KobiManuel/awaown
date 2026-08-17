@@ -3,31 +3,16 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Home, LayoutGrid, ShoppingBag, Heart, User } from "lucide-react";
 
-const tabs = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/shop", label: "Shop", icon: LayoutGrid },
-  { href: "/dashboard/cart", label: "Cart", icon: ShoppingBag, badgeKey: "cart" },
-  { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart, badgeKey: "wishlist" },
-  { href: "/dashboard/account", label: "Account", icon: User },
-];
-
-const BottomNav = () => {
+// items: [{ href, label, icon, badge?, exact? }] — badge counts are computed by the
+// caller (each role's layout) so this component stays role-agnostic.
+const BottomNav = ({ items }) => {
   const pathname = usePathname();
-  const cartCount = useSelector((s) =>
-    s.cart.items.reduce((sum, i) => sum + i.qty, 0),
-  );
-  const wishlistCount = useSelector((s) => s.wishlist.items.length);
-  const badges = { cart: cartCount, wishlist: wishlistCount };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[480px] items-stretch border-t border-shop-border bg-white pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 font-shop shadow-[0_-2px_12px_rgba(0,0,0,0.05)]">
-      {tabs.map(({ href, label, icon: Icon, badgeKey }) => {
-        const active =
-          href === "/dashboard" ? pathname === href : pathname.startsWith(href);
-        const badge = badgeKey ? badges[badgeKey] : 0;
+    <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[480px] items-stretch border-t border-shop-border bg-white pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 font-shop shadow-[0_-2px_12px_rgba(0,0,0,0.05)] lg:hidden">
+      {items.map(({ href, label, icon: Icon, badge = 0, exact }) => {
+        const active = exact ? pathname === href : pathname.startsWith(href);
         return (
           <Link
             key={href}
