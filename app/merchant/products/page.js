@@ -19,8 +19,8 @@ const Toggle = ({ on, onClick, label }) => (
     }`}
   >
     <span
-      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-        on ? "translate-x-[22px]" : "translate-x-0.5"
+      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left] duration-200 ${
+        on ? "left-[22px]" : "left-0.5"
       }`}
     />
   </button>
