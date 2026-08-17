@@ -23,7 +23,7 @@ const links = [
   { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart },
   { href: "#", label: "Saved Addresses", icon: MapPin },
   { href: "/login/merchant", label: "Become a Merchant", icon: Store },
-  { href: "/login/member", label: "Become a Member", icon: Users2 },
+  { href: "/login/partner", label: "Become a Partner", icon: Users2 },
   { href: "#", label: "Help Centre", icon: HelpCircle },
   { href: "#", label: "Settings", icon: Settings },
 ];

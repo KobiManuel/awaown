@@ -12,11 +12,11 @@ merchants grow their businesses, and affiliates earn through authentic recommend
 - Trust-first shopping
 - Secure escrow payments
 - Simple merchant onboarding
-- Powerful affiliate ecosystem (**affiliates are now called "Members"**)
+- Powerful affiliate ecosystem (**affiliates are now called "Partners"**)
 - Fast, mobile-first experience
 
 ## 3. User Types
-Customer, Merchant, Affiliate (**"Member"**), Admin.
+Customer, Merchant, Affiliate (**"Partner"**), Admin.
 
 ## 4. Core Product Modules
 Marketplace, Merchant Stores, Affiliate Hub, Wallet, Escrow, Orders, Checkout, Search,
@@ -28,7 +28,7 @@ Discover → Browse → Product → Cart → Checkout → Payment → Escrow →
 ## 6. Merchant Journey
 Register → Verify → Create Store → Upload Products → Receive Orders → Fulfil → Payout.
 
-## 7. Affiliate ("Member") Journey
+## 7. Affiliate ("Partner") Journey
 Register → Verify → Dashboard → Get Referral Link → Share → Earn Commission → Withdraw.
 
 ## 8. Website Structure
@@ -42,7 +42,7 @@ Commission Tracking, Escrow Protection, Search, Notifications.
 ## 10. Business Rules
 - Escrow holds funds until successful delivery.
 - Only verified merchants receive payouts.
-- Only verified affiliates ("Members") withdraw commissions.
+- Only verified affiliates ("Partners") withdraw commissions.
 - Refund requests pause escrow release.
 
 ## 11. Notification System
@@ -80,7 +80,7 @@ Responsibilities:
    customer issues.
 3. Manage merchant onboarding, verification, performance, payouts, products, account
    status.
-4. Manage affiliate ("Member") onboarding, verification, commissions/profit, withdrawals,
+4. Manage affiliate ("Partner") onboarding, verification, commissions/profit, withdrawals,
    referrals, performance.
 5. View customer profiles, orders, complaints, support history, reviews, wallets.
 6. Manage products, inventory, approvals, categories, featured products, product status.
@@ -117,7 +117,7 @@ navigation.
 - **Automation Center** — no-code trigger→action automations instead of manual staff
   work, e.g.:
   - Merchant verified → send welcome email automatically.
-  - Affiliate ("Member") joins → send onboarding resources automatically.
+  - Affiliate ("Partner") joins → send onboarding resources automatically.
   - Order delivered → ask customer for a review.
   - Withdrawal approved → notify user instantly.
   - Cart abandoned → send reminder after a few hours.
@@ -136,11 +136,11 @@ navigation.
   product is out of stock, customers can opt in to an email notification for when it's
   back in stock.
 - A vendor can toggle "offer commission" per product. **Only products with commission
-  enabled appear in the add-product list for Members.**
+  enabled appear in the add-product list for Partners.**
 - **Terminology change — no more "affiliate"/"commission":**
-  - "Affiliates" → **"Members"**
+  - "Affiliates" → **"Partners"**
   - They "earn commission" → they **"make profit from reselling"**
-  - Example: Public/Customer Price: ₦30,000 · Member Discount: ₦25,500 · Member Profit:
+  - Example: Public/Customer Price: ₦30,000 · Partner Discount: ₦25,500 · Partner Profit:
     ₦4,500
   - Apply this terminology everywhere on the new website.
 - Email "letters" on the platform, with delegated send access.
@@ -151,7 +151,7 @@ navigation.
 ## Current Build Scope
 
 Per the project owner, **only the customer dashboard + customer flow is being built for
-now** (not merchant, affiliate/member, or admin panels — those come later but should
+now** (not merchant, affiliate/partner, or admin panels — those come later but should
 follow this same terminology and business-rule set when built).
 
 The customer dashboard/app is **mobile-first and app-like**: its own `layout.tsx` with

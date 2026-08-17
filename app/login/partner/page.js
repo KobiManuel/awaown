@@ -21,7 +21,7 @@ export default function PartnerLoginPage() {
     setLoading(true);
     const email = e.target.email?.value || dummyUser.email;
     setTimeout(() => {
-      dispatch(login({ ...dummyUser, email, role: "member" }));
+      dispatch(login({ ...dummyUser, email, role: "partner" }));
       router.push("/partner");
     }, 900);
   };

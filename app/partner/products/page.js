@@ -54,10 +54,10 @@ export default function PartnerProductsPage() {
             <div className="grid grid-cols-2 gap-2 rounded-[10px] bg-shop-bg p-3">
               <div>
                 <p className="text-[10.5px] uppercase tracking-wide text-shop-text/60">
-                  Member Discount
+                  Partner Discount
                 </p>
                 <p className="text-[13px] font-semibold text-shop-heading">
-                  {formatPrice(product.memberDiscount)}
+                  {formatPrice(product.partnerDiscount)}
                 </p>
               </div>
               <div>
@@ -65,7 +65,7 @@ export default function PartnerProductsPage() {
                   Your Profit
                 </p>
                 <p className="text-[13px] font-semibold text-emerald-600">
-                  {formatPrice(product.memberProfit)}
+                  {formatPrice(product.partnerProfit)}
                 </p>
               </div>
             </div>

@@ -14,7 +14,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <AppFrame navItems={navItems} loginHref="/login/member" roleLabel="Partner">
+    <AppFrame navItems={navItems} loginHref="/login/partner" roleLabel="Partner">
       {children}
     </AppFrame>
   );

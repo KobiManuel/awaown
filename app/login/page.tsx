@@ -7,7 +7,7 @@ import Image from "next/image";
 import { ShoppingBag, Store, Users2, ArrowRight } from "lucide-react";
 import RoleCard from "@/app/Components/Auth/RoleCard";
 
-type Role = "customer" | "merchant" | "member" | "";
+type Role = "customer" | "merchant" | "partner" | "";
 
 const roles: {
   id: Role;
@@ -30,7 +30,7 @@ const roles: {
     icon: <Store className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
   },
   {
-    id: "member",
+    id: "partner",
     title: "Partner",
     description:
       "Share products with your audience and make profit from every sale.",
