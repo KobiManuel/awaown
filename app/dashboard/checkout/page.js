@@ -8,6 +8,7 @@ import { savedAddresses, paymentMethods, formatPrice } from "@/lib/dashboard-dat
 import { placeOrder, generateOrderId } from "@/lib/store/ordersSlice";
 import { clearCart } from "@/lib/store/cartSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import { PaystackLogo } from "@/app/Components/Icons/BrandLogos";
 
 const FREE_SHIPPING_THRESHOLD = 50000;
 const SHIPPING_FEE = 1500;
@@ -119,9 +120,12 @@ export default function CheckoutPage() {
                 active ? "border-shop-accent-1 bg-shop-accent-1-light" : "border-shop-border"
               }`}
             >
-              <div>
-                <p className="text-[13px] font-semibold text-shop-heading">{method.label}</p>
-                <p className="text-[12px] text-shop-text">{method.description}</p>
+              <div className="flex items-center gap-3">
+                {method.id === "card" && <PaystackLogo className="h-8 w-8 shrink-0" />}
+                <div>
+                  <p className="text-[13px] font-semibold text-shop-heading">{method.label}</p>
+                  <p className="text-[12px] text-shop-text">{method.description}</p>
+                </div>
               </div>
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${

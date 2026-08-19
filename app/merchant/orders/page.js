@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { PackageSearch, CheckCircle2 } from "lucide-react";
+import { PackageSearch, CheckCircle2, ChevronRight } from "lucide-react";
 import {
   formatPrice,
   MERCHANT_ORDER_STATUS_LABEL,
@@ -18,7 +19,9 @@ export default function MerchantOrdersPage() {
   const showToast = useToast();
   const orders = useSelector((s) => s.merchant.orders);
 
-  const handleConfirm = (order) => {
+  const handleConfirm = (e, order) => {
+    e.preventDefault();
+    e.stopPropagation();
     dispatch(confirmOrderReady(order.id));
     showToast(`${order.id} marked ready for pickup`);
   };
@@ -37,8 +40,9 @@ export default function MerchantOrdersPage() {
       ) : (
         <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
           {orders.map((order) => (
-            <div
+            <Link
               key={order.id}
+              href={`/merchant/orders/${order.id}`}
               className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
             >
               <div className="flex items-center justify-between">
@@ -46,11 +50,14 @@ export default function MerchantOrdersPage() {
                   <p className="text-[13px] font-semibold text-shop-heading">{order.id}</p>
                   <p className="text-[11.5px] text-shop-text/70">{order.customerName}</p>
                 </div>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${MERCHANT_ORDER_STATUS_TONE[order.status]}`}
-                >
-                  {MERCHANT_ORDER_STATUS_LABEL[order.status]}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${MERCHANT_ORDER_STATUS_TONE[order.status]}`}
+                  >
+                    {MERCHANT_ORDER_STATUS_LABEL[order.status]}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-shop-text/40" />
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -79,7 +86,7 @@ export default function MerchantOrdersPage() {
                 {order.status === "awaiting_confirmation" ? (
                   <button
                     type="button"
-                    onClick={() => handleConfirm(order)}
+                    onClick={(e) => handleConfirm(e, order)}
                     className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-shop-accent-1-dark"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -94,7 +101,7 @@ export default function MerchantOrdersPage() {
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

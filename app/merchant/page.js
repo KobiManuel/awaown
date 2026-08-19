@@ -27,6 +27,7 @@ const StatCard = ({ icon: Icon, label, value }) => (
 
 export default function MerchantHome() {
   const orders = useSelector((s) => s.merchant.orders);
+  const verified = useSelector((s) => s.merchant.verification.status === "verified");
   const recentOrders = orders.slice(0, 3);
 
   return (
@@ -37,14 +38,14 @@ export default function MerchantHome() {
             <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
               {merchantProfile.storeName}
             </p>
-            {merchantProfile.verified && (
+            {verified && (
               <BadgeCheck className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
             )}
           </div>
           <p className="text-[13px] text-shop-text">Welcome back, {merchantProfile.ownerName}</p>
         </div>
         <Link
-          href="/merchant/products"
+          href="/merchant/products/new"
           className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-4 py-2.5 text-[12.5px] font-semibold text-white"
         >
           <Plus className="h-3.5 w-3.5" />

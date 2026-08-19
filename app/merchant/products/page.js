@@ -1,114 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Package, Eye, EyeOff, Trash2, X } from "lucide-react";
+import { Plus, Package, Eye, EyeOff, Trash2, Users2 } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
-import { addProduct, toggleProductField, removeProduct } from "@/lib/store/merchantSlice";
+import { toggleProductField, removeProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
-import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
-const Toggle = ({ on, onClick, label }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-label={label}
-    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-      on ? "bg-shop-accent-1" : "bg-shop-border"
-    }`}
-  >
-    <span
-      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left] duration-200 ${
-        on ? "left-[22px]" : "left-0.5"
-      }`}
-    />
-  </button>
-);
+function priceLabel(product) {
+  if (!product.hasVariants || product.variants.length === 0) {
+    return formatPrice(product.price);
+  }
+  const prices = product.variants.map((v) => v.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? formatPrice(min) : `${formatPrice(min)} – ${formatPrice(max)}`;
+}
+
+function stockLabel(product) {
+  if (product.hideStock) return "Stock hidden";
+  if (!product.hasVariants || product.variants.length === 0) return `${product.stock} in stock`;
+  const total = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  return `${total} in stock · ${product.variants.length} options`;
+}
 
 export default function MerchantProductsPage() {
   const dispatch = useDispatch();
-  const showToast = useToast();
   const products = useSelector((s) => s.merchant.products);
-  const [formOpen, setFormOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
-
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (!title || !price || !stock) return;
-    dispatch(
-      addProduct({
-        id: `mp-${Date.now()}`,
-        title,
-        image: null,
-        price: Number(price),
-        stock: Number(stock),
-        status: "draft",
-        offerCommission: false,
-        hideStock: false,
-      }),
-    );
-    showToast(`${title} added as a draft`);
-    setTitle("");
-    setPrice("");
-    setStock("");
-    setFormOpen(false);
-  };
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title="Products"
         right={
-          <button
-            type="button"
-            onClick={() => setFormOpen((v) => !v)}
+          <Link
+            href="/merchant/products/new"
             aria-label="Add product"
             className="flex h-8 w-8 items-center justify-center rounded-full bg-shop-accent-1-light text-shop-accent-1 hover:bg-shop-accent-1 hover:text-white"
           >
-            {formOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </button>
+            <Plus className="h-4 w-4" />
+          </Link>
         }
       />
-
-      {formOpen && (
-        <form
-          onSubmit={handleAdd}
-          className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-shop-bg p-4 lg:mx-8"
-        >
-          <p className="text-[13px] font-semibold text-shop-heading">New Product</p>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Product title"
-            className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-          />
-          <div className="flex gap-3">
-            <input
-              value={price}
-              onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="Price (₦)"
-              inputMode="numeric"
-              className="w-full rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-            />
-            <input
-              value={stock}
-              onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="Stock"
-              inputMode="numeric"
-              className="w-full rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-            />
-          </div>
-          <button
-            type="submit"
-            className="rounded-[8px] bg-shop-accent-1 py-2.5 text-[13px] font-semibold text-white hover:bg-shop-accent-1-dark"
-          >
-            Publish as Draft
-          </button>
-        </form>
-      )}
 
       <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
         {products.map((product) => (
@@ -118,9 +53,9 @@ export default function MerchantProductsPage() {
           >
             <div className="flex gap-3">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
-                {product.image ? (
+                {product.images?.[0] ? (
                   <Image
-                    src={product.image}
+                    src={product.images[0]}
                     alt={product.title}
                     fill
                     className="object-contain p-1.5"
@@ -135,11 +70,9 @@ export default function MerchantProductsPage() {
                   {product.title}
                 </p>
                 <p className="text-[13px] font-semibold text-shop-heading">
-                  {formatPrice(product.price)}
+                  {priceLabel(product)}
                 </p>
-                <p className="text-[11.5px] text-shop-text/70">
-                  {product.hideStock ? "Stock hidden" : `${product.stock} in stock`}
-                </p>
+                <p className="text-[11.5px] text-shop-text/70">{stockLabel(product)}</p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span
@@ -163,18 +96,16 @@ export default function MerchantProductsPage() {
             </div>
 
             <div className="flex items-center justify-between border-t border-shop-border pt-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] font-medium text-shop-heading">
-                  Offer Commission
-                </span>
-                <Toggle
-                  on={product.offerCommission}
-                  onClick={() =>
-                    dispatch(toggleProductField({ id: product.id, field: "offerCommission" }))
-                  }
-                  label="Toggle offer commission"
-                />
-              </div>
+              <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-shop-text">
+                <Users2 className="h-3.5 w-3.5" />
+                {product.offerCommission && product.partnerProfitAmount ? (
+                  <span className="text-shop-accent-1">
+                    Partner Program · {formatPrice(product.partnerProfitAmount)} profit
+                  </span>
+                ) : (
+                  "Not enrolled in Partner Program"
+                )}
+              </span>
               <button
                 type="button"
                 onClick={() =>

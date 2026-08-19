@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  BadgeCheck,
   Store,
   ClipboardList,
   Banknote,
@@ -13,6 +12,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { merchantProfile } from "@/lib/merchant-data";
 import { dummyUser } from "@/lib/dashboard-data";
@@ -27,9 +28,17 @@ const links = [
   { href: "#", label: "Store Settings", icon: Settings },
 ];
 
+const VERIFICATION_COPY = {
+  unverified: { label: "Not Verified", tone: "bg-red-50 text-shop-accent-3" },
+  pending: { label: "Verification Pending", tone: "bg-amber-100 text-amber-700" },
+  verified: { label: "Verified Merchant", tone: "bg-emerald-100 text-emerald-700" },
+};
+
 export default function MerchantAccountPage() {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user) || dummyUser;
+  const verification = useSelector((s) => s.merchant.verification);
+  const verificationInfo = VERIFICATION_COPY[verification.status];
 
   return (
     <div className="flex flex-col gap-5 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[640px] lg:pb-10">
@@ -38,25 +47,28 @@ export default function MerchantAccountPage() {
           {(merchantProfile.storeName || "S").charAt(0)}
         </div>
         <div>
-          <div className="flex items-center gap-1.5">
-            <p className="text-[16px] font-semibold text-shop-heading">
-              {merchantProfile.storeName}
-            </p>
-            {merchantProfile.verified && (
-              <BadgeCheck className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
-            )}
-          </div>
+          <p className="text-[16px] font-semibold text-shop-heading">
+            {merchantProfile.storeName}
+          </p>
           <p className="text-[12.5px] text-shop-text">{user.name}</p>
           <p className="text-[12.5px] text-shop-text">{user.email}</p>
         </div>
       </div>
 
-      <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-accent-1-light px-4 py-2.5 lg:mx-0">
-        <BadgeCheck className="h-4 w-4 text-shop-accent-1" />
-        <span className="text-[12.5px] font-semibold text-shop-accent-1">
-          {merchantProfile.verified ? "Verified Merchant" : "Verification Pending"}
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={() =>
+          dispatch(openModal({ modalType: MODAL_TYPES.VERIFY_IDENTITY, modalProps: { role: "merchant" } }))
+        }
+        className={`mx-4 flex items-center gap-2 rounded-full px-4 py-2.5 lg:mx-0 ${verificationInfo.tone}`}
+      >
+        {verification.status === "verified" ? (
+          <ShieldCheck className="h-4 w-4" />
+        ) : (
+          <ShieldAlert className="h-4 w-4" />
+        )}
+        <span className="text-[12.5px] font-semibold">{verificationInfo.label}</span>
+      </button>
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
         {links.map(({ href, label, icon: Icon }) => (

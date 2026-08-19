@@ -8,8 +8,6 @@ import {
   Heart,
   MapPin,
   Wallet,
-  Store,
-  Users2,
   HelpCircle,
   Settings,
   LogOut,
@@ -22,8 +20,6 @@ const links = [
   { href: "/dashboard/orders", label: "My Orders", icon: Package },
   { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart },
   { href: "#", label: "Saved Addresses", icon: MapPin },
-  { href: "/login/merchant", label: "Become a Merchant", icon: Store },
-  { href: "/login/partner", label: "Become a Partner", icon: Users2 },
   { href: "#", label: "Help Centre", icon: HelpCircle },
   { href: "#", label: "Settings", icon: Settings },
 ];
