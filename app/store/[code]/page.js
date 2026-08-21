@@ -19,8 +19,12 @@ export default function PublicPartnerStorePage() {
   const accentId = useSelector((s) => s.partner.storeAccent);
   const fontId = useSelector((s) => s.partner.storeFont);
   const merchantProducts = useSelector((s) => s.merchant.products);
+  const ownProducts = useSelector((s) => s.partner.ownProducts);
 
-  const products = merchantProducts.filter((p) => storeProductIds.includes(p.id));
+  const products = [
+    ...merchantProducts.filter((p) => storeProductIds.includes(p.id)),
+    ...ownProducts,
+  ];
   const theme = getTheme(themeId);
   const accent = getAccent(accentId);
   const fontPairing = getFontPairing(fontId);

@@ -36,15 +36,23 @@ import {
   HEALTH_TONE,
 } from "@/lib/admin-data";
 
-const KPI = ({ icon: Icon, label, value }) => (
-  <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light">
-      <Icon className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
-    </div>
-    <p className="text-[16px] font-bold text-shop-heading">{value}</p>
-    <p className="text-[11.5px] text-shop-text">{label}</p>
-  </div>
-);
+const KPI = ({ icon: Icon, label, value, href }) => {
+  const Wrapper = href ? Link : "div";
+  return (
+    <Wrapper
+      {...(href ? { href } : {})}
+      className={`flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4 ${
+        href ? "hover:border-shop-accent-1" : ""
+      }`}
+    >
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light">
+        <Icon className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
+      </div>
+      <p className="text-[16px] font-bold text-shop-heading">{value}</p>
+      <p className="text-[11.5px] text-shop-text">{label}</p>
+    </Wrapper>
+  );
+};
 
 const MANAGE_LINKS = [
   { href: "/admin/customers", label: "Customers", icon: Users },
@@ -153,12 +161,12 @@ export default function AdminHome() {
       <div className="flex flex-col gap-3 px-4 lg:px-8">
         <p className="text-[14px] font-semibold text-shop-heading">Business Overview</p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(businessOverview.revenueToday)} />
-          <KPI icon={ShoppingBag} label="Orders Today" value={businessOverview.ordersToday} />
-          <KPI icon={Users} label="Customers" value={businessOverview.customers.toLocaleString()} />
-          <KPI icon={Store} label="Merchants" value={businessOverview.merchants} />
-          <KPI icon={Users2} label="Partners" value={businessOverview.partners} />
-          <KPI icon={Wallet} label="Escrow Balance" value={formatPrice(escrowBalance)} />
+          <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(businessOverview.revenueToday)} href="/admin/finance" />
+          <KPI icon={ShoppingBag} label="Orders Today" value={businessOverview.ordersToday} href="/admin/orders" />
+          <KPI icon={Users} label="Customers" value={businessOverview.customers.toLocaleString()} href="/admin/customers" />
+          <KPI icon={Store} label="Merchants" value={businessOverview.merchants} href="/admin/merchants" />
+          <KPI icon={Users2} label="Partners" value={businessOverview.partners} href="/admin/partners" />
+          <KPI icon={Wallet} label="Escrow Balance" value={formatPrice(escrowBalance)} href="/admin/finance" />
         </div>
       </div>
 

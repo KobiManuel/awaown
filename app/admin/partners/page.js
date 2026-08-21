@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { BadgeCheck, Ban, Play } from "lucide-react";
+import { BadgeCheck, Ban, Play, ChevronRight } from "lucide-react";
 import { VERIFICATION_TONE, formatPrice } from "@/lib/admin-data";
 import { setPartnerStatus, setPartnerVerification } from "@/lib/store/adminSlice";
 import { adminSetVerificationStatus } from "@/lib/store/partnerSlice";
@@ -35,19 +36,20 @@ export default function AdminPartnersPage() {
       <div className="flex flex-col gap-2.5 px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-8">
         {partners.map((p) => (
           <div key={p.id} className="flex flex-col gap-2.5 rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div className="flex items-start justify-between">
-              <div>
+            <Link href={`/admin/partners/${p.id}`} className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-shop-heading">{p.name}</p>
                 <p className="text-[11.5px] text-shop-text/70">
                   {p.storeName} · {p.referrals} referrals · {formatPrice(p.netProfit)} net profit
                 </p>
               </div>
-              <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize ${
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize ${
                 p.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-red-50 text-shop-accent-3"
               }`}>
                 {p.status}
               </span>
-            </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-shop-text/40" />
+            </Link>
             <span className={`w-fit rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize ${VERIFICATION_TONE[p.verification]}`}>
               {p.verification}
             </span>

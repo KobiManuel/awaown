@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useSelector } from "react-redux";
 import { PackageSearch } from "lucide-react";
 import {
@@ -28,9 +29,10 @@ export default function AdminOrdersPage() {
       ) : (
         <div className="flex flex-col gap-2 px-4 lg:px-8">
           {orders.map((order) => (
-            <div
+            <Link
               key={order.id}
-              className="flex items-center justify-between gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
+              href={`/admin/orders/${order.id}`}
+              className="flex items-center justify-between gap-3 rounded-[14px] border border-shop-border bg-white p-3.5 hover:border-shop-accent-1"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-shop-heading">{order.id}</p>
@@ -46,7 +48,7 @@ export default function AdminOrdersPage() {
               <span className="shrink-0 text-[13px] font-semibold text-shop-heading">
                 {formatPrice(order.total)}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       )}

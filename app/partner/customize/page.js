@@ -1,22 +1,13 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { ImagePlus, User, Eye, RotateCcw, Check } from "lucide-react";
 import { partnerProfile } from "@/lib/partner-data";
 import { readFileAsDataURL } from "@/lib/file-utils";
-import {
-  setStoreName,
-  setStoreBio,
-  setStoreProfileImage,
-  setStoreBanner,
-  setStoreTheme,
-  setStoreAccent,
-  setStoreFont,
-  resetStoreCustomization,
-} from "@/lib/store/partnerSlice";
-import { STORE_THEMES, STORE_ACCENTS, STORE_FONTS } from "@/lib/partner-store-options";
+import { saveStoreCustomization } from "@/lib/store/partnerSlice";
+import { STORE_THEMES, STORE_ACCENTS, STORE_FONTS, STORE_CUSTOMIZATION_DEFAULTS } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -27,29 +18,57 @@ export default function PartnerCustomizePage() {
   const profileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
-  const storeName = useSelector((s) => s.partner.storeName);
-  const storeBio = useSelector((s) => s.partner.storeBio);
-  const storeProfileImage = useSelector((s) => s.partner.storeProfileImage);
-  const storeBanner = useSelector((s) => s.partner.storeBanner);
-  const storeTheme = useSelector((s) => s.partner.storeTheme);
-  const storeAccent = useSelector((s) => s.partner.storeAccent);
-  const storeFont = useSelector((s) => s.partner.storeFont);
+  const saved = useSelector((s) => ({
+    storeName: s.partner.storeName,
+    storeBio: s.partner.storeBio,
+    storeProfileImage: s.partner.storeProfileImage,
+    storeBanner: s.partner.storeBanner,
+    storeTheme: s.partner.storeTheme,
+    storeAccent: s.partner.storeAccent,
+    storeFont: s.partner.storeFont,
+  }));
+
+  const [draft, setDraft] = useState(saved);
+
+  useEffect(() => {
+    setDraft(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { storeName, storeBio, storeProfileImage, storeBanner, storeTheme, storeAccent, storeFont } = draft;
+  const isDirty = Object.keys(saved).some((key) => saved[key] !== draft[key]);
+
+  const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const handleProfileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    dispatch(setStoreProfileImage(await readFileAsDataURL(file)));
+    update({ storeProfileImage: await readFileAsDataURL(file) });
+    e.target.value = "";
   };
 
   const handleBannerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    dispatch(setStoreBanner(await readFileAsDataURL(file)));
+    update({ storeBanner: await readFileAsDataURL(file) });
+    e.target.value = "";
   };
 
   const handleReset = () => {
-    dispatch(resetStoreCustomization());
-    showToast("Store appearance reset to default");
+    setDraft({
+      ...draft,
+      storeProfileImage: null,
+      storeBanner: null,
+      storeBio: "",
+      storeTheme: STORE_CUSTOMIZATION_DEFAULTS.theme,
+      storeAccent: STORE_CUSTOMIZATION_DEFAULTS.accent,
+      storeFont: STORE_CUSTOMIZATION_DEFAULTS.font,
+    });
+  };
+
+  const handleSave = () => {
+    dispatch(saveStoreCustomization(draft));
+    showToast("Store changes saved");
   };
 
   return (
@@ -116,7 +135,7 @@ export default function PartnerCustomizePage() {
             <span className="text-[13px] font-semibold text-shop-heading">Store Name</span>
             <input
               value={storeName}
-              onChange={(e) => dispatch(setStoreName(e.target.value))}
+              onChange={(e) => update({ storeName: e.target.value })}
               className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
             />
           </label>
@@ -124,7 +143,7 @@ export default function PartnerCustomizePage() {
             <span className="text-[13px] font-semibold text-shop-heading">Store Bio</span>
             <textarea
               value={storeBio}
-              onChange={(e) => dispatch(setStoreBio(e.target.value))}
+              onChange={(e) => update({ storeBio: e.target.value })}
               rows={2}
               placeholder="Tell visitors what your store is about"
               className="resize-none rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
@@ -142,7 +161,7 @@ export default function PartnerCustomizePage() {
                 <button
                   key={theme.id}
                   type="button"
-                  onClick={() => dispatch(setStoreTheme(theme.id))}
+                  onClick={() => update({ storeTheme: theme.id })}
                   className={`flex flex-col gap-2 rounded-[12px] border p-2.5 text-left transition-colors ${
                     active ? "border-shop-accent-1" : "border-shop-border"
                   }`}
@@ -176,7 +195,7 @@ export default function PartnerCustomizePage() {
                 <button
                   key={accent.id}
                   type="button"
-                  onClick={() => dispatch(setStoreAccent(accent.id))}
+                  onClick={() => update({ storeAccent: accent.id })}
                   className="flex flex-col items-center gap-1.5"
                 >
                   <span
@@ -206,7 +225,7 @@ export default function PartnerCustomizePage() {
                 <button
                   key={pair.id}
                   type="button"
-                  onClick={() => dispatch(setStoreFont(pair.id))}
+                  onClick={() => update({ storeFont: pair.id })}
                   className={`flex items-center justify-between rounded-[10px] border p-3 text-left transition-colors ${
                     active ? "border-shop-accent-1 bg-shop-accent-1-light" : "border-shop-border"
                   }`}
@@ -232,14 +251,25 @@ export default function PartnerCustomizePage() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleReset}
-          className="flex items-center justify-center gap-1.5 rounded-[10px] border border-shop-border py-3 text-[13px] font-semibold text-shop-text hover:bg-shop-bg"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Reset to Default
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-shop-border py-3 text-[13px] font-semibold text-shop-text hover:bg-shop-bg"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset to Default
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!isDirty}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
+          >
+            <Check className="h-3.5 w-3.5" />
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
   );

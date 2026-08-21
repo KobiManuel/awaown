@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSelector } from "react-redux";
-import { TrendingUp, Clock, Store, Copy, Check, Share2, ShieldAlert } from "lucide-react";
+import { TrendingUp, Clock, Store, Copy, Check, Share2, ShieldAlert, ImagePlus } from "lucide-react";
 import { partnerProfile, formatPrice } from "@/lib/partner-data";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -28,8 +29,10 @@ export default function PartnerHome() {
   const walletBalance = useSelector((s) => s.partner.walletBalance);
   const earnings = useSelector((s) => s.partner.earnings);
   const storeName = useSelector((s) => s.partner.storeName);
+  const storeBanner = useSelector((s) => s.partner.storeBanner);
   const verification = useSelector((s) => s.partner.verification);
   const [copied, setCopied] = useState(false);
+  const storeLink = partnerProfile.referralLink.replace("https://awaown.com", "");
 
   const clearedProfit = earnings
     .filter((e) => e.status === "cleared")
@@ -49,10 +52,37 @@ export default function PartnerHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      <div className="px-4 pt-5 lg:px-8 lg:pt-8">
+      {/* Store banner */}
+      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
+        {storeBanner && (
+          <Image src={storeBanner} alt="Store banner" fill className="object-cover" priority />
+        )}
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative flex w-full items-end justify-between p-4">
+          <p className="text-[16px] font-bold text-white lg:text-[20px]">{storeName}</p>
+          <div className="flex gap-2">
+            <Link
+              href="/partner/customize"
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              <ImagePlus className="h-3.5 w-3.5" />
+              {storeBanner ? "Edit Banner" : "Add Banner"}
+            </Link>
+            <Link
+              href={storeLink}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              Preview Store
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 lg:px-8">
         <p className="text-[13px] text-shop-text">Hi, {partnerProfile.name.split(" ")[0]} 👋</p>
         <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
-          {storeName}
+          Welcome back
         </p>
       </div>
 

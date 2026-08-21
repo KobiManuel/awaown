@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Package, Eye, EyeOff, Trash2, Users2 } from "lucide-react";
+import { Plus, Package, Eye, EyeOff, Trash2, Users2, Boxes } from "lucide-react";
 import { formatPrice, PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS } from "@/lib/merchant-data";
 
 function categoryLabel(slug) {
@@ -18,6 +18,7 @@ import { toggleProductField, removeProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 
 function priceLabel(product) {
+  if (product.productType === "group") return `From ${formatPrice(product.price)}`;
   if (!product.hasVariants || product.variants.length === 0) {
     return formatPrice(product.price);
   }
@@ -28,6 +29,9 @@ function priceLabel(product) {
 }
 
 function stockLabel(product) {
+  if (product.productType === "group") {
+    return `${product.groupProductIds?.length || 0} products in this group`;
+  }
   if (product.hideStock) return "Stock hidden";
   if (!product.hasVariants || product.variants.length === 0) return `${product.stock} in stock`;
   const total = product.variants.reduce((sum, v) => sum + v.stock, 0);
@@ -89,6 +93,12 @@ export default function MerchantProductsPage() {
                 )}
               </div>
               <div className="flex flex-col items-end gap-2">
+                {product.productType === "group" && (
+                  <span className="flex items-center gap-1 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10.5px] font-semibold text-shop-accent-1">
+                    <Boxes className="h-3 w-3" />
+                    Group
+                  </span>
+                )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
                     product.status === "active"
@@ -109,32 +119,34 @@ export default function MerchantProductsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-shop-border pt-3">
-              <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-shop-text">
-                <Users2 className="h-3.5 w-3.5" />
-                {product.offerCommission && product.partnerProfitAmount ? (
-                  <span className="text-shop-accent-1">
-                    Partner Program · {formatPrice(product.partnerProfitAmount)} profit
-                  </span>
-                ) : (
-                  "Not enrolled in Partner Program"
-                )}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  dispatch(toggleProductField({ id: product.id, field: "hideStock" }))
-                }
-                className="flex items-center gap-1.5 text-[12px] font-medium text-shop-text hover:text-shop-accent-1"
-              >
-                {product.hideStock ? (
-                  <EyeOff className="h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="h-3.5 w-3.5" />
-                )}
-                {product.hideStock ? "Stock hidden" : "Stock visible"}
-              </button>
-            </div>
+            {product.productType !== "group" && (
+              <div className="flex items-center justify-between border-t border-shop-border pt-3">
+                <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-shop-text">
+                  <Users2 className="h-3.5 w-3.5" />
+                  {product.offerCommission && product.partnerProfitAmount ? (
+                    <span className="text-shop-accent-1">
+                      Partner Program · {formatPrice(product.partnerProfitAmount)} profit
+                    </span>
+                  ) : (
+                    "Not enrolled in Partner Program"
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    dispatch(toggleProductField({ id: product.id, field: "hideStock" }))
+                  }
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-shop-text hover:text-shop-accent-1"
+                >
+                  {product.hideStock ? (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5" />
+                  )}
+                  {product.hideStock ? "Stock hidden" : "Stock visible"}
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

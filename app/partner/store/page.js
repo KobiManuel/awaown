@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Link2, Check, Plus, Minus, Store, Package } from "lucide-react";
+import { Link2, Check, Plus, Minus, Store, Package, Trash2, Boxes } from "lucide-react";
 import { partnerProfile, formatPrice, splitPartnerProfit } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
-import { addToStore, removeFromStore } from "@/lib/store/partnerSlice";
+import { addToStore, removeFromStore, removeOwnProduct } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -15,10 +16,12 @@ export default function PartnerStorePage() {
   const showToast = useToast();
   const [copiedId, setCopiedId] = useState(null);
   const [category, setCategory] = useState("all");
+  const [tab, setTab] = useState("marketplace"); // marketplace | mine
 
   const merchantProducts = useSelector((s) => s.merchant.products);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
   const storeName = useSelector((s) => s.partner.storeName);
+  const ownProducts = useSelector((s) => s.partner.ownProducts);
 
   const allEligible = useMemo(
     () =>
@@ -60,19 +63,150 @@ export default function PartnerStorePage() {
     setTimeout(() => setCopiedId(null), 1600);
   };
 
+  const handleRemoveOwn = (product) => {
+    dispatch(removeOwnProduct(product.id));
+    showToast(`Removed from ${storeName}`);
+  };
+
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="My Store" />
+      <AppHeader
+        title="My Store"
+        right={
+          <Link
+            href="/partner/products/new"
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-3.5 py-2 text-[12px] font-semibold text-white"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Product
+          </Link>
+        }
+      />
 
       <div className="mx-4 flex items-center gap-3 rounded-[14px] bg-shop-bg p-3.5 lg:mx-8">
         <Store className="h-5 w-5 shrink-0 text-shop-accent-1" strokeWidth={1.75} />
         <p className="text-[12px] leading-[18px] text-shop-text">
           Add products to <span className="font-semibold text-shop-heading">{storeName}</span> —
-          each one gets its own shareable link, and your full store link shares everything
-          you&apos;ve added at once.
+          from the AwaOwn marketplace, or your own uploads. Each one gets its own
+          shareable link, and your full store link shares everything at once.
         </p>
       </div>
 
+      <div className="flex gap-2 px-4 lg:px-8">
+        <button
+          type="button"
+          onClick={() => setTab("marketplace")}
+          className={`flex-1 rounded-full border py-2.5 text-[12.5px] font-semibold transition-colors ${
+            tab === "marketplace"
+              ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+              : "border-shop-border text-shop-text"
+          }`}
+        >
+          Add from Marketplace
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("mine")}
+          className={`flex-1 rounded-full border py-2.5 text-[12.5px] font-semibold transition-colors ${
+            tab === "mine"
+              ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+              : "border-shop-border text-shop-text"
+          }`}
+        >
+          My Products ({ownProducts.length})
+        </button>
+      </div>
+
+      {tab === "mine" ? (
+        <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
+          {ownProducts.map((product) => (
+            <div
+              key={product.id}
+              className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
+            >
+              <div className="flex gap-3">
+                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
+                  {product.images?.[0] ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.title}
+                      fill
+                      className="object-contain p-1.5"
+                      sizes="64px"
+                    />
+                  ) : (
+                    <Package className="h-6 w-6 text-shop-text/40" strokeWidth={1.5} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
+                    {product.title}
+                  </p>
+                  <p className="text-[11.5px] text-shop-text/70">
+                    {product.productType === "group" ? "From " : ""}
+                    {formatPrice(product.price)}
+                  </p>
+                  {product.productType === "group" ? (
+                    <p className="flex items-center gap-1 text-[11px] text-shop-accent-1">
+                      <Boxes className="h-3 w-3" />
+                      {product.groupProductIds?.length || 0} products in this group
+                    </p>
+                  ) : (
+                    !product.hideStock && (
+                      <p className="text-[11px] text-shop-text/60">{product.stock} in stock</p>
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleGetLink(product)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2.5 text-[12.5px] font-semibold transition-colors ${
+                    copiedId === product.id
+                      ? "bg-emerald-600 text-white"
+                      : "border border-shop-accent-1 text-shop-accent-1 hover:bg-shop-accent-1-light"
+                  }`}
+                >
+                  {copiedId === product.id ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="h-3.5 w-3.5" />
+                      Get Link
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveOwn(product)}
+                  className="flex items-center justify-center gap-1.5 rounded-[10px] border border-shop-border px-3.5 text-[12.5px] font-semibold text-shop-accent-3 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {ownProducts.length === 0 && (
+            <div className="col-span-2 flex flex-col items-center gap-3 py-10 text-center">
+              <p className="text-[13px] text-shop-text">
+                You haven&apos;t uploaded any products of your own yet.
+              </p>
+              <Link
+                href="/partner/products/new"
+                className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-4 py-2.5 text-[12.5px] font-semibold text-white"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Your First Product
+              </Link>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
       <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
         <button
           type="button"
@@ -213,6 +347,8 @@ export default function PartnerStorePage() {
           </p>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

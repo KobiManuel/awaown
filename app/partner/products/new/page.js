@@ -4,21 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import Image from "next/image";
-import {
-  Camera,
-  Video,
-  X,
-  Plus,
-  Trash2,
-  Package,
-  Layers,
-  Boxes,
-  Users2,
-  Check,
-} from "lucide-react";
-import { formatPrice, PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS } from "@/lib/merchant-data";
+import { Camera, Video, X, Plus, Trash2, Package, Layers, Boxes, Check } from "lucide-react";
+import { PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS, formatPrice } from "@/lib/merchant-data";
 import { readFileAsDataURL } from "@/lib/file-utils";
-import { addProduct } from "@/lib/store/merchantSlice";
+import { addOwnProduct } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -65,11 +54,11 @@ const TypeCard = ({ selected, onClick, icon: Icon, title, description }) => (
   </button>
 );
 
-export default function NewMerchantProductPage() {
+export default function NewPartnerProductPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const showToast = useToast();
-  const existingProducts = useSelector((s) => s.merchant.products);
+  const existingProducts = useSelector((s) => s.partner.ownProducts);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -88,8 +77,6 @@ export default function NewMerchantProductPage() {
   const [bulkPrice, setBulkPrice] = useState("");
   const [groupProductIds, setGroupProductIds] = useState([]);
 
-  const [offerCommission, setOfferCommission] = useState(false);
-  const [partnerProfitAmount, setPartnerProfitAmount] = useState("");
   const [hideStock, setHideStock] = useState(false);
 
   const groupCandidates = existingProducts.filter((p) => p.productType !== "group");
@@ -146,16 +133,15 @@ export default function NewMerchantProductPage() {
     : title.trim().length > 0 &&
       (hasVariants
         ? variants.length > 0 && variants.every((v) => v.price && v.stock !== "")
-        : price && stock !== "") &&
-      (!offerCommission || (partnerProfitAmount && Number(partnerProfitAmount) > 0));
+        : price && stock !== "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!isValid) return;
 
     dispatch(
-      addProduct({
-        id: `mp-${Date.now()}`,
+      addOwnProduct({
+        id: `pp-${Date.now()}`,
         title: title.trim(),
         description: description.trim(),
         category,
@@ -175,20 +161,24 @@ export default function NewMerchantProductPage() {
           : [],
         groupProductIds: isGroup ? groupProductIds : [],
         status: "active",
-        offerCommission: isGroup ? false : offerCommission,
-        partnerProfitAmount: !isGroup && offerCommission ? Number(partnerProfitAmount) : null,
         hideStock: isGroup ? true : hideStock,
       }),
     );
-    showToast(`${title.trim()} published`);
-    router.push("/merchant/products");
+    showToast(`${title.trim()} added to your store`);
+    router.push("/partner/store");
   };
 
   return (
     <div className="flex flex-col gap-6 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
-      <AppHeader title="Add Product" backHref="/merchant/products" showBackOnDesktop />
+      <AppHeader title="Add Product" backHref="/partner/store" showBackOnDesktop />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4 lg:px-0">
+        <p className="rounded-[10px] bg-shop-bg p-3.5 text-[12px] leading-[18px] text-shop-text">
+          Upload your own product to sell directly through your store — separate from
+          products you add from the AwaOwn marketplace. It&apos;s still protected by
+          AwaOwn&apos;s escrow and payment protection.
+        </p>
+
         {/* Media */}
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
@@ -263,7 +253,7 @@ export default function NewMerchantProductPage() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Ankara Print Maxi Dress"
+              placeholder="e.g. Handmade Beaded Necklace"
               className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
             />
           </label>
@@ -316,7 +306,7 @@ export default function NewMerchantProductPage() {
           <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
           <p className="text-[11.5px] text-shop-text">
             Choose how this product is sold — as-is, with color/size options, or as a
-            bundle linking to products you&apos;ve already listed.
+            bundle linking to products you&apos;ve already added.
           </p>
           <div className="flex gap-3">
             <TypeCard
@@ -354,8 +344,8 @@ export default function NewMerchantProductPage() {
             </p>
             {groupCandidates.length === 0 ? (
               <p className="rounded-[10px] bg-shop-bg p-3.5 text-[12px] text-shop-text">
-                You don&apos;t have any other products yet — publish a simple or
-                variable product first, then come back to bundle it into a group.
+                You don&apos;t have any other products yet — add a simple or variable
+                product first, then come back to bundle it into a group.
               </p>
             ) : (
               <div className="flex flex-col gap-2">
@@ -538,78 +528,19 @@ export default function NewMerchantProductPage() {
           </div>
         )}
 
+        {/* Stock visibility */}
         {!isGroup && (
-          <>
-            {/* Partner enrollment */}
-            <div className="flex flex-col gap-2.5">
-              <p className="text-[13px] font-semibold text-shop-heading">
-                Enroll this product in the Partner Program?
-              </p>
-              <p className="text-[11.5px] text-shop-text">
-                Partners can promote this product and earn a profit you choose. Customers still
-                see your normal price.
-              </p>
-              <div className="flex gap-3">
-                <TypeCard
-                  selected={!offerCommission}
-                  onClick={() => setOfferCommission(false)}
-                  icon={Users2}
-                  title="No"
-                  description="Keep this product off the Partner Program."
-                />
-                <TypeCard
-                  selected={offerCommission}
-                  onClick={() => setOfferCommission(true)}
-                  icon={Users2}
-                  title="Yes"
-                  description="Let Partners promote it and earn a profit."
-                />
-              </div>
-              {offerCommission && (
-                <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[13px] font-semibold text-shop-heading">
-                      How much do you want to give partners? (₦)
-                    </span>
-                    <input
-                      value={partnerProfitAmount}
-                      onChange={(e) => setPartnerProfitAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                      inputMode="numeric"
-                      placeholder="2500"
-                      className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-                    />
-                  </label>
-                  {partnerProfitAmount && Number.isFinite(minPriceForPreview) && minPriceForPreview > 0 && (
-                    <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
-                      Customers still see <span className="font-semibold text-shop-heading">{formatPrice(minPriceForPreview)}</span>.
-                      Partners will see a partner price of{" "}
-                      <span className="font-semibold text-shop-heading">
-                        {formatPrice(minPriceForPreview - Number(partnerProfitAmount))}
-                      </span>{" "}
-                      and earn up to{" "}
-                      <span className="font-semibold text-emerald-600">
-                        {formatPrice(Number(partnerProfitAmount))}
-                      </span>{" "}
-                      in profit for promoting it.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Stock visibility */}
-            <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
-              <span className="text-[13px] font-medium text-shop-heading">
-                Hide stock count from shoppers
-              </span>
-              <input
-                type="checkbox"
-                checked={hideStock}
-                onChange={(e) => setHideStock(e.target.checked)}
-                className="h-4.5 w-4.5 accent-[#6d28d9]"
-              />
-            </label>
-          </>
+          <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
+            <span className="text-[13px] font-medium text-shop-heading">
+              Hide stock count from shoppers
+            </span>
+            <input
+              type="checkbox"
+              checked={hideStock}
+              onChange={(e) => setHideStock(e.target.checked)}
+              className="h-4.5 w-4.5 accent-[#6d28d9]"
+            />
+          </label>
         )}
 
         <button
@@ -617,7 +548,7 @@ export default function NewMerchantProductPage() {
           disabled={!isValid}
           className="rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
         >
-          Publish Product
+          Add to My Store
         </button>
       </form>
     </div>
