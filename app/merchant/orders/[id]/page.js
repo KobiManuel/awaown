@@ -68,6 +68,7 @@ export default function MerchantOrderDetailPage() {
         <div className="flex flex-col">
           {MERCHANT_ORDER_STEPS.map((step, i) => {
             const done = i <= currentStep;
+            const historyEntry = (order.statusHistory || []).find((h) => h.status === step.key);
             return (
               <div key={step.key} className="flex gap-3">
                 <div className="flex flex-col items-center">
@@ -93,6 +94,17 @@ export default function MerchantOrderDetailPage() {
                   >
                     {step.label}
                   </p>
+                  {historyEntry && (
+                    <p className="text-[11px] text-shop-text/60">
+                      {new Date(historyEntry.at).toLocaleString("en-NG", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
                 </div>
               </div>
             );

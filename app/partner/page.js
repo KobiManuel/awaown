@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { TrendingUp, Clock, Store, Copy, Check, Share2 } from "lucide-react";
+import { TrendingUp, Clock, Store, Copy, Check, Share2, ShieldAlert } from "lucide-react";
 import { partnerProfile, formatPrice } from "@/lib/partner-data";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -28,6 +28,7 @@ export default function PartnerHome() {
   const walletBalance = useSelector((s) => s.partner.walletBalance);
   const earnings = useSelector((s) => s.partner.earnings);
   const storeName = useSelector((s) => s.partner.storeName);
+  const verification = useSelector((s) => s.partner.verification);
   const [copied, setCopied] = useState(false);
 
   const clearedProfit = earnings
@@ -55,8 +56,22 @@ export default function PartnerHome() {
         </p>
       </div>
 
+      {verification.status !== "verified" && (
+        <Link
+          href="/partner/account"
+          className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8"
+        >
+          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700" strokeWidth={1.75} />
+          <span className="text-[12.5px] leading-[18px] text-amber-800">
+            {verification.status === "pending"
+              ? "Your identity verification is under review — we'll notify you once it's approved."
+              : "You'll need to verify your identity before your first withdrawal. You can do this any time before then."}
+          </span>
+        </Link>
+      )}
+
       <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:gap-5 lg:px-8">
-        <StatCard icon={TrendingUp} label="Cleared Profit" value={formatPrice(clearedProfit)} />
+        <StatCard icon={TrendingUp} label="Cleared Profit (net)" value={formatPrice(clearedProfit)} />
         <StatCard icon={Clock} label="Pending in Escrow" value={formatPrice(pendingProfit)} />
         <StatCard icon={TrendingUp} label="Wallet Balance" value={formatPrice(walletBalance)} />
         <StatCard icon={Store} label="My Store" value="View" href="/partner/store" />
@@ -100,6 +115,13 @@ export default function PartnerHome() {
             className="rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
           >
             View Earnings History
+          </Link>
+          <Link
+            href={partnerProfile.referralLink.replace("https://awaown.com", "")}
+            target="_blank"
+            className="col-span-2 rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
+          >
+            Preview My Store — see it the way visitors do
           </Link>
         </div>
       </div>

@@ -111,13 +111,14 @@ export default function MerchantPayoutsPage() {
                     month: "short",
                     year: "numeric",
                   })}{" "}
-                  · fee {formatPrice(payout.fee)}
+                  · requested {formatPrice(payout.amount)} · fee {formatPrice(payout.fee)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-[13px] font-semibold text-shop-heading">
                   {formatPrice(payout.net)}
                 </p>
+                <p className="text-[9.5px] uppercase tracking-wide text-shop-text/50">Net</p>
                 <p className="text-[10.5px] font-medium capitalize text-emerald-600">
                   {payout.status}
                 </p>

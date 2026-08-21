@@ -13,7 +13,7 @@ import {
   Layers,
   Users2,
 } from "lucide-react";
-import { formatPrice } from "@/lib/merchant-data";
+import { formatPrice, PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS } from "@/lib/merchant-data";
 import { readFileAsDataURL } from "@/lib/file-utils";
 import { addProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -69,6 +69,8 @@ export default function NewMerchantProductPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(PRODUCT_CATEGORIES[0].slug);
+  const [processingTime, setProcessingTime] = useState(PROCESSING_TIME_OPTIONS[1].id);
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
 
@@ -139,6 +141,8 @@ export default function NewMerchantProductPage() {
         id: `mp-${Date.now()}`,
         title: title.trim(),
         description: description.trim(),
+        category,
+        processingTime,
         images: images.filter(Boolean),
         video,
         hasVariants,
@@ -252,6 +256,36 @@ export default function NewMerchantProductPage() {
               className="resize-none rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
             />
           </label>
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1.5">
+              <span className="text-[13px] font-semibold text-shop-heading">Category</span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              >
+                {PRODUCT_CATEGORIES.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-1 flex-col gap-1.5">
+              <span className="text-[13px] font-semibold text-shop-heading">Processing Time</span>
+              <select
+                value={processingTime}
+                onChange={(e) => setProcessingTime(e.target.value)}
+                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              >
+                {PROCESSING_TIME_OPTIONS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
 
         {/* Product type */}
@@ -267,8 +301,8 @@ export default function NewMerchantProductPage() {
               selected={!hasVariants}
               onClick={() => setHasVariants(false)}
               icon={Package}
-              title="No, single product"
-              description="One price, one stock count."
+              title="No, it's a simple product"
+              description="Sold as-is, with one price and one stock number."
             />
             <TypeCard
               selected={hasVariants}
@@ -413,7 +447,7 @@ export default function NewMerchantProductPage() {
             Enroll this product in the Partner Program?
           </p>
           <p className="text-[11.5px] text-shop-text">
-            Partners can resell this product and earn a profit you choose. Customers still
+            Partners can promote this product and earn a profit you choose. Customers still
             see your normal price.
           </p>
           <div className="flex gap-3">
@@ -429,7 +463,7 @@ export default function NewMerchantProductPage() {
               onClick={() => setOfferCommission(true)}
               icon={Users2}
               title="Yes"
-              description="Let Partners promote and resell it."
+              description="Let Partners promote it and earn a profit."
             />
           </div>
           {offerCommission && (
@@ -448,16 +482,16 @@ export default function NewMerchantProductPage() {
               </label>
               {partnerProfitAmount && Number.isFinite(minPriceForPreview) && minPriceForPreview > 0 && (
                 <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
-                  Customers see <span className="font-semibold text-shop-heading">{formatPrice(minPriceForPreview)}</span>.
-                  Partners see a partner price of{" "}
+                  Customers still see <span className="font-semibold text-shop-heading">{formatPrice(minPriceForPreview)}</span>.
+                  Partners will see a partner price of{" "}
                   <span className="font-semibold text-shop-heading">
                     {formatPrice(minPriceForPreview - Number(partnerProfitAmount))}
                   </span>{" "}
-                  and keep{" "}
+                  and earn up to{" "}
                   <span className="font-semibold text-emerald-600">
                     {formatPrice(Number(partnerProfitAmount))}
                   </span>{" "}
-                  as profit (before the platform&apos;s 20% fee).
+                  in profit for promoting it.
                 </p>
               )}
             </div>

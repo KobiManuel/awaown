@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { Link2, Check, Plus, Minus, Store, Package } from "lucide-react";
 import { partnerProfile, formatPrice, splitPartnerProfit } from "@/lib/partner-data";
+import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { addToStore, removeFromStore } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -13,14 +14,30 @@ export default function PartnerStorePage() {
   const dispatch = useDispatch();
   const showToast = useToast();
   const [copiedId, setCopiedId] = useState(null);
+  const [category, setCategory] = useState("all");
 
   const merchantProducts = useSelector((s) => s.merchant.products);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
   const storeName = useSelector((s) => s.partner.storeName);
 
-  const eligible = merchantProducts.filter(
-    (p) => p.status === "active" && p.offerCommission && p.partnerProfitAmount,
+  const allEligible = useMemo(
+    () =>
+      merchantProducts.filter(
+        (p) => p.status === "active" && p.offerCommission && p.partnerProfitAmount,
+      ),
+    [merchantProducts],
   );
+
+  const eligible = useMemo(
+    () => (category === "all" ? allEligible : allEligible.filter((p) => p.category === category)),
+    [allEligible, category],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    for (const p of allEligible) counts[p.category] = (counts[p.category] || 0) + 1;
+    return counts;
+  }, [allEligible]);
 
   const handleToggleStore = (product) => {
     const inStore = storeProductIds.includes(product.id);
@@ -54,6 +71,34 @@ export default function PartnerStorePage() {
           each one gets its own shareable link, and your full store link shares everything
           you&apos;ve added at once.
         </p>
+      </div>
+
+      <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
+        <button
+          type="button"
+          onClick={() => setCategory("all")}
+          className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
+            category === "all"
+              ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+              : "border-shop-border text-shop-text"
+          }`}
+        >
+          All ({allEligible.length})
+        </button>
+        {PRODUCT_CATEGORIES.filter((c) => categoryCounts[c.slug]).map((c) => (
+          <button
+            key={c.slug}
+            type="button"
+            onClick={() => setCategory(c.slug)}
+            className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
+              category === c.slug
+                ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+                : "border-shop-border text-shop-text"
+            }`}
+          >
+            {c.label} ({categoryCounts[c.slug]})
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
@@ -162,7 +207,9 @@ export default function PartnerStorePage() {
         })}
         {eligible.length === 0 && (
           <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
-            No products are enrolled in the Partner Program yet.
+            {allEligible.length === 0
+              ? "No products are enrolled in the Partner Program yet."
+              : "No products in this category yet."}
           </p>
         )}
       </div>

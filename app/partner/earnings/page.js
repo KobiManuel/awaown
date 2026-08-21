@@ -22,7 +22,7 @@ export default function PartnerEarningsPage() {
           </div>
           <div>
             <p className="text-[15px] font-semibold text-shop-heading">{formatPrice(cleared)}</p>
-            <p className="text-[11px] text-shop-text">Cleared</p>
+            <p className="text-[11px] text-shop-text">Cleared (net)</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-[14px] bg-shop-bg p-4">
@@ -31,7 +31,7 @@ export default function PartnerEarningsPage() {
           </div>
           <div>
             <p className="text-[15px] font-semibold text-shop-heading">{formatPrice(inEscrow)}</p>
-            <p className="text-[11px] text-shop-text">In Escrow</p>
+            <p className="text-[11px] text-shop-text">In Escrow (net)</p>
           </div>
         </div>
       </div>
@@ -69,8 +69,13 @@ export default function PartnerEarningsPage() {
                   Gross profit {formatPrice(e.grossProfit)} · Platform fee (20%) -
                   {formatPrice(e.platformFee)}
                 </span>
-                <span className="font-semibold text-emerald-600">
-                  +{formatPrice(e.netProfit)}
+                <span className="text-right">
+                  <span className="block font-semibold text-emerald-600">
+                    +{formatPrice(e.netProfit)}
+                  </span>
+                  <span className="block text-[9.5px] uppercase tracking-wide text-shop-text/50">
+                    Net
+                  </span>
                 </span>
               </div>
             </div>

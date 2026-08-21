@@ -12,6 +12,8 @@ import {
   Star,
   ChevronRight,
   Plus,
+  ImagePlus,
+  ShieldAlert,
 } from "lucide-react";
 import { merchantProfile, merchantStats, formatPrice, MERCHANT_ORDER_STATUS_LABEL, MERCHANT_ORDER_STATUS_TONE } from "@/lib/merchant-data";
 
@@ -27,22 +29,52 @@ const StatCard = ({ icon: Icon, label, value }) => (
 
 export default function MerchantHome() {
   const orders = useSelector((s) => s.merchant.orders);
-  const verified = useSelector((s) => s.merchant.verification.status === "verified");
+  const verification = useSelector((s) => s.merchant.verification);
+  const verified = verification.status === "verified";
+  const storeBanner = useSelector((s) => s.merchant.storeBanner);
   const recentOrders = orders.slice(0, 3);
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      <div className="flex items-center justify-between px-4 pt-5 lg:px-8 lg:pt-8">
+      {/* Store banner */}
+      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
+        {storeBanner && (
+          <Image src={storeBanner} alt="Store banner" fill className="object-cover" priority />
+        )}
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative flex w-full items-end justify-between p-4">
+          <p className="text-[16px] font-bold text-white lg:text-[20px]">
+            {merchantProfile.storeName}
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href="/merchant/account"
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              <ImagePlus className="h-3.5 w-3.5" />
+              {storeBanner ? "Edit Banner" : "Add Banner"}
+            </Link>
+            <Link
+              href="/shop/fashion-vault"
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              Preview Store
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-4 lg:px-8">
         <div>
           <div className="flex items-center gap-1.5">
             <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
-              {merchantProfile.storeName}
+              Welcome back, {merchantProfile.ownerName}
             </p>
             {verified && (
               <BadgeCheck className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
             )}
           </div>
-          <p className="text-[13px] text-shop-text">Welcome back, {merchantProfile.ownerName}</p>
         </div>
         <Link
           href="/merchant/products/new"
@@ -52,6 +84,20 @@ export default function MerchantHome() {
           Add Product
         </Link>
       </div>
+
+      {!verified && (
+        <Link
+          href="/merchant/account"
+          className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8"
+        >
+          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700" strokeWidth={1.75} />
+          <span className="text-[12.5px] leading-[18px] text-amber-800">
+            {verification.status === "pending"
+              ? "Your identity verification is under review — we'll notify you once it's approved."
+              : "You'll need to verify your identity before your first payout. You can do this any time before then."}
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:gap-5 lg:px-8">
         <StatCard icon={TrendingUp} label="Revenue Today" value={formatPrice(merchantStats.revenueToday)} />

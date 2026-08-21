@@ -86,7 +86,7 @@ const MerchantPayoutModal = () => {
                     <span className="font-medium text-shop-heading">-{formatPrice(fee)}</span>
                   </div>
                   <div className="flex justify-between border-t border-shop-border pt-1 font-semibold text-shop-heading">
-                    <span>You&apos;ll receive</span>
+                    <span>You&apos;ll receive (net)</span>
                     <span>{formatPrice(net)}</span>
                   </div>
                 </div>
@@ -150,7 +150,8 @@ const MerchantPayoutModal = () => {
               <div>
                 <p className="text-[16px] font-semibold text-shop-heading">Payout Requested</p>
                 <p className="mt-1 text-[12.5px] text-shop-text">
-                  {formatPrice(net)} will be sent to your bank within 2–3 business days.
+                  Net amount <span className="font-semibold text-shop-heading">{formatPrice(net)}</span> will
+                  be sent to your bank within 2–3 business days.
                 </p>
               </div>
               <button

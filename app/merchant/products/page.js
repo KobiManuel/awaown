@@ -5,7 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { Plus, Package, Eye, EyeOff, Trash2, Users2 } from "lucide-react";
-import { formatPrice } from "@/lib/merchant-data";
+import { formatPrice, PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS } from "@/lib/merchant-data";
+
+function categoryLabel(slug) {
+  return PRODUCT_CATEGORIES.find((c) => c.slug === slug)?.label || slug;
+}
+
+function processingLabel(id) {
+  return PROCESSING_TIME_OPTIONS.find((p) => p.id === id)?.label || id;
+}
 import { toggleProductField, removeProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 
@@ -73,6 +81,12 @@ export default function MerchantProductsPage() {
                   {priceLabel(product)}
                 </p>
                 <p className="text-[11.5px] text-shop-text/70">{stockLabel(product)}</p>
+                {product.category && (
+                  <p className="text-[11px] text-shop-text/60">
+                    {categoryLabel(product.category)}
+                    {product.processingTime && ` · Ships in ${processingLabel(product.processingTime)}`}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span

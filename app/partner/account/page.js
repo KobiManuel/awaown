@@ -9,7 +9,8 @@ import {
   Banknote,
   Bell,
   HelpCircle,
-  Settings,
+  Palette,
+  Eye,
   LogOut,
   ChevronRight,
   ShieldCheck,
@@ -24,11 +25,17 @@ import { setStoreName } from "@/lib/store/partnerSlice";
 
 const links = [
   { href: "/partner/store", label: "My Store", icon: Store },
+  { href: "/partner/customize", label: "Customize My Store", icon: Palette },
+  {
+    href: partnerProfile.referralLink.replace("https://awaown.com", ""),
+    label: "Preview My Store",
+    icon: Eye,
+    external: true,
+  },
   { href: "/partner/earnings", label: "Earnings History", icon: TrendingUp },
   { href: "/partner/withdraw", label: "Withdraw", icon: Banknote },
   { href: "#", label: "Notifications", icon: Bell },
   { href: "#", label: "Help Centre", icon: HelpCircle },
-  { href: "#", label: "Settings", icon: Settings },
 ];
 
 const VERIFICATION_COPY = {
@@ -134,10 +141,11 @@ export default function PartnerAccountPage() {
       </div>
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
-        {links.map(({ href, label, icon: Icon }) => (
+        {links.map(({ href, label, icon: Icon, external }) => (
           <Link
             key={label}
             href={href}
+            target={external ? "_blank" : undefined}
             className="flex items-center gap-3 rounded-[12px] px-2 py-3 hover:bg-shop-bg"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-bg">

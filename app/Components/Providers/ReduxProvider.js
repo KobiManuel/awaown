@@ -9,6 +9,7 @@ import { hydrateAuth } from "@/lib/store/authSlice";
 import { hydrateOrders } from "@/lib/store/ordersSlice";
 import { hydrateMerchant } from "@/lib/store/merchantSlice";
 import { hydratePartner } from "@/lib/store/partnerSlice";
+import { hydrateAdmin } from "@/lib/store/adminSlice";
 
 const CART_KEY = "awaown_cart";
 const WISHLIST_KEY = "awaown_wishlist";
@@ -16,6 +17,7 @@ const AUTH_KEY = "awaown_auth";
 const ORDERS_KEY = "awaown_orders";
 const MERCHANT_KEY = "awaown_merchant";
 const PARTNER_KEY = "awaown_partner";
+const ADMIN_KEY = "awaown_admin";
 
 const ReduxProvider = ({ children }) => {
   const storeRef = useRef(null);
@@ -34,12 +36,14 @@ const ReduxProvider = ({ children }) => {
       const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
       const merchant = JSON.parse(localStorage.getItem(MERCHANT_KEY) || "null");
       const partner = JSON.parse(localStorage.getItem(PARTNER_KEY) || "null");
+      const admin = JSON.parse(localStorage.getItem(ADMIN_KEY) || "null");
       store.dispatch(hydrateCart(cart));
       store.dispatch(hydrateWishlist(wishlist));
       store.dispatch(hydrateAuth(auth));
       store.dispatch(hydrateOrders(orders));
       if (merchant) store.dispatch(hydrateMerchant(merchant));
       if (partner) store.dispatch(hydratePartner(partner));
+      if (admin) store.dispatch(hydrateAdmin(admin));
     } catch {
       // ignore malformed storage
     }
@@ -55,6 +59,7 @@ const ReduxProvider = ({ children }) => {
       localStorage.setItem(ORDERS_KEY, JSON.stringify(state.orders.items));
       localStorage.setItem(MERCHANT_KEY, JSON.stringify(state.merchant));
       localStorage.setItem(PARTNER_KEY, JSON.stringify(state.partner));
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(state.admin));
     });
 
     return unsubscribe;
