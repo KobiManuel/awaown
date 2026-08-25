@@ -185,10 +185,20 @@ p {
   margin: 0;
 }
 
-.product-form button:not(:disabled),
-.product-form label,
-.product-form select {
-  cursor: pointer;
+/* Every clickable control inside any dashboard (customer/merchant/partner/admin —
+   all share the AppFrame shell, marked with .app-frame) gets an explicit pointer
+   cursor on desktop. Native <button> elements don't get one by default in most
+   browsers, which read as "is this actually clickable?" on hover. Scoped to
+   desktop only (matches the app's lg: 1024px breakpoint) since pointer cursors
+   are meaningless on touch. */
+@media (min-width: 1024px) {
+  .app-frame button:not(:disabled),
+  .app-frame a,
+  .app-frame select,
+  .app-frame label,
+  .app-frame [role="button"] {
+    cursor: pointer;
+  }
 }
 
 .hide-scrollbar {

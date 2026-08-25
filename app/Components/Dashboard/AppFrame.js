@@ -48,7 +48,7 @@ const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null }
   return (
     <ToastProvider>
       <div
-        className="min-h-screen w-full bg-shop-bg lg:flex"
+        className="app-frame min-h-screen w-full bg-shop-bg lg:flex"
         style={{ ...themeVars, ...preview }}
         {...(themeVars ? { "data-shop-theme": "" } : {})}
       >

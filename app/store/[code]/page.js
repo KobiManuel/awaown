@@ -15,21 +15,19 @@ export default function PublicPartnerStorePage() {
   const storeBanner = useSelector((s) => s.partner.storeBanner);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
   const storeDetails = useSelector((s) => s.partner.storeDetails);
-  const ownProducts = useSelector((s) => s.partner.ownProducts);
   const themeId = useSelector((s) => s.partner.storeTheme);
   const accentId = useSelector((s) => s.partner.storeAccent);
   const fontId = useSelector((s) => s.partner.storeFont);
   const merchantProducts = useSelector((s) => s.merchant.products);
   const productDiscounts = useSelector((s) => s.partner.productDiscounts);
 
-  const curatedProducts = merchantProducts
+  const products = merchantProducts
     .filter((p) => storeProductIds.includes(p.id))
     .map((p) => {
       const discount = productDiscounts[p.id] || 0;
       const buyerPrice = Math.max(0, p.price - (p.partnerProfitAmount || 0) - discount);
       return { ...p, price: buyerPrice };
     });
-  const products = [...curatedProducts, ...ownProducts];
 
   const theme = getTheme(themeId);
   const accent = getAccent(accentId);
