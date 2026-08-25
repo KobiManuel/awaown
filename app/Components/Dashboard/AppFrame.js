@@ -15,7 +15,15 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
 // e.g. the Partner role passes its saved store accent/font here so its entire
 // dashboard (not just its public storefront) reflects its own branding. A page inside
 // can further override this live via ThemePreviewContext (see Partner Customize).
-const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars }) => {
+/**
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ * @param {Array<object>} props.navItems
+ * @param {string} props.loginHref
+ * @param {string} [props.roleLabel]
+ * @param {Record<string, string> | null} [props.themeVars]
+ */
+const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null }) => {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(null);
