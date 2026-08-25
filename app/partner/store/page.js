@@ -4,10 +4,10 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Link2, Check, Plus, Minus, Store, Package, Trash2, Boxes } from "lucide-react";
+import { Link2, Check, Plus, Minus, Store, Package, Tag, Trash2, Boxes } from "lucide-react";
 import { partnerProfile, formatPrice, splitPartnerProfit } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
-import { addToStore, removeFromStore, removeOwnProduct } from "@/lib/store/partnerSlice";
+import { addToStore, removeFromStore, setProductDiscount, removeOwnProduct } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -16,11 +16,13 @@ export default function PartnerStorePage() {
   const showToast = useToast();
   const [copiedId, setCopiedId] = useState(null);
   const [category, setCategory] = useState("all");
+  const [discountDrafts, setDiscountDrafts] = useState({});
   const [tab, setTab] = useState("marketplace"); // marketplace | mine
 
   const merchantProducts = useSelector((s) => s.merchant.products);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
   const storeName = useSelector((s) => s.partner.storeName);
+  const productDiscounts = useSelector((s) => s.partner.productDiscounts);
   const ownProducts = useSelector((s) => s.partner.ownProducts);
 
   const allEligible = useMemo(
@@ -46,6 +48,7 @@ export default function PartnerStorePage() {
     const inStore = storeProductIds.includes(product.id);
     if (inStore) {
       dispatch(removeFromStore(product.id));
+      dispatch(setProductDiscount({ productId: product.id, discount: 0 }));
       showToast(`Removed from ${storeName}`);
     } else {
       dispatch(addToStore(product.id));
@@ -61,6 +64,13 @@ export default function PartnerStorePage() {
     setCopiedId(product.id);
     showToast("Product link copied");
     setTimeout(() => setCopiedId(null), 1600);
+  };
+
+  const applyDiscount = (product) => {
+    const raw = Number(discountDrafts[product.id] ?? productDiscounts[product.id] ?? 0);
+    const clamped = Math.max(0, Math.min(raw, product.partnerProfitAmount));
+    dispatch(setProductDiscount({ productId: product.id, discount: clamped }));
+    showToast(clamped > 0 ? `Discount set — buyers save an extra ${formatPrice(clamped)}` : "Discount removed");
   };
 
   const handleRemoveOwn = (product) => {
@@ -142,14 +152,11 @@ export default function PartnerStorePage() {
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
                     {product.title}
                   </p>
-                  <p className="text-[11.5px] text-shop-text/70">
-                    {product.productType === "group" ? "From " : ""}
-                    {formatPrice(product.price)}
-                  </p>
+                  <p className="text-[11.5px] text-shop-text/70">{formatPrice(product.price)}</p>
                   {product.productType === "group" ? (
                     <p className="flex items-center gap-1 text-[11px] text-shop-accent-1">
                       <Boxes className="h-3 w-3" />
-                      {product.groupProductIds?.length || 0} products in this group
+                      {product.groupItems?.length || 0} items in this bundle
                     </p>
                   ) : (
                     !product.hideStock && (
@@ -237,8 +244,9 @@ export default function PartnerStorePage() {
 
       <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
         {eligible.map((product) => {
-          const { netProfit } = splitPartnerProfit(product.partnerProfitAmount);
-          const partnerPrice = product.price - product.partnerProfitAmount;
+          const discount = productDiscounts[product.id] || 0;
+          const { netProfit } = splitPartnerProfit(product.partnerProfitAmount - discount);
+          const partnerPrice = product.price - product.partnerProfitAmount - discount;
           const inStore = storeProductIds.includes(product.id);
 
           return (
@@ -273,7 +281,7 @@ export default function PartnerStorePage() {
               <div className="grid grid-cols-2 gap-2 rounded-[10px] bg-shop-bg p-3">
                 <div>
                   <p className="text-[10.5px] uppercase tracking-wide text-shop-text/60">
-                    Partner Price
+                    Buyer Price
                   </p>
                   <p className="text-[13px] font-semibold text-shop-heading">
                     {formatPrice(partnerPrice)}
@@ -289,6 +297,39 @@ export default function PartnerStorePage() {
                   <p className="text-[9.5px] text-shop-text/50">after 20% platform fee</p>
                 </div>
               </div>
+
+              {inStore && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-shop-text">
+                    <Tag className="h-3.5 w-3.5" />
+                    Give buyers an extra discount, out of your own {formatPrice(product.partnerProfitAmount)} cut
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={discountDrafts[product.id] ?? discount ?? ""}
+                      onChange={(e) =>
+                        setDiscountDrafts((prev) => ({
+                          ...prev,
+                          [product.id]: e.target.value.replace(/[^0-9]/g, ""),
+                        }))
+                      }
+                      inputMode="numeric"
+                      placeholder="0"
+                      className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => applyDiscount(product)}
+                      className="rounded-[6px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white"
+                    >
+                      Apply
+                    </button>
+                    <span className="text-[10.5px] text-shop-text/50">
+                      max {formatPrice(product.partnerProfitAmount)}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <button

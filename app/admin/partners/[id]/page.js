@@ -28,7 +28,6 @@ export default function AdminPartnerDetailPage() {
   const earnings = useSelector((s) => s.partner.earnings);
   const withdrawals = useSelector((s) => s.partner.withdrawals);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
-  const ownProducts = useSelector((s) => s.partner.ownProducts);
 
   if (!partner) {
     return (
@@ -88,7 +87,7 @@ export default function AdminPartnerDetailPage() {
         {isLive ? (
           <>
             <Stat label="Wallet Balance" value={formatPrice(walletBalance)} />
-            <Stat label="Store Items" value={storeProductIds.length + ownProducts.length} />
+            <Stat label="Store Items" value={storeProductIds.length} />
           </>
         ) : (
           <p className="col-span-2 flex items-center rounded-[12px] bg-shop-bg p-3.5 text-[11px] text-shop-text/60">

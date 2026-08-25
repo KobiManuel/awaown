@@ -34,6 +34,7 @@ import {
   failedPaymentsSeed,
   formatPrice,
   HEALTH_TONE,
+  customersDirectory,
 } from "@/lib/admin-data";
 
 const KPI = ({ icon: Icon, label, value, href }) => {
@@ -55,15 +56,15 @@ const KPI = ({ icon: Icon, label, value, href }) => {
 };
 
 const MANAGE_LINKS = [
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/content", label: "Content", icon: FileText },
-  { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/team", label: "Access Control", icon: UserCog },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-  { href: "/admin/automations", label: "Automations", icon: Zap },
-  { href: "/admin/audit-log", label: "Audit Log", icon: History },
+  { href: "/admin/customers", label: "Customers", icon: Users, tone: "bg-blue-100 text-blue-700" },
+  { href: "/admin/products", label: "Products", icon: Package, tone: "bg-amber-100 text-amber-700" },
+  { href: "/admin/content", label: "Content", icon: FileText, tone: "bg-emerald-100 text-emerald-700" },
+  { href: "/admin/marketing", label: "Marketing", icon: Megaphone, tone: "bg-shop-accent-1-light text-shop-accent-1" },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3, tone: "bg-blue-100 text-blue-700" },
+  { href: "/admin/team", label: "Access Control", icon: UserCog, tone: "bg-amber-100 text-amber-700" },
+  { href: "/admin/settings", label: "Settings", icon: Settings, tone: "bg-shop-bg text-shop-heading" },
+  { href: "/admin/automations", label: "Automations", icon: Zap, tone: "bg-emerald-100 text-emerald-700" },
+  { href: "/admin/audit-log", label: "Audit Log", icon: History, tone: "bg-shop-accent-1-light text-shop-accent-1" },
 ];
 
 export default function AdminHome() {
@@ -75,6 +76,10 @@ export default function AdminHome() {
   const merchantPayouts = useSelector((s) => s.merchant.payouts);
   const partnerWithdrawals = useSelector((s) => s.partner.withdrawals);
   const escrowBalance = useSelector((s) => s.merchant.escrowBalance);
+  const adminMerchants = useSelector((s) => s.admin.merchants);
+  const adminPartners = useSelector((s) => s.admin.partners);
+  const merchantOrders = useSelector((s) => s.merchant.orders);
+  const merchantProducts = useSelector((s) => s.merchant.products);
 
   const actionItems = useMemo(() => {
     const items = [];
@@ -104,35 +109,91 @@ export default function AdminHome() {
     return items;
   }, [merchantVerification, partnerVerification, refunds, complaints, merchantPayouts, partnerWithdrawals]);
 
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const results = [];
+    for (const m of adminMerchants) {
+      if (m.storeName.toLowerCase().includes(q) || m.owner.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) {
+        results.push({ type: "Merchant", label: m.storeName, sub: m.owner, href: `/admin/merchants/${m.id}` });
+      }
+    }
+    for (const p of adminPartners) {
+      if (p.name.toLowerCase().includes(q) || p.storeName.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) {
+        results.push({ type: "Partner", label: p.name, sub: p.storeName, href: `/admin/partners/${p.id}` });
+      }
+    }
+    for (const c of customersDirectory) {
+      if (c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)) {
+        results.push({ type: "Customer", label: c.name, sub: c.email, href: "/admin/customers" });
+      }
+    }
+    for (const o of merchantOrders) {
+      if (o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q)) {
+        results.push({ type: "Order", label: o.id, sub: o.customerName, href: `/admin/orders/${o.id}` });
+      }
+    }
+    for (const p of merchantProducts) {
+      if (p.title.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) {
+        results.push({ type: "Product", label: p.title, sub: formatPrice(p.price), href: "/admin/products" });
+      }
+    }
+    return results.slice(0, 12);
+  }, [query, adminMerchants, adminPartners, merchantOrders, merchantProducts]);
+
   return (
     <div className="flex flex-col gap-6 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1200px] lg:gap-8">
-      <div className="flex items-center justify-between px-4 pt-5 lg:px-8 lg:pt-8">
+      <div className="mx-4 mt-4 flex items-center justify-between rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 px-5 py-5 text-white lg:mx-8 lg:mt-8">
         <div>
-          <p className="text-[13px] text-shop-text">Platform Overview</p>
-          <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
+          <p className="text-[12.5px] text-white/75">Platform Overview</p>
+          <p className="text-[17px] font-semibold lg:text-[22px]">
             Good to see you, Admin 👋
           </p>
         </div>
         <button
           type="button"
           aria-label="Notifications"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-bg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
         >
-          <Bell className="h-4 w-4 text-shop-heading" strokeWidth={1.75} />
+          <Bell className="h-4 w-4 text-white" strokeWidth={1.75} />
         </button>
       </div>
 
       {/* Global search */}
-      <div className="px-4 lg:px-8">
+      <div className="relative px-4 lg:px-8">
         <div className="flex items-center gap-2 rounded-full border border-shop-border bg-white px-4 py-3">
           <Search className="h-4 w-4 text-shop-text/50" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search orders, customers, merchants, partners, tracking IDs..."
+            placeholder="Search orders, customers, merchants, partners, products, tracking IDs..."
             className="w-full bg-transparent text-[13px] text-shop-heading outline-none placeholder:text-shop-text/50"
           />
         </div>
+        {searchResults && (
+          <div className="absolute inset-x-4 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-[14px] border border-shop-border bg-white shadow-lg lg:inset-x-8">
+            {searchResults.length === 0 ? (
+              <p className="p-4 text-center text-[12.5px] text-shop-text">No results for &quot;{query}&quot;</p>
+            ) : (
+              searchResults.map((r, i) => (
+                <Link
+                  key={i}
+                  href={r.href}
+                  onClick={() => setQuery("")}
+                  className="flex items-center justify-between gap-3 border-b border-shop-border px-4 py-3 last:border-b-0 hover:bg-shop-bg"
+                >
+                  <div className="min-w-0">
+                    <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">{r.label}</p>
+                    <p className="line-clamp-1 text-[11px] text-shop-text/60">{r.sub}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10px] font-semibold text-shop-accent-1">
+                    {r.type}
+                  </span>
+                </Link>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Action Required */}
@@ -255,14 +316,14 @@ export default function AdminHome() {
       <div className="flex flex-col gap-3 px-4 pb-6 lg:px-8">
         <p className="text-[14px] font-semibold text-shop-heading">Manage Platform</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {MANAGE_LINKS.map(({ href, label, icon: Icon }) => (
+          {MANAGE_LINKS.map(({ href, label, icon: Icon, tone }) => (
             <Link
               key={href}
               href={href}
               className="flex flex-col items-center gap-2 rounded-[12px] border border-shop-border bg-white p-4 text-center hover:border-shop-accent-1"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-bg">
-                <Icon className="h-4.5 w-4.5 text-shop-heading" strokeWidth={1.75} />
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${tone}`}>
+                <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
               </span>
               <span className="text-[11.5px] font-medium text-shop-heading">{label}</span>
             </Link>

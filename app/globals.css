@@ -44,6 +44,72 @@
   --shop-text: #555555;
   --shop-heading: #1a1a1a;
   --shop-border: #e5e5e5;
+
+  /* Indirection so a subtree (e.g. the Partner dashboard shell) can override
+     the body font via inline style without fighting every page's own
+     `font-shop` class re-declaration — see AppFrame.js's `themeVars` prop. */
+  --shop-font-family: "Bai Jamjuree", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --background: #0b0b10;
+  --foreground: #f0f0f3;
+  --shop-bg: #121216;
+  --shop-surface: #1a1a20;
+  --shop-text: #a3a3ae;
+  --shop-heading: #f2f2f5;
+  --shop-border: #2a2a33;
+  --shop-accent-1-light: #241b3d;
+}
+
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .bg-white\/95,
+:root[data-theme="dark"] .bg-white\/90 {
+  background-color: var(--shop-surface) !important;
+}
+
+/* Partner dashboard reskin (Customize My Store's theme/accent/font): most page
+   content uses literal `bg-white`, not `bg-shop-surface`, so `--shop-surface`
+   alone doesn't reach it — this scoped rule bridges that, mirroring the dark-mode
+   override above. AppFrame sets `data-shop-theme` on its wrapper whenever it's
+   given `themeVars` (currently: Partner role only). */
+[data-shop-theme] .bg-white,
+[data-shop-theme] .bg-white\/95,
+[data-shop-theme] .bg-white\/90 {
+  background-color: var(--shop-surface);
+}
+:root[data-theme="dark"] body {
+  background: var(--shop-bg);
+}
+:root[data-theme="dark"] [class*="bg-emerald-100"] { background-color: rgba(16, 185, 129, 0.16) !important; }
+:root[data-theme="dark"] [class*="bg-emerald-50"] { background-color: rgba(16, 185, 129, 0.12) !important; }
+:root[data-theme="dark"] [class*="text-emerald-700"],
+:root[data-theme="dark"] [class*="text-emerald-600"] { color: #34d399 !important; }
+:root[data-theme="dark"] [class*="bg-amber-100"] { background-color: rgba(245, 158, 11, 0.18) !important; }
+:root[data-theme="dark"] [class*="bg-amber-50"] { background-color: rgba(245, 158, 11, 0.12) !important; }
+:root[data-theme="dark"] [class*="text-amber-700"],
+:root[data-theme="dark"] [class*="text-amber-800"],
+:root[data-theme="dark"] [class*="text-amber-600"] { color: #fbbf24 !important; }
+:root[data-theme="dark"] [class*="bg-red-50"] { background-color: rgba(221, 56, 66, 0.14) !important; }
+:root[data-theme="dark"] [class*="bg-blue-100"] { background-color: rgba(59, 130, 246, 0.18) !important; }
+:root[data-theme="dark"] [class*="text-blue-700"] { color: #60a5fa !important; }
+
+/* View-transition circular reveal for the theme toggle */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: awaown-theme-reveal 0.55s ease-in-out;
+  mix-blend-mode: normal;
+}
+@keyframes awaown-theme-reveal {
+  from {
+    clip-path: circle(0% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
 }
 
 @theme inline {
@@ -96,7 +162,7 @@
   --color-shop-text: var(--shop-text);
   --color-shop-heading: var(--shop-heading);
   --color-shop-border: var(--shop-border);
-  --font-shop: "Bai Jamjuree", sans-serif;
+  --font-shop: var(--shop-font-family);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -117,6 +183,12 @@ h5,
 h6,
 p {
   margin: 0;
+}
+
+.product-form button:not(:disabled),
+.product-form label,
+.product-form select {
+  cursor: pointer;
 }
 
 .hide-scrollbar {

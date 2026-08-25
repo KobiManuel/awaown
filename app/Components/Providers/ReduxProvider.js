@@ -48,18 +48,30 @@ const ReduxProvider = ({ children }) => {
       // ignore malformed storage
     }
 
+    // Each key is persisted independently — localStorage has a hard quota shared
+    // across the whole origin, and a large image (a banner, a product photo) can
+    // push one key's JSON over what's left. Without isolating these, one
+    // QuotaExceededError would throw out of the subscriber and silently skip
+    // every key after it, making unrelated state (e.g. admin) stop persisting
+    // too. `readImageAsCompressedDataURL` (lib/file-utils.js) is the real fix —
+    // this is a defense-in-depth backstop, not a substitute for it.
+    const persist = (key, value) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        console.warn(`[ReduxProvider] Failed to persist "${key}" to localStorage — likely over quota (large image?).`, err);
+      }
+    };
+
     const unsubscribe = store.subscribe(() => {
       const state = store.getState();
-      localStorage.setItem(CART_KEY, JSON.stringify(state.cart.items));
-      localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist.items));
-      localStorage.setItem(
-        AUTH_KEY,
-        JSON.stringify(state.auth.isAuthenticated ? state.auth.user : null),
-      );
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(state.orders.items));
-      localStorage.setItem(MERCHANT_KEY, JSON.stringify(state.merchant));
-      localStorage.setItem(PARTNER_KEY, JSON.stringify(state.partner));
-      localStorage.setItem(ADMIN_KEY, JSON.stringify(state.admin));
+      persist(CART_KEY, state.cart.items);
+      persist(WISHLIST_KEY, state.wishlist.items);
+      persist(AUTH_KEY, state.auth.isAuthenticated ? state.auth.user : null);
+      persist(ORDERS_KEY, state.orders.items);
+      persist(MERCHANT_KEY, state.merchant);
+      persist(PARTNER_KEY, state.partner);
+      persist(ADMIN_KEY, state.admin);
     });
 
     return unsubscribe;

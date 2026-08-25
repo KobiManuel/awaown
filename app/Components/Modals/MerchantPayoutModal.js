@@ -2,16 +2,19 @@
 
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { X, Loader2, CheckCircle2, Info } from "lucide-react";
+import { X, Loader2, CheckCircle2, Info, CalendarClock, ShieldAlert } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
 import { PAYOUT_BANKS, MERCHANT_PAYOUT_FEE_RATE } from "@/lib/payout-banks";
 import { BANK_LOGOS } from "@/app/Components/Icons/BrandLogos";
 import { requestPayout } from "@/lib/store/merchantSlice";
 import ModalShell from "./ModalShell";
 
+const MIN_PAYOUT = 2000;
+
 const MerchantPayoutModal = () => {
   const dispatch = useDispatch();
   const balance = useSelector((s) => s.merchant.walletBalance);
+  const verification = useSelector((s) => s.merchant.verification);
   const [step, setStep] = useState("amount"); // amount | processing | success
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState(PAYOUT_BANKS[0].id);
@@ -19,7 +22,35 @@ const MerchantPayoutModal = () => {
   const numericAmount = amount ? Number(amount) : 0;
   const fee = Math.round(numericAmount * MERCHANT_PAYOUT_FEE_RATE);
   const net = numericAmount - fee;
-  const isValid = numericAmount > 0 && numericAmount <= balance;
+  const isValid = numericAmount >= MIN_PAYOUT && numericAmount <= balance;
+
+  if (verification.status !== "verified") {
+    return (
+      <ModalShell variant="sheet">
+        {(close) => (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <ShieldAlert className="h-6 w-6 text-amber-700" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-shop-heading">Verify to Request a Payout</p>
+              <p className="mt-1 text-[12.5px] text-shop-text">
+                Only verified merchants can request a payout. Verify your identity from
+                your account page first.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              className="w-full rounded-[10px] bg-shop-accent-1 py-3 text-[13.5px] font-semibold text-white hover:bg-shop-accent-1-dark"
+            >
+              Got it
+            </button>
+          </div>
+        )}
+      </ModalShell>
+    );
+  }
 
   const handleAmount = (value) => setAmount(value.replace(/[^0-9]/g, ""));
 
@@ -55,10 +86,16 @@ const MerchantPayoutModal = () => {
                 <span className="font-semibold text-shop-heading">{formatPrice(balance)}</span>
               </p>
 
-              <div className="mb-4 flex items-start gap-2 rounded-[10px] bg-amber-50 px-3.5 py-3">
+              <div className="mb-3 flex items-start gap-2 rounded-[10px] bg-amber-50 px-3.5 py-3">
                 <Info className="h-4 w-4 shrink-0 text-amber-700" strokeWidth={1.75} />
                 <p className="text-[11.5px] leading-[16px] text-amber-800">
                   A 2.5% processing fee applies to all merchant payouts.
+                </p>
+              </div>
+              <div className="mb-4 flex items-start gap-2 rounded-[10px] bg-amber-50 px-3.5 py-3">
+                <CalendarClock className="h-4 w-4 shrink-0 text-amber-700" strokeWidth={1.75} />
+                <p className="text-[11.5px] leading-[16px] text-amber-800">
+                  Payouts are processed weekly. Minimum payout is {formatPrice(MIN_PAYOUT)}.
                 </p>
               </div>
 
@@ -77,6 +114,11 @@ const MerchantPayoutModal = () => {
               {numericAmount > balance && (
                 <p className="mb-3 text-[12px] text-shop-accent-3">
                   Amount exceeds your available balance.
+                </p>
+              )}
+              {numericAmount > 0 && numericAmount < MIN_PAYOUT && (
+                <p className="mb-3 text-[12px] text-shop-accent-3">
+                  Minimum payout is {formatPrice(MIN_PAYOUT)}.
                 </p>
               )}
               {numericAmount > 0 && numericAmount <= balance && (

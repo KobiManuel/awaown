@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { Search, Layers, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
+import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 
 const MainHeader = ({ onMenuClick }) => {
   const cartCount = useSelector((state) =>
@@ -66,6 +67,7 @@ const MainHeader = ({ onMenuClick }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <button type="button" aria-label="Compare" className="relative">
               <Layers className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
               <span className="absolute -right-2 -top-2 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-shop-accent-1 text-[10px] text-white">

@@ -2,22 +2,53 @@
 
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { X, Loader2, CheckCircle2 } from "lucide-react";
+import { X, Loader2, CheckCircle2, CalendarClock, ShieldAlert } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { PAYOUT_BANKS } from "@/lib/payout-banks";
 import { BANK_LOGOS } from "@/app/Components/Icons/BrandLogos";
 import { requestWithdrawal } from "@/lib/store/partnerSlice";
 import ModalShell from "./ModalShell";
 
+const MIN_WITHDRAWAL = 2000;
+
 const WithdrawModal = () => {
   const dispatch = useDispatch();
   const balance = useSelector((s) => s.partner.walletBalance);
+  const verification = useSelector((s) => s.partner.verification);
   const [step, setStep] = useState("amount"); // amount | processing | success
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState(PAYOUT_BANKS[0].id);
 
   const numericAmount = amount ? Number(amount) : 0;
-  const isValid = numericAmount > 0 && numericAmount <= balance;
+  const isValid = numericAmount >= MIN_WITHDRAWAL && numericAmount <= balance;
+
+  if (verification.status !== "verified") {
+    return (
+      <ModalShell variant="sheet">
+        {(close) => (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <ShieldAlert className="h-6 w-6 text-amber-700" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-shop-heading">Verify to Withdraw</p>
+              <p className="mt-1 text-[12.5px] text-shop-text">
+                Only verified partners can request a withdrawal. Verify your identity from
+                your account page first.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              className="w-full rounded-[10px] bg-shop-accent-1 py-3 text-[13.5px] font-semibold text-white hover:bg-shop-accent-1-dark"
+            >
+              Got it
+            </button>
+          </div>
+        )}
+      </ModalShell>
+    );
+  }
 
   const handleAmount = (value) => {
     setAmount(value.replace(/[^0-9]/g, ""));
@@ -50,13 +81,21 @@ const WithdrawModal = () => {
                 </button>
               </div>
 
-              <p className="mb-4 rounded-[10px] bg-shop-bg px-3.5 py-3 text-[12.5px] text-shop-text">
+              <p className="mb-3 rounded-[10px] bg-shop-bg px-3.5 py-3 text-[12.5px] text-shop-text">
                 Available balance:{" "}
                 <span className="font-semibold text-shop-heading">{formatPrice(balance)}</span>
               </p>
 
+              <div className="mb-4 flex items-start gap-2 rounded-[10px] bg-amber-50 px-3.5 py-3">
+                <CalendarClock className="h-4 w-4 shrink-0 text-amber-700" strokeWidth={1.75} />
+                <p className="text-[11.5px] leading-[16px] text-amber-800">
+                  Withdrawal requests are processed weekly. Minimum withdrawal is{" "}
+                  {formatPrice(MIN_WITHDRAWAL)}.
+                </p>
+              </div>
+
               <p className="mb-2 text-[12.5px] font-semibold text-shop-heading">Amount</p>
-              <div className="mb-5 flex items-center gap-2 rounded-[10px] border border-shop-border px-3.5 py-3 focus-within:border-shop-accent-1">
+              <div className="mb-2 flex items-center gap-2 rounded-[10px] border border-shop-border px-3.5 py-3 focus-within:border-shop-accent-1">
                 <span className="text-[14px] font-semibold text-shop-text">₦</span>
                 <input
                   type="text"
@@ -68,8 +107,13 @@ const WithdrawModal = () => {
                 />
               </div>
               {numericAmount > balance && (
-                <p className="-mt-3 mb-4 text-[12px] text-shop-accent-3">
+                <p className="mb-4 text-[12px] text-shop-accent-3">
                   Amount exceeds your available balance.
+                </p>
+              )}
+              {numericAmount > 0 && numericAmount < MIN_WITHDRAWAL && (
+                <p className="mb-4 text-[12px] text-shop-accent-3">
+                  Minimum withdrawal is {formatPrice(MIN_WITHDRAWAL)}.
                 </p>
               )}
 

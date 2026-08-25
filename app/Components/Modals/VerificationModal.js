@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheck, Upload, CheckCircle2, Loader2, X } from "lucide-react";
 import { ID_TYPES } from "@/lib/merchant-data";
-import { readFileAsDataURL } from "@/lib/file-utils";
+import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import {
   submitVerification as submitMerchantVerification,
   approveVerification as approveMerchantVerification,
@@ -42,7 +42,7 @@ const UploadSlot = ({ label, image, onChange }) => {
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
-          onChange(await readFileAsDataURL(file));
+          onChange(await readImageAsCompressedDataURL(file));
         }}
       />
     </div>

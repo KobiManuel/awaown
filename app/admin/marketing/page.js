@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Tag, Plus, Mail, ImagePlus, X, Send } from "lucide-react";
 import { toggleCouponStatus, addCoupon, sendEmailCampaign } from "@/lib/store/adminSlice";
 import { EMAIL_AUDIENCES, customersDirectory } from "@/lib/admin-data";
-import { readFileAsDataURL } from "@/lib/file-utils";
+import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -65,7 +65,7 @@ export default function AdminMarketingPage() {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const remaining = MAX_CAMPAIGN_IMAGES - campaignImages.length;
-    const dataUrls = await Promise.all(files.slice(0, remaining).map(readFileAsDataURL));
+    const dataUrls = await Promise.all(files.slice(0, remaining).map(readImageAsCompressedDataURL));
     setCampaignImages((prev) => [...prev, ...dataUrls]);
     e.target.value = "";
   };

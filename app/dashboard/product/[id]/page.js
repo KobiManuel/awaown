@@ -4,7 +4,8 @@ import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { Heart, Star, Minus, Plus, Check, ShoppingBag } from "lucide-react";
+import Link from "next/link";
+import { Heart, Star, Minus, Plus, Check, ShoppingBag, Store, ChevronRight } from "lucide-react";
 import {
   getProductById,
   getRelatedProducts,
@@ -159,6 +160,16 @@ export default function ProductDetailPage() {
               {product.rating} ({product.reviewCount} reviews)
             </span>
           </div>
+          <Link
+            href="/shop/fashion-vault"
+            className="flex w-fit items-center gap-1.5 rounded-full border border-shop-border bg-shop-bg py-1 pl-1 pr-3 text-[12px] font-medium text-shop-heading hover:border-shop-accent-1"
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-shop-accent-1-light">
+              <Store className="h-3 w-3 text-shop-accent-1" strokeWidth={1.75} />
+            </span>
+            Sold by {product.vendor}
+            <ChevronRight className="h-3 w-3 text-shop-text/50" />
+          </Link>
         </div>
 
         {/* Price */}

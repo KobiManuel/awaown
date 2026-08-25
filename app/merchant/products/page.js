@@ -18,7 +18,7 @@ import { toggleProductField, removeProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 
 function priceLabel(product) {
-  if (product.productType === "group") return `From ${formatPrice(product.price)}`;
+  if (product.productType === "group") return formatPrice(product.price);
   if (!product.hasVariants || product.variants.length === 0) {
     return formatPrice(product.price);
   }
@@ -30,13 +30,24 @@ function priceLabel(product) {
 
 function stockLabel(product) {
   if (product.productType === "group") {
-    return `${product.groupProductIds?.length || 0} products in this group`;
+    return `${product.stock} bundles in stock · ${product.groupItems?.length || 0} items included`;
   }
   if (product.hideStock) return "Stock hidden";
   if (!product.hasVariants || product.variants.length === 0) return `${product.stock} in stock`;
   const total = product.variants.reduce((sum, v) => sum + v.stock, 0);
   return `${total} in stock · ${product.variants.length} options`;
 }
+
+const APPROVAL_TONE = {
+  pending: "bg-amber-100 text-amber-700",
+  approved: "bg-emerald-100 text-emerald-700",
+  rejected: "bg-red-50 text-shop-accent-3",
+};
+const APPROVAL_LABEL = {
+  pending: "Awaiting Admin Approval",
+  approved: "Approved",
+  rejected: "Rejected",
+};
 
 export default function MerchantProductsPage() {
   const dispatch = useDispatch();
@@ -89,6 +100,16 @@ export default function MerchantProductsPage() {
                   <p className="text-[11px] text-shop-text/60">
                     {categoryLabel(product.category)}
                     {product.processingTime && ` · Ships in ${processingLabel(product.processingTime)}`}
+                  </p>
+                )}
+                {product.approvalStatus && (
+                  <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${APPROVAL_TONE[product.approvalStatus]}`}>
+                    {APPROVAL_LABEL[product.approvalStatus]}
+                  </span>
+                )}
+                {product.approvalStatus === "rejected" && product.rejectionReason && (
+                  <p className="mt-1 text-[10.5px] text-shop-accent-3">
+                    Reason: {product.rejectionReason}
                   </p>
                 )}
               </div>

@@ -2,11 +2,24 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import Image from "next/image";
-import { Camera, Video, X, Plus, Trash2, Package, Layers, Boxes, Check } from "lucide-react";
-import { PRODUCT_CATEGORIES, PROCESSING_TIME_OPTIONS, formatPrice } from "@/lib/merchant-data";
-import { readFileAsDataURL } from "@/lib/file-utils";
+import { useDispatch } from "react-redux";
+import {
+  Camera,
+  Video,
+  X,
+  Plus,
+  Trash2,
+  Package,
+  Layers,
+  Boxes,
+  FileDown,
+  Truck,
+} from "lucide-react";
+import {
+  PRODUCT_CATEGORY_GROUPS,
+  PROCESSING_TIME_OPTIONS,
+} from "@/lib/merchant-data";
+import { readFileAsDataURL, readImageAsCompressedDataURL } from "@/lib/file-utils";
 import { addOwnProduct } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -20,7 +33,13 @@ function buildVariants(optionGroups, previous) {
       name: g.name.trim(),
       values: [...new Set(g.valuesText.split(",").map((v) => v.trim()).filter(Boolean))],
     }));
-  if (groups.length === 0) return [];
+  if (groups.length === 0) {
+    // Keep a price/stock row visible even before any option is named, so
+    // partners see up front that pricing is still required here — same as
+    // the simple-product and bundle views.
+    const existing = previous.find((v) => v.id === "default");
+    return [existing || { id: "default", label: "Default", price: "", stock: "" }];
+  }
 
   const combos = groups.reduce(
     (acc, group) => acc.flatMap((combo) => group.values.map((value) => ({ ...combo, [group.name]: value }))),
@@ -58,12 +77,13 @@ export default function NewPartnerProductPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const showToast = useToast();
-  const existingProducts = useSelector((s) => s.partner.ownProducts);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(PRODUCT_CATEGORIES[0].slug);
+  const [category, setCategory] = useState(PRODUCT_CATEGORY_GROUPS[0].items[0].slug);
+  const [deliveryType, setDeliveryType] = useState("physical"); // physical | digital
   const [processingTime, setProcessingTime] = useState(PROCESSING_TIME_OPTIONS[1].id);
+  const [digitalFile, setDigitalFile] = useState(null);
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
 
@@ -75,18 +95,12 @@ export default function NewPartnerProductPage() {
   const [optionGroups, setOptionGroups] = useState([{ name: "", valuesText: "" }]);
   const [variants, setVariants] = useState([]);
   const [bulkPrice, setBulkPrice] = useState("");
-  const [groupProductIds, setGroupProductIds] = useState([]);
+
+  const [bundleItems, setBundleItems] = useState([]);
+  const [bundleItemTitle, setBundleItemTitle] = useState("");
+  const [bundleItemImage, setBundleItemImage] = useState(null);
 
   const [hideStock, setHideStock] = useState(false);
-
-  const groupCandidates = existingProducts.filter((p) => p.productType !== "group");
-  const groupMembers = existingProducts.filter((p) => groupProductIds.includes(p.id));
-  const groupMinPrice = groupMembers.length
-    ? Math.min(...groupMembers.map((p) => p.price))
-    : 0;
-
-  const toggleGroupMember = (id) =>
-    setGroupProductIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   useEffect(() => {
     if (!hasVariants) return;
@@ -96,7 +110,7 @@ export default function NewPartnerProductPage() {
   const handleImageChange = async (e, index) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await readFileAsDataURL(file);
+    const dataUrl = await readImageAsCompressedDataURL(file);
     setImages((prev) => {
       const next = [...prev];
       next[index] = dataUrl;
@@ -109,6 +123,30 @@ export default function NewPartnerProductPage() {
     if (!file) return;
     setVideo(await readFileAsDataURL(file));
   };
+
+  const handleDigitalFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDigitalFile(await readFileAsDataURL(file));
+  };
+
+  const handleBundleItemImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBundleItemImage(await readImageAsCompressedDataURL(file));
+  };
+
+  const addBundleItem = () => {
+    if (!bundleItemTitle.trim()) return;
+    setBundleItems((prev) => [
+      ...prev,
+      { id: `bi-${Date.now()}`, title: bundleItemTitle.trim(), image: bundleItemImage },
+    ]);
+    setBundleItemTitle("");
+    setBundleItemImage(null);
+  };
+
+  const removeBundleItem = (id) => setBundleItems((prev) => prev.filter((b) => b.id !== id));
 
   const addOptionGroup = () => setOptionGroups((g) => [...g, { name: "", valuesText: "" }]);
   const removeOptionGroup = (index) =>
@@ -129,7 +167,7 @@ export default function NewPartnerProductPage() {
     : Number(price) || 0;
 
   const isValid = isGroup
-    ? title.trim().length > 0 && groupProductIds.length >= 2
+    ? title.trim().length > 0 && bundleItems.length >= 2 && price && stock !== ""
     : title.trim().length > 0 &&
       (hasVariants
         ? variants.length > 0 && variants.every((v) => v.price && v.stock !== "")
@@ -145,23 +183,25 @@ export default function NewPartnerProductPage() {
         title: title.trim(),
         description: description.trim(),
         category,
-        processingTime,
+        deliveryType,
+        digitalFile: deliveryType === "digital" ? digitalFile : null,
+        processingTime: deliveryType === "digital" ? "same_day" : processingTime,
         images: images.filter(Boolean),
         video,
         productType,
         hasVariants,
         price: isGroup
-          ? groupMinPrice
+          ? Number(price)
           : hasVariants
             ? (Number.isFinite(minPriceForPreview) ? minPriceForPreview : 0)
             : Number(price),
-        stock: isGroup ? 0 : hasVariants ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0) : Number(stock),
+        stock: isGroup ? Number(stock) : hasVariants ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0) : Number(stock),
         variants: hasVariants
           ? variants.map((v) => ({ id: v.id, label: v.label, price: Number(v.price), stock: Number(v.stock) }))
           : [],
-        groupProductIds: isGroup ? groupProductIds : [],
+        groupItems: isGroup ? bundleItems : [],
         status: "active",
-        hideStock: isGroup ? true : hideStock,
+        hideStock: isGroup ? false : hideStock,
       }),
     );
     showToast(`${title.trim()} added to your store`);
@@ -172,12 +212,107 @@ export default function NewPartnerProductPage() {
     <div className="flex flex-col gap-6 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
       <AppHeader title="Add Product" backHref="/partner/store" showBackOnDesktop />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4 lg:px-0">
+      <form onSubmit={handleSubmit} className="product-form flex flex-col gap-6 px-4 lg:px-0">
         <p className="rounded-[10px] bg-shop-bg p-3.5 text-[12px] leading-[18px] text-shop-text">
           Upload your own product to sell directly through your store — separate from
           products you add from the AwaOwn marketplace. It&apos;s still protected by
           AwaOwn&apos;s escrow and payment protection.
         </p>
+
+        {/* Basic info */}
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-shop-heading">Product Title</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Handmade Beaded Necklace"
+              className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-shop-heading">
+              Description <span className="font-normal text-shop-text">(optional)</span>
+            </span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Tell shoppers what makes this product great"
+              className="resize-none rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-shop-heading">Category</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+            >
+              {PRODUCT_CATEGORY_GROUPS.map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.items.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Delivery type */}
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[13px] font-semibold text-shop-heading">How is this delivered?</p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <TypeCard
+              selected={deliveryType === "physical"}
+              onClick={() => setDeliveryType("physical")}
+              icon={Truck}
+              title="Physical Product"
+              description="Shipped to the buyer — set a processing time below."
+            />
+            <TypeCard
+              selected={deliveryType === "digital"}
+              onClick={() => setDeliveryType("digital")}
+              icon={FileDown}
+              title="Digital Product"
+              description="A file or access link delivered instantly, no shipping."
+            />
+          </div>
+          {deliveryType === "digital" ? (
+            <label className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
+              {digitalFile ? (
+                <span className="flex items-center gap-2 text-[12.5px] font-medium text-shop-heading">
+                  <FileDown className="h-4 w-4 text-shop-accent-1" />
+                  File attached
+                </span>
+              ) : (
+                <span className="flex items-center gap-2 text-[12px] text-shop-text/60">
+                  <FileDown className="h-4 w-4" />
+                  Upload the file buyers receive after purchase
+                </span>
+              )}
+              <input type="file" className="hidden" onChange={handleDigitalFileChange} />
+            </label>
+          ) : (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-semibold text-shop-heading">Processing Time</span>
+              <select
+                value={processingTime}
+                onChange={(e) => setProcessingTime(e.target.value)}
+                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              >
+                {PROCESSING_TIME_OPTIONS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         {/* Media */}
         <div className="flex flex-col gap-2.5">
@@ -246,69 +381,14 @@ export default function NewPartnerProductPage() {
           </label>
         </div>
 
-        {/* Basic info */}
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-semibold text-shop-heading">Product Title</span>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Handmade Beaded Necklace"
-              className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-semibold text-shop-heading">
-              Description <span className="font-normal text-shop-text">(optional)</span>
-            </span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="Tell shoppers what makes this product great"
-              className="resize-none rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-            />
-          </label>
-          <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">Category</span>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-              >
-                {PRODUCT_CATEGORIES.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">Processing Time</span>
-              <select
-                value={processingTime}
-                onChange={(e) => setProcessingTime(e.target.value)}
-                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-              >
-                {PROCESSING_TIME_OPTIONS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </div>
-
         {/* Product type */}
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
           <p className="text-[11.5px] text-shop-text">
             Choose how this product is sold — as-is, with color/size options, or as a
-            bundle linking to products you&apos;ve already added.
+            bundle of items sold together.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <TypeCard
               selected={productType === "simple"}
               onClick={() => setProductType("simple")}
@@ -320,7 +400,7 @@ export default function NewPartnerProductPage() {
               selected={productType === "variable"}
               onClick={() => setProductType("variable")}
               icon={Layers}
-              title="Has options"
+              title={'Variable Product ("has options")'}
               description="e.g. color, size — priced separately."
             />
             <TypeCard
@@ -328,65 +408,99 @@ export default function NewPartnerProductPage() {
               onClick={() => setProductType("group")}
               icon={Boxes}
               title="Group product"
-              description="Bundle existing products together on one listing."
+              description="A bundle of items sold together as one listing."
             />
           </div>
         </div>
 
         {isGroup ? (
-          <div className="flex flex-col gap-2.5">
-            <p className="text-[13px] font-semibold text-shop-heading">
-              Choose products to include ({groupProductIds.length} selected)
-            </p>
-            <p className="text-[11.5px] text-shop-text">
-              Pick at least 2 of your existing products. Each keeps its own price and
-              stock — shoppers see them together, but buy them individually.
-            </p>
-            {groupCandidates.length === 0 ? (
-              <p className="rounded-[10px] bg-shop-bg p-3.5 text-[12px] text-shop-text">
-                You don&apos;t have any other products yet — add a simple or variable
-                product first, then come back to bundle it into a group.
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5 rounded-[10px] bg-shop-bg p-3.5 text-[11.5px] leading-[17px] text-shop-text">
+              <p><span className="font-semibold text-shop-heading">Step 1.</span> Add each item that&apos;s included in this bundle below.</p>
+              <p><span className="font-semibold text-shop-heading">Step 2.</span> Set one price and one stock count for the whole bundle.</p>
+              <p><span className="font-semibold text-shop-heading">Step 3.</span> Publish — shoppers buy the bundle as a single listing, not the items separately.</p>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <p className="text-[13px] font-semibold text-shop-heading">
+                Items in this bundle ({bundleItems.length})
               </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {groupCandidates.map((p) => {
-                  const selected = groupProductIds.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => toggleGroupMember(p.id)}
-                      className={`flex items-center gap-3 rounded-[10px] border p-2.5 text-left transition-colors ${
-                        selected ? "border-shop-accent-1 bg-shop-accent-1-light" : "border-shop-border"
-                      }`}
-                    >
+              {bundleItems.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {bundleItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 rounded-[10px] border border-shop-border p-2.5">
                       <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-shop-bg">
-                        {p.images?.[0] ? (
-                          <Image src={p.images[0]} alt={p.title} fill className="object-contain p-1" sizes="44px" />
+                        {item.image ? (
+                          <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                         ) : (
                           <Package className="h-4.5 w-4.5 text-shop-text/40" />
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">{p.title}</p>
-                        <p className="text-[11px] text-shop-text/60">{formatPrice(p.price)}</p>
-                      </div>
-                      {selected && (
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-shop-accent-1 text-white">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                      <span className="flex-1 text-[12.5px] font-medium text-shop-heading">{item.title}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeBundleItem(item.id)}
+                        aria-label="Remove item"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-shop-text/50 hover:bg-shop-bg hover:text-shop-accent-3"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <label className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-dashed border-shop-border bg-shop-bg">
+                  {bundleItemImage ? (
+                    <img src={bundleItemImage} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Camera className="h-4 w-4 text-shop-text/40" />
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleBundleItemImageChange} />
+                </label>
+                <input
+                  value={bundleItemTitle}
+                  onChange={(e) => setBundleItemTitle(e.target.value)}
+                  placeholder="Item name, e.g. Matching Earrings"
+                  className="flex-1 rounded-[8px] border border-shop-border bg-white px-3 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+                <button
+                  type="button"
+                  onClick={addBundleItem}
+                  disabled={!bundleItemTitle.trim()}
+                  className="flex h-10 shrink-0 items-center gap-1 rounded-[8px] bg-shop-accent-1 px-3 text-[12.5px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add
+                </button>
               </div>
-            )}
-            {groupMembers.length > 0 && (
-              <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
-                Shoppers will see this group starting from{" "}
-                <span className="font-semibold text-shop-heading">{formatPrice(groupMinPrice)}</span>.
-              </p>
-            )}
+              {bundleItems.length < 2 && (
+                <p className="text-[11px] text-shop-text/60">Add at least 2 items to publish this bundle.</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <label className="flex flex-1 flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-shop-heading">Bundle Price (₦)</span>
+                <input
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                  inputMode="numeric"
+                  placeholder="e.g. 25000"
+                  className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+              </label>
+              <label className="flex flex-1 flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-shop-heading">Bundle Stock</span>
+                <input
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                  inputMode="numeric"
+                  placeholder="e.g. 10"
+                  className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+              </label>
+            </div>
           </div>
         ) : !hasVariants ? (
           <div className="flex gap-3">
@@ -450,6 +564,9 @@ export default function NewPartnerProductPage() {
                   )}
                 </div>
               ))}
+              <p className="text-[11px] text-shop-text/60">
+                e.g. Colour, Size, Height, Variety — each becomes a separate option shoppers pick from.
+              </p>
               <button
                 type="button"
                 onClick={addOptionGroup}
@@ -460,13 +577,20 @@ export default function NewPartnerProductPage() {
               </button>
             </div>
 
-            {variants.length > 0 && (
-              <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    Pricing ({variants.length} options)
+                    {variants.length === 1 && variants[0].id === "default"
+                      ? "Pricing"
+                      : `Pricing (${variants.length} options)`}
                   </p>
                 </div>
+                {variants.length === 1 && variants[0].id === "default" && (
+                  <p className="text-[11px] text-shop-text/60">
+                    Add an option name and values above to price each option separately —
+                    until then, set a single price and stock below.
+                  </p>
+                )}
                 <div className="flex items-center gap-2 rounded-[10px] bg-shop-bg p-2.5">
                   <span className="text-[11.5px] text-shop-text">Set the same price for all:</span>
                   <input
@@ -484,47 +608,58 @@ export default function NewPartnerProductPage() {
                     Apply to All
                   </button>
                 </div>
-                <div className="flex items-center gap-2 px-2.5">
+                <div className="hidden items-center gap-2 px-2.5 sm:flex">
                   <span className="flex-1 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
                     Option
                   </span>
-                  <span className="w-24 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                  <span className="w-28 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
                     Price (₦)
                   </span>
-                  <span className="w-20 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
-                    Items in Stock
+                  <span className="w-24 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                    Stock
                   </span>
                 </div>
                 <div className="flex flex-col gap-2">
                   {variants.map((v) => (
                     <div
                       key={v.id}
-                      className="flex items-center gap-2 rounded-[10px] border border-shop-border p-2.5"
+                      className="flex flex-col gap-2 rounded-[10px] border border-shop-border p-2.5 sm:flex-row sm:items-center"
                     >
-                      <span className="flex-1 text-[12.5px] font-medium text-shop-heading">
+                      <span className="text-[12.5px] font-medium text-shop-heading sm:flex-1">
                         {v.label}
                       </span>
-                      <input
-                        value={v.price}
-                        onChange={(e) => updateVariant(v.id, "price", e.target.value.replace(/[^0-9]/g, ""))}
-                        inputMode="numeric"
-                        placeholder="e.g. 15000"
-                        aria-label="Price (₦)"
-                        className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
-                      />
-                      <input
-                        value={v.stock}
-                        onChange={(e) => updateVariant(v.id, "stock", e.target.value.replace(/[^0-9]/g, ""))}
-                        inputMode="numeric"
-                        placeholder="e.g. 10"
-                        aria-label="Number of items in stock"
-                        className="w-20 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
-                      />
+                      <div className="flex gap-2">
+                        <div className="flex flex-1 flex-col gap-1 sm:w-28 sm:flex-none">
+                          <span className="text-[10px] font-medium uppercase tracking-wide text-shop-text/50 sm:hidden">
+                            Price (₦)
+                          </span>
+                          <input
+                            value={v.price}
+                            onChange={(e) => updateVariant(v.id, "price", e.target.value.replace(/[^0-9]/g, ""))}
+                            inputMode="numeric"
+                            placeholder="e.g. 15000"
+                            aria-label="Price (₦)"
+                            className="w-full rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1 sm:w-24 sm:flex-none">
+                          <span className="text-[10px] font-medium uppercase tracking-wide text-shop-text/50 sm:hidden">
+                            Items in Stock
+                          </span>
+                          <input
+                            value={v.stock}
+                            onChange={(e) => updateVariant(v.id, "stock", e.target.value.replace(/[^0-9]/g, ""))}
+                            inputMode="numeric"
+                            placeholder="e.g. 10"
+                            aria-label="Number of items in stock"
+                            className="w-full rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
           </div>
         )}
 

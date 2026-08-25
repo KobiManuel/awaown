@@ -5,16 +5,24 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { ImagePlus, User, Eye, RotateCcw, Check } from "lucide-react";
 import { partnerProfile } from "@/lib/partner-data";
-import { readFileAsDataURL } from "@/lib/file-utils";
+import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import { saveStoreCustomization } from "@/lib/store/partnerSlice";
-import { STORE_THEMES, STORE_ACCENTS, STORE_FONTS, STORE_CUSTOMIZATION_DEFAULTS } from "@/lib/partner-store-options";
+import {
+  STORE_THEMES,
+  STORE_ACCENTS,
+  STORE_FONTS,
+  STORE_CUSTOMIZATION_DEFAULTS,
+} from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
+import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
+import { useThemePreview } from "@/app/Components/Dashboard/ThemePreviewContext";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 export default function PartnerCustomizePage() {
   const dispatch = useDispatch();
   const showToast = useToast();
+  const setThemePreview = useThemePreview();
   const profileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
@@ -38,19 +46,28 @@ export default function PartnerCustomizePage() {
   const { storeName, storeBio, storeProfileImage, storeBanner, storeTheme, storeAccent, storeFont } = draft;
   const isDirty = Object.keys(saved).some((key) => saved[key] !== draft[key]);
 
+  // Live-reskins the whole Partner dashboard shell (sidebar, bottom nav, page
+  // background, card surfaces, text, every accent-colored control — not just this
+  // page) as the draft theme/accent/font changes, reverting to the saved theme
+  // the moment this page is left without saving.
+  useEffect(() => {
+    setThemePreview(buildPartnerThemeVars(storeTheme, storeAccent, storeFont));
+    return () => setThemePreview(null);
+  }, [storeTheme, storeAccent, storeFont, setThemePreview]);
+
   const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const handleProfileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    update({ storeProfileImage: await readFileAsDataURL(file) });
+    update({ storeProfileImage: await readImageAsCompressedDataURL(file) });
     e.target.value = "";
   };
 
   const handleBannerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    update({ storeBanner: await readFileAsDataURL(file) });
+    update({ storeBanner: await readImageAsCompressedDataURL(file) });
     e.target.value = "";
   };
 
@@ -95,6 +112,14 @@ export default function PartnerCustomizePage() {
           powered by AwaOwn, and every purchase stays protected by AwaOwn&apos;s
           payment protection policy.
         </p>
+
+        {isDirty && (
+          <p className="flex items-center gap-1.5 rounded-[10px] bg-amber-50 p-3 text-[12px] text-amber-800">
+            Your dashboard is showing these changes live — they won&apos;t apply for
+            your visitors, or stay after you leave this page, until you hit Save
+            Changes.
+          </p>
+        )}
 
         {/* Banner + profile image */}
         <div className="flex flex-col gap-2.5">
@@ -188,7 +213,7 @@ export default function PartnerCustomizePage() {
         {/* Accent */}
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Accent Color</p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {STORE_ACCENTS.map((accent) => {
               const active = storeAccent === accent.id;
               return (
