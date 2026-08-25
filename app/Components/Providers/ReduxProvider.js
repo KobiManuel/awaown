@@ -18,6 +18,19 @@ const ORDERS_KEY = "awaown_orders";
 const MERCHANT_KEY = "awaown_merchant";
 const PARTNER_KEY = "awaown_partner";
 const ADMIN_KEY = "awaown_admin";
+const ALL_KEYS = [CART_KEY, WISHLIST_KEY, AUTH_KEY, ORDERS_KEY, MERCHANT_KEY, PARTNER_KEY, ADMIN_KEY];
+
+const SCHEMA_KEY = "awaown_schema_version";
+// Bump this any time seed/demo data changes in a way testers should see fresh —
+// new products, changed eligibility flags, new fields on an existing record, etc.
+// Every hydration path below (hydrateMerchant, hydratePartner, ...) trusts
+// whatever's in localStorage over the current seed data when a key exists, so
+// without this, a tester's browser keeps replaying an old snapshot forever and
+// never sees anything shipped after their first visit — this is what caused the
+// "why don't I see my new demo products" and "why is this order missing a
+// timestamp" reports. Bumping this wipes all `awaown_*` keys once, so the next
+// load starts clean from the current seed data.
+const SCHEMA_VERSION = "2026-08-25.1";
 
 const ReduxProvider = ({ children }) => {
   const storeRef = useRef(null);
@@ -27,6 +40,19 @@ const ReduxProvider = ({ children }) => {
 
   useEffect(() => {
     const store = storeRef.current;
+
+    // If the seed-data schema has moved on since this browser last visited,
+    // wipe every persisted key before hydrating so stale demo state (missing
+    // fields, outdated eligibility, incomplete history) can't shadow the
+    // current seed data. See SCHEMA_VERSION above.
+    try {
+      if (localStorage.getItem(SCHEMA_KEY) !== SCHEMA_VERSION) {
+        for (const key of ALL_KEYS) localStorage.removeItem(key);
+        localStorage.setItem(SCHEMA_KEY, SCHEMA_VERSION);
+      }
+    } catch {
+      // ignore (e.g. localStorage unavailable)
+    }
 
     // Hydrate from localStorage after mount (client-only, avoids SSR mismatch).
     try {
