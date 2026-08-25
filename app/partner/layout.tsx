@@ -24,7 +24,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const themeVars = buildPartnerThemeVars(storeTheme, storeAccent, storeFont);
 
   return (
-    <AppFrame navItems={navItems} loginHref="/login/partner" roleLabel="Partner" themeVars={themeVars}>
+    <AppFrame
+      navItems={navItems}
+      loginHref="/login/partner"
+      roleLabel="Partner"
+      themeVars={themeVars}
+      hideThemeToggle
+    >
       {children}
     </AppFrame>
   );

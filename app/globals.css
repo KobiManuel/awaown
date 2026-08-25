@@ -51,15 +51,24 @@
   --shop-font-family: "Bai Jamjuree", sans-serif;
 }
 
+/* !important on the neutral tokens here is deliberate: the Partner dashboard
+   reskin (AppFrame's `themeVars` — see Partner Customize) sets these same
+   variables via an inline `style` attribute, which normally beats any
+   stylesheet rule regardless of source order. Without `!important`, a partner
+   whose store theme picks a light page background would get stuck in light
+   mode with no way for the dark/light toggle to override it — the exact bug
+   this fixes. Accent color and font are intentionally left un-forced below, so
+   a partner's brand accent/font still shows through in dark mode; only the
+   background/surface/text tokens are dark mode's to own outright. */
 :root[data-theme="dark"] {
   --background: #0b0b10;
   --foreground: #f0f0f3;
-  --shop-bg: #121216;
-  --shop-surface: #1a1a20;
-  --shop-text: #a3a3ae;
-  --shop-heading: #f2f2f5;
-  --shop-border: #2a2a33;
-  --shop-accent-1-light: #241b3d;
+  --shop-bg: #121216 !important;
+  --shop-surface: #1a1a20 !important;
+  --shop-text: #a3a3ae !important;
+  --shop-heading: #f2f2f5 !important;
+  --shop-border: #2a2a33 !important;
+  --shop-accent-1-light: #241b3d !important;
 }
 
 :root[data-theme="dark"] .bg-white,

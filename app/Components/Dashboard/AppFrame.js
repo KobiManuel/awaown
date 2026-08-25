@@ -15,6 +15,10 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
 // e.g. the Partner role passes its saved store accent/font here so its entire
 // dashboard (not just its public storefront) reflects its own branding. A page inside
 // can further override this live via ThemePreviewContext (see Partner Customize).
+// `hideThemeToggle` (optional): the Partner role already has full theme control via
+// Customize My Store (theme/accent/font), so the separate site-wide dark/light toggle
+// is redundant there and was removed to avoid two competing "what theme is this"
+// controls on the same dashboard.
 /**
  * @param {object} props
  * @param {React.ReactNode} props.children
@@ -22,8 +26,9 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
  * @param {string} props.loginHref
  * @param {string} [props.roleLabel]
  * @param {Record<string, string> | null} [props.themeVars]
+ * @param {boolean} [props.hideThemeToggle]
  */
-const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null }) => {
+const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null, hideThemeToggle = false }) => {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -60,7 +65,9 @@ const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null }
               <BottomNav items={navItems} />
             </div>
           </div>
-          <ThemeToggle className="fixed right-4 top-4 z-[60] shadow-md lg:right-6 lg:top-6" />
+          {!hideThemeToggle && (
+            <ThemeToggle className="fixed right-4 top-4 z-[60] shadow-md lg:right-6 lg:top-6" />
+          )}
         </ThemePreviewContext.Provider>
       </div>
     </ToastProvider>
