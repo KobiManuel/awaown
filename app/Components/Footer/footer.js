@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 
 const Facebook = (props) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
@@ -58,13 +58,7 @@ const Footer = () => {
     <footer className="mt-16 border-t border-shop-border bg-white font-shop">
       <div className="mx-auto grid w-full max-w-[1460px] grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 md:grid-cols-6 md:px-8">
         <div className="col-span-2 flex flex-col gap-4">
-          <Image
-            src="/v2/images/awa-logo.webp"
-            alt="AwaOwn"
-            width={220}
-            height={60}
-            className="h-14 w-auto object-contain"
-          />
+          <ThemedLogo width={220} height={60} className="h-14 w-auto object-contain" />
           <p className="text-[13px] font-semibold uppercase tracking-wide text-shop-heading">
             Contact Us
           </p>

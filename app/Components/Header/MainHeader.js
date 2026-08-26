@@ -2,10 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useSelector } from "react-redux";
 import { Search, Layers, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
+import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 
 const MainHeader = ({ onMenuClick }) => {
   const cartCount = useSelector((state) =>
@@ -29,13 +29,7 @@ const MainHeader = ({ onMenuClick }) => {
           href="/"
           className="relative h-12 w-45 shrink-0 md:h-16 md:w-60"
         >
-          <Image
-            src="/v2/images/awa-logo.webp"
-            alt="AwaOwn"
-            fill
-            className="object-contain object-left"
-            priority
-          />
+          <ThemedLogo fill className="object-contain object-left" priority />
         </Link>
 
         <div className="hidden flex-1 items-center md:flex">

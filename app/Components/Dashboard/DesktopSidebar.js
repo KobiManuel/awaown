@@ -2,12 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { LogOut } from "lucide-react";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { dummyUser } from "@/lib/dashboard-data";
+import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 
 // items: same shape as BottomNav's items. roleLabel is a small eyebrow under the logo
 // (e.g. "Merchant", "Partner") so the same shell reads correctly per dashboard.
@@ -20,13 +20,7 @@ const DesktopSidebar = ({ items, roleLabel }) => {
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-shop-border bg-white font-shop lg:flex">
       <Link href="/" className="flex items-center px-6 pt-6">
         <div className="relative h-9 w-[130px]">
-          <Image
-            src="/v2/images/awa-logo.webp"
-            alt="AwaOwn"
-            fill
-            sizes="130px"
-            className="object-contain object-left"
-          />
+          <ThemedLogo fill sizes="130px" className="object-contain object-left" />
         </div>
       </Link>
       {roleLabel && (
