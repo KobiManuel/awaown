@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Heart, Layers, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
@@ -76,7 +77,7 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Media */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-[8px] bg-shop-bg">
+      <Link href={`/product/${id}`} className="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-shop-bg">
         {badge && (
           <span className="absolute left-[10px] top-[10px] z-10 rounded-[3px] bg-shop-accent-3 px-2 py-[3px] text-[11px] font-medium text-white">
             {badge}
@@ -111,7 +112,7 @@ const ProductCard = ({ product }) => {
             ))}
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
@@ -121,7 +122,7 @@ const ProductCard = ({ product }) => {
           </span>
         )}
         <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
-          <a href="#">{title}</a>
+          <Link href={`/product/${id}`}>{title}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
           {Array.from({ length: 5 }).map((_, i) => (

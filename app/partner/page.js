@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useSelector } from "react-redux";
 import { TrendingUp, Clock, Store, Copy, Check, Share2, ShieldAlert, ImagePlus } from "lucide-react";
 import { partnerProfile, formatPrice } from "@/lib/partner-data";
+import { SITE_URL } from "@/lib/site-config";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const StatCard = ({ icon: Icon, label, value, href }) => {
@@ -32,7 +33,7 @@ export default function PartnerHome() {
   const storeBanner = useSelector((s) => s.partner.storeBanner);
   const verification = useSelector((s) => s.partner.verification);
   const [copied, setCopied] = useState(false);
-  const storeLink = partnerProfile.referralLink.replace("https://awaown.com", "");
+  const storeLink = partnerProfile.referralLink.replace(SITE_URL, "");
 
   const clearedProfit = earnings
     .filter((e) => e.status === "cleared")
@@ -147,7 +148,7 @@ export default function PartnerHome() {
             View Earnings History
           </Link>
           <Link
-            href={partnerProfile.referralLink.replace("https://awaown.com", "")}
+            href={partnerProfile.referralLink.replace(SITE_URL, "")}
             target="_blank"
             className="col-span-2 rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
           >

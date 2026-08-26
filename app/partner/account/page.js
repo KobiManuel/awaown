@@ -20,6 +20,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { partnerProfile, formatPrice } from "@/lib/partner-data";
+import { SITE_URL } from "@/lib/site-config";
 import { dummyUser } from "@/lib/dashboard-data";
 import { NIGERIAN_STATES } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
@@ -30,7 +31,7 @@ const links = [
   { href: "/partner/store", label: "My Store", icon: Store },
   { href: "/partner/customize", label: "Customize My Store", icon: Palette },
   {
-    href: partnerProfile.referralLink.replace("https://awaown.com", ""),
+    href: partnerProfile.referralLink.replace(SITE_URL, ""),
     label: "Preview My Store",
     icon: Eye,
     external: true,

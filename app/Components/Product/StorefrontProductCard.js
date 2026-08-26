@@ -2,17 +2,48 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
 import { addToCart } from "@/lib/store/cartSlice";
 import { toggleWishlist } from "@/lib/store/wishlistSlice";
 
+// Common color names merchants/partners actually type into a "Color" option
+// group (see app/merchant/products/new/page.js's Option Names field). Variant
+// records only ever store the free-text combined label ("Black / M"), never a
+// hex value, so this is a heuristic match on that label — not a structured
+// per-attribute color field. Good enough for the common case; won't catch an
+// unusual color name.
+const COLOR_NAME_HEX = {
+  black: "#1a1a1a", white: "#f5f5f5", red: "#dc2626", blue: "#2563eb", navy: "#1e3a5f",
+  green: "#16a34a", yellow: "#eab308", purple: "#7c3aed", pink: "#ec4899", orange: "#ea580c",
+  brown: "#7b4a2d", grey: "#9ca3af", gray: "#9ca3af", gold: "#c9a635", silver: "#b8bcc2",
+  beige: "#e8dcc8", cream: "#f5f0e1", maroon: "#7f1d1d", teal: "#0d9488", tan: "#d2b48c",
+  burgundy: "#7a1f3d", olive: "#556b2f", turquoise: "#2dd4bf", lavender: "#c4b5fd", coral: "#ff6f61",
+  peach: "#ffcba4", mint: "#86efac", indigo: "#4f46e5", charcoal: "#36454f", ivory: "#f7f4e9",
+  khaki: "#c3b091", rose: "#f43f5e", violet: "#8b5cf6", cyan: "#22d3ee",
+};
+
+function extractColorSwatches(product) {
+  if (!product.hasVariants || !product.variants?.length) return [];
+  const found = new Map();
+  for (const v of product.variants) {
+    const tokens = (v.label || "").split("/").map((t) => t.trim().toLowerCase());
+    for (const token of tokens) {
+      if (COLOR_NAME_HEX[token] && !found.has(token)) {
+        found.set(token, COLOR_NAME_HEX[token]);
+      }
+    }
+  }
+  return [...found.values()];
+}
+
 // Visually matches app/Components/Product/ProductCard.js (same hover-reveal action
-// icons, image swap, layout) but sourced from real merchant/partner product records
-// (Naira pricing, `images[]`) instead of the disconnected shop-data.js demo catalog —
-// used on merchant and partner public store pages so a store "feels" like the rest
-// of AwaOwn's shop.
+// icons, image swap, color swatches, layout) but sourced from real merchant/partner
+// product records (Naira pricing, `images[]`) instead of the disconnected
+// shop-data.js demo catalog — used on merchant and partner public store pages so a
+// store "feels" like the rest of AwaOwn's shop.
 const StorefrontProductCard = ({ product, accentColor }) => {
   const dispatch = useDispatch();
   const isWishlisted = useSelector((state) =>
@@ -21,6 +52,8 @@ const StorefrontProductCard = ({ product, accentColor }) => {
   const [justAdded, setJustAdded] = useState(false);
   const image = product.images?.[0];
   const hoverImage = product.images?.[1];
+  const swatches = extractColorSwatches(product);
+  const href = `/product/${product.id}`;
 
   const handleWishlist = () => {
     dispatch(
@@ -79,7 +112,7 @@ const StorefrontProductCard = ({ product, accentColor }) => {
       </div>
 
       {/* Media */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-[8px] bg-shop-bg">
+      <Link href={href} className="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-shop-bg">
         {image ? (
           <>
             <Image
@@ -104,12 +137,24 @@ const StorefrontProductCard = ({ product, accentColor }) => {
             <ShoppingCart className="h-8 w-8" strokeWidth={1.5} />
           </div>
         )}
-      </div>
+
+        {swatches.length > 0 && (
+          <div className="absolute bottom-[8px] left-[12px] z-10 flex gap-[4px] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            {swatches.map((c, i) => (
+              <span
+                key={i}
+                className="h-[16px] w-[16px] rounded-full border border-white shadow-[0_0_0_1px_rgba(0,0,0,0.1)]"
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        )}
+      </Link>
 
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
-        <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading">
-          {product.title}
+        <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
+          <Link href={href}>{product.title}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
           {Array.from({ length: 5 }).map((_, i) => (

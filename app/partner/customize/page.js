@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { ImagePlus, User, Eye, RotateCcw, Check } from "lucide-react";
 import { partnerProfile } from "@/lib/partner-data";
+import { SITE_URL } from "@/lib/site-config";
 import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import { saveStoreCustomization } from "@/lib/store/partnerSlice";
 import {
@@ -96,7 +97,7 @@ export default function PartnerCustomizePage() {
         showBackOnDesktop
         right={
           <Link
-            href={partnerProfile.referralLink.replace("https://awaown.com", "")}
+            href={partnerProfile.referralLink.replace(SITE_URL, "")}
             target="_blank"
             className="flex items-center gap-1.5 text-[12px] font-semibold text-shop-accent-1"
           >
