@@ -96,6 +96,10 @@ function ImageEditButton({ onPick, label = "Change image" }) {
   );
 }
 
+function DimensionHint({ text }) {
+  return <p className="text-[10.5px] text-shop-text/50">Recommended image size: {text}</p>;
+}
+
 function SectionShell({ title, children }) {
   return (
     <div className="flex flex-col gap-3 rounded-[16px] border border-shop-border bg-white p-5">
@@ -147,6 +151,7 @@ function HeroEditor({ data, onChange }) {
           </div>
         ))}
       </div>
+      <DimensionHint text="1100 × 495px per slide" />
     </SectionShell>
   );
 }
@@ -185,6 +190,7 @@ function ThreeBannerEditor({ data, onChange }) {
           </div>
         ))}
       </div>
+      <DimensionHint text="446 × 180px per card" />
     </SectionShell>
   );
 }
@@ -198,6 +204,7 @@ function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange }) {
             <Image src={deal.image} alt="" fill className="object-contain p-6" />
             <ImageEditButton onPick={(url) => onDealChange({ image: url })} />
           </div>
+          <DimensionHint text="800 × 800px (square)" />
           <InlineText
             value={deal.vendor}
             onChange={(v) => onDealChange({ vendor: v })}
@@ -311,6 +318,7 @@ function TwoBannerEditor({ data, onChange }) {
           </div>
         ))}
       </div>
+      <DimensionHint text="685 × 240px per banner" />
     </SectionShell>
   );
 }
@@ -349,6 +357,7 @@ function OneBannerEditor({ data, onChange }) {
           </div>
         </div>
       </div>
+      <DimensionHint text="1400 × 220px" />
     </SectionShell>
   );
 }
