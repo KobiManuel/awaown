@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { Search, Bell, ShieldCheck } from "lucide-react";
 import { products, dashboardCategories } from "@/lib/dashboard-data";
 import AppProductCard from "@/app/Components/Dashboard/AppProductCard";
+import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 
 export default function DashboardHome() {
   const user = useSelector((s) => s.auth.user);
@@ -26,17 +27,18 @@ export default function DashboardHome() {
             Find something you&apos;ll love
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
+          <ThemeToggle size="sm" className="lg:hidden" />
           <button
             type="button"
             aria-label="Notifications"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-bg"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-shop-bg lg:h-9 lg:w-9"
           >
             <Bell className="h-4 w-4 text-shop-heading" strokeWidth={1.75} />
           </button>
           <Link
             href="/dashboard/account"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1 text-[13px] font-semibold text-white lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-shop-accent-1 text-[12px] font-semibold text-white lg:hidden"
           >
             {initial}
           </Link>

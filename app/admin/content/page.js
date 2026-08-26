@@ -215,7 +215,8 @@ function CommunityCardEditor({ card, values, onSave }) {
   const handleImagePick = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setDraft((p) => ({ ...p, image: await readImageAsCompressedDataURL(file) }));
+    const image = await readImageAsCompressedDataURL(file);
+    setDraft((p) => ({ ...p, image }));
     e.target.value = "";
   };
 

@@ -19,6 +19,10 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
 // Customize My Store (theme/accent/font), so the separate site-wide dark/light toggle
 // is redundant there and was removed to avoid two competing "what theme is this"
 // controls on the same dashboard.
+// `hideThemeToggleOnMobile` (optional): the Customer role's home page has its own
+// smaller toggle inline in the greeting bar (next to notifications/avatar) on mobile,
+// so the floating fixed-position toggle would be a redundant second control there —
+// stays floating on desktop where there's no equivalent header row.
 /**
  * @param {object} props
  * @param {React.ReactNode} props.children
@@ -27,8 +31,17 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
  * @param {string} [props.roleLabel]
  * @param {Record<string, string> | null} [props.themeVars]
  * @param {boolean} [props.hideThemeToggle]
+ * @param {boolean} [props.hideThemeToggleOnMobile]
  */
-const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null, hideThemeToggle = false }) => {
+const AppFrame = ({
+  children,
+  navItems,
+  loginHref,
+  roleLabel,
+  themeVars = null,
+  hideThemeToggle = false,
+  hideThemeToggleOnMobile = false,
+}) => {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -66,7 +79,11 @@ const AppFrame = ({ children, navItems, loginHref, roleLabel, themeVars = null, 
             </div>
           </div>
           {!hideThemeToggle && (
-            <ThemeToggle className="fixed right-4 top-4 z-[60] shadow-md lg:right-6 lg:top-6" />
+            <ThemeToggle
+              className={`fixed right-4 top-4 z-[60] shadow-md lg:right-6 lg:top-6 ${
+                hideThemeToggleOnMobile ? "hidden lg:flex" : ""
+              }`}
+            />
           )}
         </ThemePreviewContext.Provider>
       </div>

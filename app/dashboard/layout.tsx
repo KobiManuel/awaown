@@ -20,7 +20,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   return (
-    <AppFrame navItems={navItems} loginHref="/login/customer" roleLabel="Customer">
+    <AppFrame
+      navItems={navItems}
+      loginHref="/login/customer"
+      roleLabel="Customer"
+      hideThemeToggleOnMobile
+    >
       {children}
     </AppFrame>
   );
