@@ -57,6 +57,7 @@ export default function MerchantProductsPage() {
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title="Products"
+        backHref="/merchant"
         right={
           <Link
             href="/merchant/products/new"

@@ -67,7 +67,7 @@ export default function AdminPartnersPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Partners" />
+      <AppHeader title="Partners" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Onboarding, verification, profit, withdrawals, referrals and performance.
       </p>

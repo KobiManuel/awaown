@@ -28,7 +28,7 @@ export default function AdminAutomationsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="Automation Center" />
+      <AppHeader title="Automation Center" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-0">
         Create simple trigger → action automations instead of manual staff work.
       </p>

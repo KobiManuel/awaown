@@ -73,7 +73,7 @@ export default function AdminProductsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Products" />
+      <AppHeader title="Products" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Approve products before they go live, reject with a reason, or remove fraudulent listings.
       </p>

@@ -73,7 +73,7 @@ export default function AdminMerchantsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Merchants" />
+      <AppHeader title="Merchants" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Onboarding, verification, performance, payouts, products and account status.
       </p>

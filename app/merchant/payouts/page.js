@@ -24,7 +24,7 @@ export default function MerchantPayoutsPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="Payouts" />
+      <AppHeader title="Payouts" backHref="/merchant" />
 
       {verification.status !== "verified" && (
         <button

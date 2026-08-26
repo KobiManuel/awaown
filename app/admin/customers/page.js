@@ -15,7 +15,7 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Customers" />
+      <AppHeader title="Customers" backHref="/admin" />
 
       <div className="flex flex-col gap-2.5 px-4 lg:px-8">
         <p className="text-[13px] font-semibold text-shop-heading">Customer Profiles</p>

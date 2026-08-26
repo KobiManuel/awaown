@@ -16,7 +16,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Orders" />
+      <AppHeader title="Orders" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Complete order lifecycle: payment status, escrow, delivery and refunds.
       </p>

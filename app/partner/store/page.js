@@ -68,6 +68,7 @@ export default function PartnerStorePage() {
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title="My Store"
+        backHref="/partner"
         right={
           <Link
             href="/partner/store/marketplace"

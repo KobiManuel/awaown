@@ -8,7 +8,7 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 export default function AdminReportsPage() {
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Reports" />
+      <AppHeader title="Reports" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Sales, merchants, partners, customers, products and business performance.
       </p>

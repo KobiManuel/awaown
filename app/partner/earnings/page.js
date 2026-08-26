@@ -13,7 +13,7 @@ export default function PartnerEarningsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="Earnings History" />
+      <AppHeader title="Earnings History" backHref="/partner" />
 
       <div className="mx-4 grid grid-cols-2 gap-3 lg:mx-8">
         <div className="flex items-center gap-3 rounded-[14px] bg-shop-bg p-4">

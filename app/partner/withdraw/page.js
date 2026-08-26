@@ -33,7 +33,7 @@ export default function PartnerWithdrawPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="Withdraw" />
+      <AppHeader title="Withdraw" backHref="/partner" />
 
       {verification.status !== "verified" && (
         <button

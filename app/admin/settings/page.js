@@ -33,7 +33,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
-      <AppHeader title="Platform Settings" />
+      <AppHeader title="Platform Settings" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-0">
         Payment gateways, shipping, notifications, security, integrations and system preferences.
       </p>

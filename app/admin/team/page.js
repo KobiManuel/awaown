@@ -19,7 +19,7 @@ export default function AdminTeamPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="Access Control" />
+      <AppHeader title="Access Control" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Super Admin, Operations, Finance, Marketing, Support and Content access levels.
       </p>

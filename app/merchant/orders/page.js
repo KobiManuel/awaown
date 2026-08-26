@@ -28,7 +28,7 @@ export default function MerchantOrdersPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Orders" />
+      <AppHeader title="Orders" backHref="/merchant" />
 
       {orders.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">

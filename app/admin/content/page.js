@@ -22,7 +22,7 @@ export default function AdminContentPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Content" />
+      <AppHeader title="Content" backHref="/admin" />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Homepage content, banners, FAQs, announcements, categories, blogs and static pages.
       </p>

@@ -100,6 +100,7 @@ export default function AdminMarketingPage() {
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title="Marketing"
+        backHref="/admin"
         right={
           <button
             type="button"
