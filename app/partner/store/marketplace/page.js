@@ -3,32 +3,34 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Link2, Check, Plus, Minus, Store, Package, Tag } from "lucide-react";
+import { Plus, Store, Package } from "lucide-react";
 import { formatPrice, splitPartnerProfit } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
-import { SITE_URL } from "@/lib/site-config";
-import { addToStore, removeFromStore, setProductDiscount } from "@/lib/store/partnerSlice";
+import { addToStore } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 export default function PartnerMarketplacePage() {
   const dispatch = useDispatch();
   const showToast = useToast();
-  const [copiedId, setCopiedId] = useState(null);
   const [category, setCategory] = useState("all");
-  const [discountDrafts, setDiscountDrafts] = useState({});
 
   const merchantProducts = useSelector((s) => s.merchant.products);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
   const storeName = useSelector((s) => s.partner.storeName);
   const productDiscounts = useSelector((s) => s.partner.productDiscounts);
 
-  const allEligible = useMemo(
+  const allProgramProducts = useMemo(
     () =>
       merchantProducts.filter(
         (p) => p.status === "active" && p.offerCommission && p.partnerProfitAmount,
       ),
     [merchantProducts],
+  );
+
+  const allEligible = useMemo(
+    () => allProgramProducts.filter((p) => !storeProductIds.includes(p.id)),
+    [allProgramProducts, storeProductIds],
   );
 
   const eligible = useMemo(
@@ -42,33 +44,9 @@ export default function PartnerMarketplacePage() {
     return counts;
   }, [allEligible]);
 
-  const handleToggleStore = (product) => {
-    const inStore = storeProductIds.includes(product.id);
-    if (inStore) {
-      dispatch(removeFromStore(product.id));
-      dispatch(setProductDiscount({ productId: product.id, discount: 0 }));
-      showToast(`Removed from ${storeName}`);
-    } else {
-      dispatch(addToStore(product.id));
-      showToast(`Added to ${storeName}`);
-    }
-  };
-
-  const handleGetLink = (product) => {
-    const link = `${SITE_URL}/product/${product.id}`;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(link).catch(() => {});
-    }
-    setCopiedId(product.id);
-    showToast("Product link copied");
-    setTimeout(() => setCopiedId(null), 1600);
-  };
-
-  const applyDiscount = (product) => {
-    const raw = Number(discountDrafts[product.id] ?? productDiscounts[product.id] ?? 0);
-    const clamped = Math.max(0, Math.min(raw, product.partnerProfitAmount));
-    dispatch(setProductDiscount({ productId: product.id, discount: clamped }));
-    showToast(clamped > 0 ? `Discount set — buyers save an extra ${formatPrice(clamped)}` : "Discount removed");
+  const handleAddToStore = (product) => {
+    dispatch(addToStore(product.id));
+    showToast(`Added to ${storeName}`);
   };
 
   return (
@@ -84,48 +62,53 @@ export default function PartnerMarketplacePage() {
         </p>
       </div>
 
-      <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
-        <button
-          type="button"
-          onClick={() => setCategory("all")}
-          className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
-            category === "all"
-              ? "border-shop-accent-1 bg-shop-accent-1 text-white"
-              : "border-shop-border text-shop-text"
-          }`}
-        >
-          All ({allEligible.length})
-        </button>
-        {PRODUCT_CATEGORIES.filter((c) => categoryCounts[c.slug]).map((c) => (
+      {allEligible.length > 0 && (
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
           <button
-            key={c.slug}
             type="button"
-            onClick={() => setCategory(c.slug)}
+            onClick={() => setCategory("all")}
             className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
-              category === c.slug
+              category === "all"
                 ? "border-shop-accent-1 bg-shop-accent-1 text-white"
                 : "border-shop-border text-shop-text"
             }`}
           >
-            {c.label} ({categoryCounts[c.slug]})
+            All ({allEligible.length})
           </button>
-        ))}
-      </div>
+          {PRODUCT_CATEGORIES.filter((c) => categoryCounts[c.slug]).map((c) => (
+            <button
+              key={c.slug}
+              type="button"
+              onClick={() => setCategory(c.slug)}
+              className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
+                category === c.slug
+                  ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+                  : "border-shop-border text-shop-text"
+              }`}
+            >
+              {c.label} ({categoryCounts[c.slug]})
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
         {eligible.map((product) => {
           const discount = productDiscounts[product.id] || 0;
           const { netProfit } = splitPartnerProfit(product.partnerProfitAmount - discount);
           const partnerPrice = product.price - product.partnerProfitAmount - discount;
-          const inStore = storeProductIds.includes(product.id);
 
           return (
             <div
               key={product.id}
-              className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
+              className="relative flex flex-col gap-3 rounded-[14px] border-2 border-dashed border-shop-accent-1/40 bg-shop-bg p-3.5"
             >
-              <div className="flex gap-3">
-                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
+              <span className="absolute right-3.5 top-3.5 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-shop-accent-1">
+                Not in store
+              </span>
+
+              <div className="flex gap-3 pr-20">
+                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-white">
                   {product.images?.[0] ? (
                     <Image
                       src={product.images[0]}
@@ -148,7 +131,7 @@ export default function PartnerMarketplacePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 rounded-[10px] bg-shop-bg p-3">
+              <div className="grid grid-cols-2 gap-2 rounded-[10px] bg-white p-3">
                 <div>
                   <p className="text-[10.5px] uppercase tracking-wide text-shop-text/60">
                     Buyer Price
@@ -168,93 +151,24 @@ export default function PartnerMarketplacePage() {
                 </div>
               </div>
 
-              {inStore && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="flex items-center gap-1.5 text-[11px] font-medium text-shop-text">
-                    <Tag className="h-3.5 w-3.5" />
-                    Give buyers an extra discount, out of your own {formatPrice(product.partnerProfitAmount)} cut
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={discountDrafts[product.id] ?? discount ?? ""}
-                      onChange={(e) =>
-                        setDiscountDrafts((prev) => ({
-                          ...prev,
-                          [product.id]: e.target.value.replace(/[^0-9]/g, ""),
-                        }))
-                      }
-                      inputMode="numeric"
-                      placeholder="0"
-                      className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => applyDiscount(product)}
-                      className="rounded-[6px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white"
-                    >
-                      Apply
-                    </button>
-                    <span className="text-[10.5px] text-shop-text/50">
-                      max {formatPrice(product.partnerProfitAmount)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleToggleStore(product)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2.5 text-[12.5px] font-semibold transition-colors ${
-                    inStore
-                      ? "border border-shop-border text-shop-heading hover:bg-shop-bg"
-                      : "bg-shop-accent-1 text-white hover:bg-shop-accent-1-dark"
-                  }`}
-                >
-                  {inStore ? (
-                    <>
-                      <Minus className="h-3.5 w-3.5" />
-                      Remove
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-3.5 w-3.5" />
-                      Add to My Store
-                    </>
-                  )}
-                </button>
-                {inStore && (
-                  <button
-                    type="button"
-                    onClick={() => handleGetLink(product)}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2.5 text-[12.5px] font-semibold transition-colors ${
-                      copiedId === product.id
-                        ? "bg-emerald-600 text-white"
-                        : "border border-shop-accent-1 text-shop-accent-1 hover:bg-shop-accent-1-light"
-                    }`}
-                  >
-                    {copiedId === product.id ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Link2 className="h-3.5 w-3.5" />
-                        Get Link
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => handleAddToStore(product)}
+                className="flex items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-2.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add to My Store
+              </button>
             </div>
           );
         })}
         {eligible.length === 0 && (
           <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
-            {allEligible.length === 0
+            {allProgramProducts.length === 0
               ? "No products are enrolled in the Partner Program yet."
-              : "No products in this category yet."}
+              : allEligible.length === 0
+                ? "No new items to add from marketplace."
+                : "No products in this category yet."}
           </p>
         )}
       </div>

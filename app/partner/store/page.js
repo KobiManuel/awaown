@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Link2, Check, Minus, Store, Package, Tag, Plus } from "lucide-react";
 import { formatPrice, splitPartnerProfit } from "@/lib/partner-data";
+import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { SITE_URL } from "@/lib/site-config";
 import { removeFromStore, setProductDiscount } from "@/lib/store/partnerSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -16,6 +17,7 @@ export default function PartnerStorePage() {
   const showToast = useToast();
   const [copiedId, setCopiedId] = useState(null);
   const [discountDrafts, setDiscountDrafts] = useState({});
+  const [category, setCategory] = useState("all");
 
   const merchantProducts = useSelector((s) => s.merchant.products);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
@@ -26,6 +28,18 @@ export default function PartnerStorePage() {
     () => storeProductIds.map((id) => merchantProducts.find((p) => p.id === id)).filter(Boolean),
     [storeProductIds, merchantProducts],
   );
+
+  const filteredProducts = useMemo(
+    () =>
+      category === "all" ? storeProducts : storeProducts.filter((p) => p.category === category),
+    [storeProducts, category],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    for (const p of storeProducts) counts[p.category] = (counts[p.category] || 0) + 1;
+    return counts;
+  }, [storeProducts]);
 
   const handleRemove = (product) => {
     dispatch(removeFromStore(product.id));
@@ -75,8 +89,38 @@ export default function PartnerStorePage() {
         </p>
       </div>
 
+      {storeProducts.length > 0 && (
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 lg:px-8">
+          <button
+            type="button"
+            onClick={() => setCategory("all")}
+            className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
+              category === "all"
+                ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+                : "border-shop-border text-shop-text"
+            }`}
+          >
+            All ({storeProducts.length})
+          </button>
+          {PRODUCT_CATEGORIES.filter((c) => categoryCounts[c.slug]).map((c) => (
+            <button
+              key={c.slug}
+              type="button"
+              onClick={() => setCategory(c.slug)}
+              className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${
+                category === c.slug
+                  ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+                  : "border-shop-border text-shop-text"
+              }`}
+            >
+              {c.label} ({categoryCounts[c.slug]})
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
-        {storeProducts.map((product) => {
+        {filteredProducts.map((product) => {
           const discount = productDiscounts[product.id] || 0;
           const { netProfit } = splitPartnerProfit(product.partnerProfitAmount - discount);
           const partnerPrice = product.price - product.partnerProfitAmount - discount;
@@ -201,11 +245,13 @@ export default function PartnerStorePage() {
             </div>
           );
         })}
-        {storeProducts.length === 0 && (
+        {filteredProducts.length === 0 && (
           <div className="col-span-2 flex flex-col items-center gap-3 py-14 text-center">
             <Store className="h-8 w-8 text-shop-text/30" strokeWidth={1.5} />
             <p className="text-[13px] text-shop-text">
-              Your store doesn&apos;t have any products yet.
+              {storeProducts.length === 0
+                ? "Your store doesn't have any products yet."
+                : "No products in this category yet."}
             </p>
             <Link
               href="/partner/store/marketplace"
