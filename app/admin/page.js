@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSelector } from "react-redux";
+import Image from "next/image";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Search,
   Bell,
@@ -24,6 +25,7 @@ import {
   UserCog,
   Settings,
   History,
+  ImagePlus,
 } from "lucide-react";
 import {
   businessOverview,
@@ -36,6 +38,9 @@ import {
   HEALTH_TONE,
   customersDirectory,
 } from "@/lib/admin-data";
+import { setDashboardBanner } from "@/lib/store/adminSlice";
+import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const KPI = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -68,7 +73,11 @@ const MANAGE_LINKS = [
 ];
 
 export default function AdminHome() {
+  const dispatch = useDispatch();
+  const showToast = useToast();
+  const bannerInputRef = useRef(null);
   const [query, setQuery] = useState("");
+  const dashboardBanner = useSelector((s) => s.admin.dashboardBanner);
   const merchantVerification = useSelector((s) => s.merchant.verification);
   const partnerVerification = useSelector((s) => s.partner.verification);
   const refunds = useSelector((s) => s.admin.refunds);
@@ -141,22 +150,48 @@ export default function AdminHome() {
     return results.slice(0, 12);
   }, [query, adminMerchants, adminPartners, merchantOrders, merchantProducts]);
 
+  const handleBannerChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    dispatch(setDashboardBanner(await readImageAsCompressedDataURL(file)));
+    showToast("Dashboard banner updated");
+    e.target.value = "";
+  };
+
   return (
     <div className="flex flex-col gap-6 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1200px] lg:gap-8">
-      <div className="mx-4 mt-4 flex items-center justify-between rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 px-5 py-5 text-white lg:mx-8 lg:mt-8">
-        <div>
-          <p className="text-[12.5px] text-white/75">Platform Overview</p>
-          <p className="text-[17px] font-semibold lg:text-[22px]">
-            Good to see you, Admin 👋
-          </p>
+      {/* Dashboard banner */}
+      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
+        {dashboardBanner && (
+          <Image src={dashboardBanner} alt="Dashboard banner" fill className="object-cover" priority />
+        )}
+        <div className="absolute inset-0 bg-black/20" />
+        <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+        <div className="relative flex w-full items-end justify-between p-4">
+          <div>
+            <p className="text-[12.5px] text-white/75">Platform Overview</p>
+            <p className="text-[16px] font-bold text-white lg:text-[20px]">
+              Good to see you, Admin 👋
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              <ImagePlus className="h-3.5 w-3.5" />
+              {dashboardBanner ? "Edit Banner" : "Add Banner"}
+            </button>
+            <button
+              type="button"
+              aria-label="Notifications"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
+            >
+              <Bell className="h-4 w-4 text-white" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
-        >
-          <Bell className="h-4 w-4 text-white" strokeWidth={1.75} />
-        </button>
       </div>
 
       {/* Global search */}
