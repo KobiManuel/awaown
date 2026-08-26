@@ -12,6 +12,8 @@ import {
   Trash2,
   ImagePlus,
   Info,
+  LayoutTemplate,
+  MonitorSmartphone,
 } from "lucide-react";
 import { faqsSeed, BANNER_LOCATIONS } from "@/lib/admin-data";
 import {
@@ -24,6 +26,7 @@ import {
 import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import HomepageEditor from "./HomepageEditor";
 
 const STATUS_TONE = {
   live: "bg-emerald-100 text-emerald-700",
@@ -326,39 +329,67 @@ function CommunitySectionEditor() {
 
 export default function AdminContentPage() {
   return (
-    <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
+    <div className="pb-4 font-shop">
       <AppHeader title="Content" backHref="/admin" />
-      <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
-        Homepage content, banners, FAQs, announcements, categories, blogs and static pages.
-      </p>
 
-      <div className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8">
-        <Info className="h-4.5 w-4.5 shrink-0 text-amber-700" strokeWidth={1.75} />
-        <p className="text-[12px] leading-[18px] text-amber-800">
-          Changes here save to the admin panel, but won&apos;t appear on the live homepage
-          until content editing is wired up to a real backend.
+      {/* Desktop / tablet: the real editor */}
+      <div className="hidden flex-col gap-6 lg:mx-auto lg:flex lg:w-full lg:max-w-[1200px]">
+        <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
+          Homepage content, banners, FAQs, announcements, categories, blogs and static pages.
         </p>
+
+        <div className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8">
+          <Info className="h-4.5 w-4.5 shrink-0 text-amber-700" strokeWidth={1.75} />
+          <p className="text-[12px] leading-[18px] text-amber-800">
+            Changes here save to the admin panel, but won&apos;t appear on the live
+            homepage until content editing is wired up to a real backend.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <LayoutTemplate className="h-4 w-4 text-shop-accent-1" />
+            Homepage Sections
+          </p>
+          <p className="text-[11.5px] text-shop-text/60">
+            This is how each section looks on the homepage. Click any text to edit or
+            erase it, or use the image icon to swap a picture.
+          </p>
+        </div>
+        <HomepageEditor />
+
+        <CommunitySectionEditor />
+
+        <BannerEditor />
+
+        <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <HelpCircle className="h-4 w-4 text-shop-accent-1" />
+            FAQs
+          </p>
+          <div className="flex flex-col gap-2">
+            {faqsSeed.map((f) => (
+              <div key={f.id} className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5">
+                <p className="text-[13px] text-shop-heading">{f.question}</p>
+                <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status]}`}>
+                  {f.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <BannerEditor />
-
-      <CommunitySectionEditor />
-
-      <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
-        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-          <HelpCircle className="h-4 w-4 text-shop-accent-1" />
-          FAQs
-        </p>
-        <div className="flex flex-col gap-2">
-          {faqsSeed.map((f) => (
-            <div key={f.id} className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5">
-              <p className="text-[13px] text-shop-heading">{f.question}</p>
-              <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status]}`}>
-                {f.status}
-              </span>
-            </div>
-          ))}
+      {/* Mobile: this editor needs real screen space to be usable */}
+      <div className="flex flex-col items-center gap-3 px-8 py-16 text-center lg:hidden">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-shop-accent-1-light">
+          <MonitorSmartphone className="h-6 w-6 text-shop-accent-1" strokeWidth={1.75} />
         </div>
+        <p className="text-[15px] font-semibold text-shop-heading">Desktop Only</p>
+        <p className="max-w-[280px] text-[13px] leading-[19px] text-shop-text">
+          The homepage content editor needs more screen space than a phone can give it.
+          Switch to a desktop or tablet to edit this page.
+        </p>
       </div>
     </div>
   );
