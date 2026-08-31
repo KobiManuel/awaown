@@ -185,7 +185,7 @@ export default function NewMerchantProductPage() {
     ? title.trim().length > 0 && bundleItems.length >= 2 && price && stock !== ""
     : title.trim().length > 0 &&
       price &&
-      stock !== "" &&
+      (deliveryType === "digital" || stock !== "") &&
       (hasVariants
         ? variants.length > 0 && variants.every((v) => v.id === "default" || (v.price && v.stock !== ""))
         : true) &&
@@ -326,15 +326,12 @@ export default function NewMerchantProductPage() {
           )}
         </div>
 
-        {/* Media */}
+        {/* Media — not shown for digital products, which have no photos/video */}
+        {deliveryType !== "digital" && (
         <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] font-semibold text-shop-heading">
-            {deliveryType === "digital" ? "Cover Image" : "Product Photos"}
-          </p>
+          <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
           <p className="text-[11.5px] text-shop-text">
-            {deliveryType === "digital"
-              ? "One cover image is enough — it's what shoppers see on the listing."
-              : "Add a few angles — shoppers convert better when they can see the product clearly."}
+            Add a few angles — shoppers convert better when they can see the product clearly.
           </p>
           <div className="grid grid-cols-4 gap-2.5">
             {Array.from({ length: MAX_IMAGES }).map((_, i) => (
@@ -396,6 +393,7 @@ export default function NewMerchantProductPage() {
             <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
           </label>
         </div>
+        )}
 
         {/* Product type — not shown for digital products, which are always Simple */}
         {deliveryType !== "digital" && (
@@ -532,16 +530,18 @@ export default function NewMerchantProductPage() {
                 className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
               />
             </label>
-            <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">Stock</span>
-              <input
-                value={stock}
-                onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
-                inputMode="numeric"
-                placeholder="24"
-                className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-              />
-            </label>
+            {deliveryType !== "digital" && (
+              <label className="flex flex-1 flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-shop-heading">Stock</span>
+                <input
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                  inputMode="numeric"
+                  placeholder="24"
+                  className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+              </label>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -773,18 +773,20 @@ export default function NewMerchantProductPage() {
               )}
             </div>
 
-            {/* Stock visibility */}
-            <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
-              <span className="text-[13px] font-medium text-shop-heading">
-                Hide stock count from shoppers
-              </span>
-              <input
-                type="checkbox"
-                checked={hideStock}
-                onChange={(e) => setHideStock(e.target.checked)}
-                className="h-4.5 w-4.5 accent-[#6d28d9]"
-              />
-            </label>
+            {/* Stock visibility — not applicable to digital products (no stock field) */}
+            {deliveryType !== "digital" && (
+              <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
+                <span className="text-[13px] font-medium text-shop-heading">
+                  Hide stock count from shoppers
+                </span>
+                <input
+                  type="checkbox"
+                  checked={hideStock}
+                  onChange={(e) => setHideStock(e.target.checked)}
+                  className="h-4.5 w-4.5 accent-[#6d28d9]"
+                />
+              </label>
+            )}
           </>
         )}
 
