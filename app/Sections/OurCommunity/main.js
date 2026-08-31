@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Video,
   Lightbulb,
@@ -18,11 +19,14 @@ const ArrowChip = ({ bg = "bg-shop-accent-1", text = "text-white" }) => (
   </span>
 );
 
-const PillButton = ({ children, chipBg, chipText = "text-white" }) => (
-  <span className="inline-flex w-fit items-center gap-3 rounded-full bg-white py-1 pl-4 pr-1 text-[13px] font-semibold text-shop-heading">
+const PillButton = ({ children, href = "#", chipBg, chipText = "text-white" }) => (
+  <Link
+    href={href}
+    className="inline-flex w-fit items-center gap-3 rounded-full bg-white py-1 pl-4 pr-1 text-[13px] font-semibold text-shop-heading transition-transform hover:scale-[1.03]"
+  >
     {children}
     <ArrowChip bg={chipBg} text={chipText} />
-  </span>
+  </Link>
 );
 
 const IconChip = ({ icon: Icon, label }) => (
@@ -53,7 +57,9 @@ const VendorSpotlight = () => (
         Handcrafted accessories and boutique fashion, rated 4.9 by shoppers
         across Lagos. This week we&apos;re spotlighting their new collection.
       </p>
-      <PillButton chipBg="bg-shop-accent-1">Visit Store</PillButton>
+      <PillButton href="/shop/fashion-vault" chipBg="bg-shop-accent-1">
+        Visit Store
+      </PillButton>
     </div>
   </div>
 );

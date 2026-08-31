@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -17,14 +17,12 @@ import {
   ShieldAlert,
   Pencil,
   Check,
-  MapPin,
 } from "lucide-react";
 import { partnerProfile, formatPrice } from "@/lib/partner-data";
 import { SITE_URL } from "@/lib/site-config";
 import { dummyUser } from "@/lib/dashboard-data";
-import { NIGERIAN_STATES } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
-import { setStoreName, setStoreDetails } from "@/lib/store/partnerSlice";
+import { setStoreName } from "@/lib/store/partnerSlice";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const links = [
@@ -38,8 +36,8 @@ const links = [
   },
   { href: "/partner/earnings", label: "Earnings History", icon: TrendingUp },
   { href: "/partner/withdraw", label: "Withdraw", icon: Banknote },
-  { href: "#", label: "Notifications", icon: Bell },
-  { href: "#", label: "Help Centre", icon: HelpCircle },
+  { href: "/partner/notifications", label: "Notifications", icon: Bell },
+  { href: "/partner/help", label: "Help Centre", icon: HelpCircle },
 ];
 
 const VERIFICATION_COPY = {
@@ -55,30 +53,14 @@ export default function PartnerAccountPage() {
   const walletBalance = useSelector((s) => s.partner.walletBalance);
   const storeName = useSelector((s) => s.partner.storeName);
   const verification = useSelector((s) => s.partner.verification);
-  const savedDetails = useSelector((s) => s.partner.storeDetails);
   const [editingStore, setEditingStore] = useState(false);
   const [storeNameDraft, setStoreNameDraft] = useState(storeName);
-  const [detailsDraft, setDetailsDraft] = useState(savedDetails);
-
-  useEffect(() => {
-    setDetailsDraft(savedDetails);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const verificationInfo = VERIFICATION_COPY[verification.status];
-  const isDetailsDirty = JSON.stringify(savedDetails) !== JSON.stringify(detailsDraft);
-  const detailsComplete = Boolean(detailsDraft.state && detailsDraft.address && detailsDraft.phone);
 
   const saveStoreName = () => {
     if (storeNameDraft.trim()) dispatch(setStoreName(storeNameDraft.trim()));
     setEditingStore(false);
-  };
-
-  const updateDetails = (patch) => setDetailsDraft((prev) => ({ ...prev, ...patch }));
-
-  const handleSaveDetails = () => {
-    dispatch(setStoreDetails(detailsDraft));
-    showToast("Store details saved");
   };
 
   return (
@@ -147,61 +129,6 @@ export default function PartnerAccountPage() {
         )}
         <span className="text-[12.5px] font-semibold">{verificationInfo.label}</span>
       </button>
-
-      <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
-        <div className="flex items-center justify-between">
-          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-shop-heading">
-            <MapPin className="h-4 w-4 text-shop-accent-1" />
-            Store Details
-          </p>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-              detailsComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            {detailsComplete ? "Complete" : "Missing"}
-          </span>
-        </div>
-        <p className="text-[11.5px] text-shop-text">
-          Needed for delivery — couriers use this to plan pickup and shipping.
-        </p>
-        <select
-          value={detailsDraft.state || ""}
-          onChange={(e) => updateDetails({ state: e.target.value })}
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
-        >
-          <option value="" disabled>
-            Select state
-          </option>
-          {NIGERIAN_STATES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <input
-          value={detailsDraft.address || ""}
-          onChange={(e) => updateDetails({ address: e.target.value })}
-          placeholder="Full pickup address"
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
-        />
-        <input
-          value={detailsDraft.phone || ""}
-          onChange={(e) => updateDetails({ phone: e.target.value.replace(/[^0-9+]/g, "") })}
-          placeholder="Contact phone number"
-          inputMode="tel"
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
-        />
-        <button
-          type="button"
-          onClick={handleSaveDetails}
-          disabled={!isDetailsDirty}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
-        >
-          <Check className="h-3.5 w-3.5" />
-          Save Changes
-        </button>
-      </div>
 
       <div className="mx-4 flex items-center justify-between rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-4 text-white lg:mx-0">
         <div>

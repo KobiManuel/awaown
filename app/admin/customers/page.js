@@ -4,14 +4,16 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CheckCircle2 } from "lucide-react";
 import { customersDirectory, formatPrice } from "@/lib/admin-data";
-import { resolveComplaint } from "@/lib/store/adminSlice";
+import { resolveComplaint, reopenComplaint } from "@/lib/store/adminSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
 
 export default function AdminCustomersPage() {
   const dispatch = useDispatch();
   const showToast = useToast();
   const complaints = useSelector((s) => s.admin.complaints);
+  const { run, bar } = useUndoBuffer();
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -48,6 +50,14 @@ export default function AdminCustomersPage() {
                   onClick={() => {
                     dispatch(resolveComplaint(c.id));
                     showToast("Complaint marked resolved");
+                    run(
+                      `"${c.subject}" resolved — undo within 8 seconds`,
+                      () => {
+                        dispatch(reopenComplaint(c.id));
+                        showToast("Undone");
+                      },
+                      () => {},
+                    );
                   }}
                   className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white"
                 >
@@ -63,6 +73,7 @@ export default function AdminCustomersPage() {
           ))}
         </div>
       </div>
+      {bar}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import {
   formatPrice,
-  PRODUCT_CATEGORY_GROUPS,
+  PRODUCT_CATEGORIES,
   PROCESSING_TIME_OPTIONS,
   PARTNER_PROGRAM_MIN_PROFIT,
 } from "@/lib/merchant-data";
@@ -83,7 +83,7 @@ export default function NewMerchantProductPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(PRODUCT_CATEGORY_GROUPS[0].items[0].slug);
+  const [category, setCategory] = useState(PRODUCT_CATEGORIES[0].slug);
   const [deliveryType, setDeliveryType] = useState("physical"); // physical | digital
   const [processingTime, setProcessingTime] = useState(PROCESSING_TIME_OPTIONS[1].id);
   const [digitalFile, setDigitalFile] = useState(null);
@@ -255,14 +255,10 @@ export default function NewMerchantProductPage() {
               onChange={(e) => setCategory(e.target.value)}
               className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
             >
-              {PRODUCT_CATEGORY_GROUPS.map((g) => (
-                <optgroup key={g.group} label={g.group}>
-                  {g.items.map((c) => (
-                    <option key={c.slug} value={c.slug}>
-                      {c.label}
-                    </option>
-                  ))}
-                </optgroup>
+              {PRODUCT_CATEGORIES.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.label}
+                </option>
               ))}
             </select>
           </label>
@@ -302,6 +298,11 @@ export default function NewMerchantProductPage() {
               )}
               <input type="file" className="hidden" onChange={handleDigitalFileChange} />
             </label>
+          ) : null}
+          {deliveryType === "digital" ? (
+            <p className="text-[11px] text-shop-text/60">
+              Any file type is accepted — PDF, ZIP, MP3, video, or anything else buyers need.
+            </p>
           ) : (
             <label className="flex flex-col gap-1.5">
               <span className="text-[13px] font-semibold text-shop-heading">Processing Time</span>
@@ -322,9 +323,13 @@ export default function NewMerchantProductPage() {
 
         {/* Media */}
         <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
+          <p className="text-[13px] font-semibold text-shop-heading">
+            {deliveryType === "digital" ? "Cover Image" : "Product Photos"}
+          </p>
           <p className="text-[11.5px] text-shop-text">
-            Add a few angles — shoppers convert better when they can see the product clearly.
+            {deliveryType === "digital"
+              ? "One cover image is enough — it's what shoppers see on the listing."
+              : "Add a few angles — shoppers convert better when they can see the product clearly."}
           </p>
           <div className="grid grid-cols-4 gap-2.5">
             {Array.from({ length: MAX_IMAGES }).map((_, i) => (

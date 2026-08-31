@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { Package, Star, BadgeCheck, X, Trash2 } from "lucide-react";
-import { formatPrice, PRODUCT_CATEGORIES } from "@/lib/merchant-data";
+import { Package, Star, BadgeCheck, X, Trash2, Store, User } from "lucide-react";
+import { formatPrice, PRODUCT_CATEGORIES, merchantProfile } from "@/lib/merchant-data";
 import { toggleProductField, adminSetProductApproval, removeProduct } from "@/lib/store/merchantSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -12,6 +12,153 @@ import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
 
 function categoryLabel(slug) {
   return PRODUCT_CATEGORIES.find((c) => c.slug === slug)?.label || slug;
+}
+
+// This dummy build only ever has one seeded merchant, so every product's "vendor" is
+// merchantProfile. A real backend would look this up per-product via a merchantId.
+function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, tab }) {
+  const [activeImage, setActiveImage] = useState(0);
+  if (!product) return null;
+  const images = product.images?.length ? product.images : [];
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 lg:items-center" onClick={onClose}>
+      <div
+        className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[20px] bg-white p-5 lg:rounded-[16px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-[14px] font-semibold text-shop-heading">Product Details</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
+          >
+            <X className="h-4 w-4 text-shop-heading" />
+          </button>
+        </div>
+
+        <div className="relative aspect-square w-full overflow-hidden rounded-[12px] bg-shop-bg">
+          {images[activeImage] ? (
+            <Image src={images[activeImage]} alt={product.title} fill className="object-contain p-6" sizes="560px" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Package className="h-10 w-10 text-shop-text/40" strokeWidth={1.5} />
+            </div>
+          )}
+        </div>
+        {images.length > 1 && (
+          <div className="flex gap-2">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setActiveImage(i)}
+                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] border-2 bg-shop-bg ${
+                  i === activeImage ? "border-shop-accent-1" : "border-transparent"
+                }`}
+              >
+                <Image src={img} alt="" fill className="object-contain p-1.5" sizes="56px" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <p className="text-[16px] font-semibold text-shop-heading">{product.title}</p>
+          <p className="text-[13px] text-shop-text">{product.description || "No description provided."}</p>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-[10px] bg-shop-bg p-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white">
+            <Store className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[12.5px] font-semibold text-shop-heading">{merchantProfile.storeName}</p>
+            <p className="flex items-center gap-1 truncate text-[11px] text-shop-text/70">
+              <User className="h-3 w-3" />
+              {merchantProfile.ownerName}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 text-[12.5px]">
+          <div className="rounded-[10px] bg-shop-bg p-3">
+            <p className="text-shop-text/60">Category</p>
+            <p className="font-semibold text-shop-heading">{categoryLabel(product.category)}</p>
+          </div>
+          <div className="rounded-[10px] bg-shop-bg p-3">
+            <p className="text-shop-text/60">Price</p>
+            <p className="font-semibold text-shop-heading">{formatPrice(product.price)}</p>
+          </div>
+          {product.hasVariants && product.variants?.length ? (
+            <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
+              <p className="mb-1.5 text-shop-text/60">Variants ({product.variants.length})</p>
+              <div className="flex flex-col gap-1">
+                {product.variants.map((v) => (
+                  <div key={v.id} className="flex items-center justify-between text-[12px]">
+                    <span className="text-shop-heading">{v.label}</span>
+                    <span className="text-shop-text">{formatPrice(v.price)} · {v.stock} in stock</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[10px] bg-shop-bg p-3">
+              <p className="text-shop-text/60">Stock</p>
+              <p className="font-semibold text-shop-heading">{product.stock}</p>
+            </div>
+          )}
+          {product.offerCommission && (
+            <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
+              <p className="text-shop-text/60">Partner Program</p>
+              <p className="font-semibold text-shop-heading">
+                Enrolled — {formatPrice(product.partnerProfitAmount)} profit per sale
+              </p>
+            </div>
+          )}
+          {product.rejectionReason && (
+            <div className="col-span-2 rounded-[10px] bg-red-50 p-3">
+              <p className="text-shop-accent-3/80">Rejection Reason</p>
+              <p className="font-semibold text-shop-accent-3">{product.rejectionReason}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 border-t border-shop-border pt-3">
+          {tab !== "approved" && (
+            <button
+              type="button"
+              onClick={() => onApprove(product)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-shop-accent-1 py-2.5 text-[12.5px] font-semibold text-white"
+            >
+              <BadgeCheck className="h-3.5 w-3.5" />
+              Approve
+            </button>
+          )}
+          {tab !== "rejected" && (
+            <button
+              type="button"
+              onClick={() => onReject(product)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reject
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onRemove(product)}
+            aria-label="Remove product"
+            className="flex items-center justify-center rounded-[8px] border border-shop-border px-3.5 text-shop-accent-3"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const TABS = [
@@ -26,6 +173,7 @@ export default function AdminProductsPage() {
   const products = useSelector((s) => s.merchant.products);
   const { run, bar } = useUndoBuffer();
   const [tab, setTab] = useState("pending");
+  const [detailProduct, setDetailProduct] = useState(null);
 
   const filtered = products.filter((p) => (p.approvalStatus || "approved") === tab);
 
@@ -96,7 +244,15 @@ export default function AdminProductsPage() {
       <div className="flex flex-col gap-2.5 px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-8">
         {filtered.map((p) => (
           <div key={p.id} className="flex flex-col gap-2.5 rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div className="flex items-center gap-3">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetailProduct(p)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setDetailProduct(p);
+              }}
+              className="flex cursor-pointer items-center gap-3"
+            >
               <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
                 {p.images?.[0] ? (
                   <Image src={p.images[0]} alt={p.title} fill className="object-contain p-1.5" sizes="56px" />
@@ -116,7 +272,8 @@ export default function AdminProductsPage() {
               <button
                 type="button"
                 aria-label="Toggle featured"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   dispatch(toggleProductField({ id: p.id, field: "featured" }));
                   showToast(p.featured ? "Removed from Featured" : "Marked as Featured");
                 }}
@@ -166,6 +323,23 @@ export default function AdminProductsPage() {
         )}
       </div>
       {bar}
+      <ProductDetailModal
+        product={detailProduct}
+        tab={tab}
+        onClose={() => setDetailProduct(null)}
+        onApprove={(p) => {
+          handleApprove(p);
+          setDetailProduct(null);
+        }}
+        onReject={(p) => {
+          handleReject(p);
+          setDetailProduct(null);
+        }}
+        onRemove={(p) => {
+          handleRemove(p);
+          setDetailProduct(null);
+        }}
+      />
     </div>
   );
 }

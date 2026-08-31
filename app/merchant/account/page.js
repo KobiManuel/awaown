@@ -30,8 +30,8 @@ const links = [
   { href: "/merchant/products", label: "Manage Products", icon: Store },
   { href: "/merchant/orders", label: "Orders", icon: ClipboardList },
   { href: "/merchant/payouts", label: "Payouts", icon: Banknote },
-  { href: "#", label: "Notifications", icon: Bell },
-  { href: "#", label: "Help Centre", icon: HelpCircle },
+  { href: "/merchant/notifications", label: "Notifications", icon: Bell },
+  { href: "/merchant/help", label: "Help Centre", icon: HelpCircle },
 ];
 
 const VERIFICATION_COPY = {

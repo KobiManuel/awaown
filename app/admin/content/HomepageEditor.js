@@ -4,7 +4,8 @@ import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { ImagePlus, Plus, Trash2, Quote } from "lucide-react";
-import { saveHomepageContent } from "@/lib/store/adminSlice";
+import { saveHomepageContent, saveSectionVisibility } from "@/lib/store/adminSlice";
+import { formatPrice } from "@/lib/admin-data";
 import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -100,22 +101,53 @@ function DimensionHint({ text }) {
   return <p className="text-[10.5px] text-shop-text/50">Recommended image size: {text}</p>;
 }
 
-function SectionShell({ title, children }) {
+function VisibilityToggle({ on, onClick }) {
   return (
-    <div className="flex flex-col gap-3 rounded-[16px] border border-shop-border bg-white p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/50">{title}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={on ? "Hide this section from the homepage" : "Show this section on the homepage"}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${on ? "bg-shop-accent-1" : "bg-shop-border"}`}
+    >
+      <span
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-[left] duration-200 ${
+          on ? "left-[18px]" : "left-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+function SectionShell({ title, children, visible = true, onToggleVisible }) {
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-[16px] border border-shop-border bg-white p-5 ${
+        visible ? "" : "opacity-60"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/50">{title}</p>
+        {onToggleVisible && (
+          <label className="flex items-center gap-2">
+            <span className="text-[10.5px] font-medium text-shop-text/60">
+              {visible ? "Shown on homepage" : "Hidden"}
+            </span>
+            <VisibilityToggle on={visible} onClick={onToggleVisible} />
+          </label>
+        )}
+      </div>
       {children}
     </div>
   );
 }
 
-function HeroEditor({ data, onChange }) {
+function HeroEditor({ data, onChange, visible, onToggleVisible }) {
   const updateSlide = (i, patch) => {
     onChange({ slides: data.slides.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) });
   };
 
   return (
-    <SectionShell title="Hero Banner">
+    <SectionShell title="Hero Banner" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="grid grid-cols-2 gap-4">
         {data.slides.map((slide, i) => (
           <div key={i} className="group relative aspect-[1100/495] w-full overflow-hidden rounded-[10px] bg-shop-bg">
@@ -156,13 +188,13 @@ function HeroEditor({ data, onChange }) {
   );
 }
 
-function ThreeBannerEditor({ data, onChange }) {
+function ThreeBannerEditor({ data, onChange, visible, onToggleVisible }) {
   const updateBanner = (i, patch) => {
     onChange({ banners: data.banners.map((b, idx) => (idx === i ? { ...b, ...patch } : b)) });
   };
 
   return (
-    <SectionShell title="3-Card Row (right after Hero)">
+    <SectionShell title="3-Card Row (right after Hero)" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="grid grid-cols-3 gap-4">
         {data.banners.map((b, i) => (
           <div key={i} className="group relative aspect-[446/180] w-full overflow-hidden rounded-[12px] bg-shop-bg">
@@ -195,9 +227,9 @@ function ThreeBannerEditor({ data, onChange }) {
   );
 }
 
-function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange }) {
+function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange, visible, onToggleVisible }) {
   return (
-    <SectionShell title="Deal of the Week & Featured Products">
+    <SectionShell title="Deal of the Week & Featured Products" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex w-full flex-col gap-3 rounded-[10px] bg-shop-bg p-4 lg:w-[280px] lg:shrink-0">
           <div className="group relative aspect-square w-full overflow-hidden rounded-[8px] bg-white">
@@ -276,13 +308,17 @@ function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange }) {
   );
 }
 
-function TwoBannerEditor({ data, onChange }) {
+function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
   const updateBanner = (i, patch) => {
     onChange({ banners: data.banners.map((b, idx) => (idx === i ? { ...b, ...patch } : b)) });
   };
 
   return (
-    <SectionShell title="2-Banner Row (after Deal of the Week / Featured Products)">
+    <SectionShell
+      title="2-Banner Row (after Deal of the Week / Featured Products)"
+      visible={visible}
+      onToggleVisible={onToggleVisible}
+    >
       <div className="grid grid-cols-2 gap-4">
         {data.banners.map((b, i) => (
           <div key={i} className="group relative aspect-[685/240] w-full overflow-hidden rounded-[12px] bg-shop-bg">
@@ -323,9 +359,9 @@ function TwoBannerEditor({ data, onChange }) {
   );
 }
 
-function OneBannerEditor({ data, onChange }) {
+function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
   return (
-    <SectionShell title="Banner (right before Reviews)">
+    <SectionShell title="Banner (right before Reviews)" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="group relative aspect-[1400/220] w-full overflow-hidden rounded-[16px] bg-shop-bg">
         <Image src={data.image} alt="" fill className="object-cover" />
         <ImageEditButton onPick={(url) => onChange({ image: url })} />
@@ -362,7 +398,7 @@ function OneBannerEditor({ data, onChange }) {
   );
 }
 
-function ReviewsEditor({ data, onChange }) {
+function ReviewsEditor({ data, onChange, visible, onToggleVisible }) {
   const updateTestimonial = (i, patch) => {
     onChange({ testimonials: data.testimonials.map((t, idx) => (idx === i ? { ...t, ...patch } : t)) });
   };
@@ -374,7 +410,7 @@ function ReviewsEditor({ data, onChange }) {
   };
 
   return (
-    <SectionShell title="Reviews">
+    <SectionShell title="Reviews" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="flex items-center justify-between">
         <InlineText
           value={data.sectionTitle}
@@ -439,34 +475,124 @@ function ReviewsEditor({ data, onChange }) {
   );
 }
 
+// Off by default (see sectionVisibilityDefaults) — a template for slotting in a new
+// recurring homepage feature without a code change each time: pick a merchant, add a
+// note, flip it on. The same shape could grow into "Partner of the Month" etc. later.
+function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
+  const merchants = useSelector((s) => s.admin.merchants);
+  const selected = merchants.find((m) => m.id === data.merchantId);
+
+  return (
+    <SectionShell title="Merchant of the Week (extra — off by default)" visible={visible} onToggleVisible={onToggleVisible}>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-1">
+          <span className={LABEL}>Merchant</span>
+          <select
+            value={data.merchantId || ""}
+            onChange={(e) => onChange({ merchantId: e.target.value })}
+            className="rounded-[6px] border border-shop-border bg-white px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+          >
+            <option value="">Select a merchant</option>
+            {merchants.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.storeName}
+              </option>
+            ))}
+          </select>
+        </div>
+        {selected && (
+          <p className="text-[11px] text-shop-text/60">
+            {selected.owner} · {formatPrice(selected.revenue || 0)} in revenue
+          </p>
+        )}
+        <div className="flex flex-col gap-1">
+          <span className={LABEL}>Why they're featured</span>
+          <InlineText
+            value={data.note}
+            onChange={(v) => onChange({ note: v })}
+            className="text-[13px] text-shop-heading"
+            placeholder="e.g. Fastest-growing store this month"
+            multiline
+          />
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 export default function HomepageEditor() {
   const dispatch = useDispatch();
   const showToast = useToast();
   const homepageContent = useSelector((s) => s.admin.homepageContent);
+  const sectionVisibility = useSelector((s) => s.admin.sectionVisibility);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(homepageContent)));
+  const [visibility, setVisibility] = useState(() => ({ ...sectionVisibility }));
 
   const updateSection = (key, patch) => {
     setDraft((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   };
 
+  const toggleVisible = (...keys) => {
+    setVisibility((prev) => {
+      const next = { ...prev };
+      const turningOn = !prev[keys[0]];
+      for (const key of keys) next[key] = turningOn;
+      return next;
+    });
+  };
+
   const handleSave = () => {
     dispatch(saveHomepageContent(draft));
+    dispatch(saveSectionVisibility(visibility));
     showToast("Homepage content saved");
   };
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-4 lg:px-8">
-      <HeroEditor data={draft.hero} onChange={(patch) => updateSection("hero", patch)} />
-      <ThreeBannerEditor data={draft.threeBannerRow} onChange={(patch) => updateSection("threeBannerRow", patch)} />
+      <HeroEditor
+        data={draft.hero}
+        onChange={(patch) => updateSection("hero", patch)}
+        visible={visibility.hero}
+        onToggleVisible={() => toggleVisible("hero")}
+      />
+      <ThreeBannerEditor
+        data={draft.threeBannerRow}
+        onChange={(patch) => updateSection("threeBannerRow", patch)}
+        visible={visibility.threeBannerRow}
+        onToggleVisible={() => toggleVisible("threeBannerRow")}
+      />
       <DealOfWeekEditor
         deal={draft.dealOfWeek}
         featured={draft.featuredProducts}
         onDealChange={(patch) => updateSection("dealOfWeek", patch)}
         onFeaturedChange={(patch) => updateSection("featuredProducts", patch)}
+        visible={visibility.dealOfWeek}
+        onToggleVisible={() => toggleVisible("dealOfWeek", "featuredProducts")}
       />
-      <TwoBannerEditor data={draft.twoBannerRow} onChange={(patch) => updateSection("twoBannerRow", patch)} />
-      <OneBannerEditor data={draft.oneBannerRow} onChange={(patch) => updateSection("oneBannerRow", patch)} />
-      <ReviewsEditor data={draft.reviews} onChange={(patch) => updateSection("reviews", patch)} />
+      <TwoBannerEditor
+        data={draft.twoBannerRow}
+        onChange={(patch) => updateSection("twoBannerRow", patch)}
+        visible={visibility.twoBannerRow}
+        onToggleVisible={() => toggleVisible("twoBannerRow")}
+      />
+      <OneBannerEditor
+        data={draft.oneBannerRow}
+        onChange={(patch) => updateSection("oneBannerRow", patch)}
+        visible={visibility.oneBannerRow}
+        onToggleVisible={() => toggleVisible("oneBannerRow")}
+      />
+      <ReviewsEditor
+        data={draft.reviews}
+        onChange={(patch) => updateSection("reviews", patch)}
+        visible={visibility.reviews}
+        onToggleVisible={() => toggleVisible("reviews")}
+      />
+      <MerchantOfWeekEditor
+        data={draft.merchantOfWeek || { merchantId: "", note: "" }}
+        onChange={(patch) => updateSection("merchantOfWeek", patch)}
+        visible={visibility.merchantOfWeek}
+        onToggleVisible={() => toggleVisible("merchantOfWeek")}
+      />
 
       <div className="sticky bottom-4 z-30 flex justify-end">
         <button

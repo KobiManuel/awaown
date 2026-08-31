@@ -15,17 +15,22 @@ import {
   LayoutTemplate,
   MonitorSmartphone,
 } from "lucide-react";
-import { faqsSeed, BANNER_LOCATIONS } from "@/lib/admin-data";
+import { BANNER_LOCATIONS } from "@/lib/admin-data";
 import {
   toggleBannerStatus,
   addBanner,
   updateBanner,
   removeBanner,
   saveCommunitySection,
+  addFaq,
+  updateFaq,
+  toggleFaqStatus,
+  removeFaq,
 } from "@/lib/store/adminSlice";
 import { readImageAsCompressedDataURL } from "@/lib/file-utils";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
 import HomepageEditor from "./HomepageEditor";
 
 const STATUS_TONE = {
@@ -42,6 +47,7 @@ function BannerEditor() {
   const dispatch = useDispatch();
   const showToast = useToast();
   const banners = useSelector((s) => s.admin.banners);
+  const { run, bar } = useUndoBuffer();
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ title: "", location: BANNER_LOCATIONS[0] });
 
@@ -66,6 +72,14 @@ function BannerEditor() {
     dispatch(removeBanner(banner.id));
     showToast(`"${banner.title}" removed`);
     if (editingId === banner.id) setEditingId(null);
+    run(
+      `"${banner.title}" removed — undo within 8 seconds`,
+      () => {
+        dispatch(addBanner(banner));
+        showToast("Undone");
+      },
+      () => {},
+    );
   };
 
   return (
@@ -158,6 +172,123 @@ function BannerEditor() {
           </div>
         ))}
       </div>
+      {bar}
+    </div>
+  );
+}
+
+function FaqEditor() {
+  const dispatch = useDispatch();
+  const showToast = useToast();
+  const faqs = useSelector((s) => s.admin.faqs);
+  const { run, bar } = useUndoBuffer();
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState("");
+
+  const startEdit = (faq) => {
+    setEditingId(faq.id);
+    setDraft(faq.question);
+  };
+
+  const handleAdd = () => {
+    const faq = { id: `faq-${Date.now()}`, question: "New question", status: "draft" };
+    dispatch(addFaq(faq));
+    startEdit(faq);
+  };
+
+  const handleSave = (id) => {
+    dispatch(updateFaq({ id, changes: { question: draft } }));
+    showToast("FAQ saved");
+    setEditingId(null);
+  };
+
+  const handleRemove = (faq) => {
+    dispatch(removeFaq(faq.id));
+    showToast(`"${faq.question}" removed`);
+    if (editingId === faq.id) setEditingId(null);
+    run(
+      `"${faq.question}" removed — undo within 8 seconds`,
+      () => {
+        dispatch(addFaq(faq));
+        showToast("Undone");
+      },
+      () => {},
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+          <HelpCircle className="h-4 w-4 text-shop-accent-1" />
+          FAQs
+        </p>
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add FAQ
+        </button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {faqs.map((f) => (
+          <div key={f.id} className="rounded-[14px] border border-shop-border bg-white p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              {editingId === f.id ? (
+                <input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  autoFocus
+                  className={`${FIELD} flex-1`}
+                />
+              ) : (
+                <p className="text-[13px] text-shop-heading">{f.question}</p>
+              )}
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch(toggleFaqStatus(f.id));
+                    showToast(`"${f.question}" updated`);
+                  }}
+                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status]}`}
+                >
+                  {f.status}
+                </button>
+                {editingId === f.id ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSave(f.id)}
+                    className="rounded-full bg-shop-accent-1 px-3 py-1 text-[11px] font-semibold text-white"
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label="Edit FAQ"
+                    onClick={() => startEdit(f)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text hover:bg-shop-bg"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="Remove FAQ"
+                  onClick={() => handleRemove(f)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {bar}
     </div>
   );
 }
@@ -180,6 +311,7 @@ const COMMUNITY_CARDS = [
       { name: "title", label: "Title", type: "text" },
       { name: "dateText", label: "Date / Time", type: "text" },
       { name: "buttonText", label: "Button Text", type: "text" },
+      { name: "url", label: "Registration Link (Zoom, Meet, landing page, etc.)", type: "text" },
     ],
   },
   {
@@ -362,22 +494,7 @@ export default function AdminContentPage() {
 
         <BannerEditor />
 
-        <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <HelpCircle className="h-4 w-4 text-shop-accent-1" />
-            FAQs
-          </p>
-          <div className="flex flex-col gap-2">
-            {faqsSeed.map((f) => (
-              <div key={f.id} className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5">
-                <p className="text-[13px] text-shop-heading">{f.question}</p>
-                <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status]}`}>
-                  {f.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <FaqEditor />
       </div>
 
       {/* Mobile: this editor needs real screen space to be usable */}

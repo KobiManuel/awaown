@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { ShieldCheck, User, MapPin, Phone, Clock } from "lucide-react";
+import { ShieldCheck, User, Clock } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import StorefrontProductCard from "@/app/Components/Product/StorefrontProductCard";
@@ -14,7 +14,6 @@ export default function PublicPartnerStorePage() {
   const storeProfileImage = useSelector((s) => s.partner.storeProfileImage);
   const storeBanner = useSelector((s) => s.partner.storeBanner);
   const storeProductIds = useSelector((s) => s.partner.storeProductIds);
-  const storeDetails = useSelector((s) => s.partner.storeDetails);
   const themeId = useSelector((s) => s.partner.storeTheme);
   const accentId = useSelector((s) => s.partner.storeAccent);
   const fontId = useSelector((s) => s.partner.storeFont);
@@ -88,19 +87,6 @@ export default function PublicPartnerStorePage() {
               className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-[12px] font-semibold"
               style={{ color: theme.subtleText }}
             >
-              {storeDetails.state && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {storeDetails.address ? `${storeDetails.address}, ` : ""}
-                  {storeDetails.state}
-                </span>
-              )}
-              {storeDetails.phone && (
-                <span className="flex items-center gap-1">
-                  <Phone className="h-3.5 w-3.5" />
-                  {storeDetails.phone}
-                </span>
-              )}
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 Powered by AwaOwn

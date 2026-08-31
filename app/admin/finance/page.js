@@ -7,6 +7,7 @@ import { businessOverview, failedPaymentsSeed, formatPrice } from "@/lib/admin-d
 import { setRefundStatus } from "@/lib/store/adminSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
 
 export default function AdminFinancePage() {
   const dispatch = useDispatch();
@@ -15,6 +16,7 @@ export default function AdminFinancePage() {
   const refunds = useSelector((s) => s.admin.refunds);
   const merchantPayouts = useSelector((s) => s.merchant.payouts);
   const partnerWithdrawals = useSelector((s) => s.partner.withdrawals);
+  const { run, bar } = useUndoBuffer();
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -52,6 +54,14 @@ export default function AdminFinancePage() {
                     onClick={() => {
                       dispatch(setRefundStatus({ id: r.id, status: "approved" }));
                       showToast(`Refund for ${r.order} approved`);
+                      run(
+                        `Refund for ${r.order} approved — undo within 8 seconds`,
+                        () => {
+                          dispatch(setRefundStatus({ id: r.id, status: "pending" }));
+                          showToast("Undone");
+                        },
+                        () => {},
+                      );
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
                   >
@@ -62,6 +72,14 @@ export default function AdminFinancePage() {
                     onClick={() => {
                       dispatch(setRefundStatus({ id: r.id, status: "rejected" }));
                       showToast(`Refund for ${r.order} rejected`);
+                      run(
+                        `Refund for ${r.order} rejected — undo within 8 seconds`,
+                        () => {
+                          dispatch(setRefundStatus({ id: r.id, status: "pending" }));
+                          showToast("Undone");
+                        },
+                        () => {},
+                      );
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-shop-accent-3"
                   >
@@ -117,6 +135,7 @@ export default function AdminFinancePage() {
             )}
         </div>
       </div>
+      {bar}
     </div>
   );
 }
