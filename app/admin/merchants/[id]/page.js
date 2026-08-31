@@ -4,13 +4,27 @@ import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { BadgeCheck, Ban, Play, Store, Package, ShoppingBag } from "lucide-react";
+import { BadgeCheck, Ban, Play, Store, Package, ShoppingBag, IdCard, User as UserIcon } from "lucide-react";
 import { VERIFICATION_TONE, formatPrice } from "@/lib/admin-data";
 import { setMerchantStatus, setMerchantVerification } from "@/lib/store/adminSlice";
 import { adminSetVerificationStatus } from "@/lib/store/merchantSlice";
 import { MERCHANT_ORDER_STATUS_LABEL, MERCHANT_ORDER_STATUS_TONE } from "@/lib/merchant-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
+
+const DocSlot = ({ label, image }) => (
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[11px] font-semibold text-shop-text/60">{label}</span>
+    <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
+      {image ? (
+        <Image src={image} alt={label} fill className="object-cover" sizes="200px" />
+      ) : (
+        <span className="text-[11px] text-shop-text/40">Not submitted</span>
+      )}
+    </div>
+  </div>
+);
 
 const Stat = ({ label, value }) => (
   <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3.5">
@@ -30,6 +44,8 @@ export default function AdminMerchantDetailPage() {
   const liveOrders = useSelector((s) => s.merchant.orders);
   const walletBalance = useSelector((s) => s.merchant.walletBalance);
   const escrowBalance = useSelector((s) => s.merchant.escrowBalance);
+  const liveVerification = useSelector((s) => s.merchant.verification);
+  const { run, bar } = useUndoBuffer();
 
   if (!merchant) {
     return (
@@ -43,9 +59,20 @@ export default function AdminMerchantDetailPage() {
   }
 
   const handleVerify = (verification) => {
+    const previous = merchant.verification;
     dispatch(setMerchantVerification({ id: merchant.id, verification }));
     if (isLive) dispatch(adminSetVerificationStatus(verification));
-    showToast(`${merchant.storeName} verification ${verification === "verified" ? "approved" : "rejected"}`);
+    const label = verification === "verified" ? "approved" : "rejected";
+    showToast(`${merchant.storeName} verification ${label}`);
+    run(
+      `${merchant.storeName} verification ${label} — undo within 8 seconds`,
+      () => {
+        dispatch(setMerchantVerification({ id: merchant.id, verification: previous }));
+        if (isLive) dispatch(adminSetVerificationStatus(previous));
+        showToast("Undone");
+      },
+      () => {},
+    );
   };
 
   const handleStatus = (status) => {
@@ -97,6 +124,27 @@ export default function AdminMerchantDetailPage() {
           </p>
         )}
       </div>
+
+      {merchant.verification !== "unverified" && (
+        <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <IdCard className="h-4 w-4 text-shop-accent-1" />
+            Verification Documents
+          </p>
+          {isLive ? (
+            <div className="grid grid-cols-3 gap-3">
+              <DocSlot label="ID Front" image={liveVerification.idImageFront} />
+              <DocSlot label="ID Back" image={liveVerification.idImageBack} />
+              <DocSlot label="Selfie Holding ID" image={liveVerification.selfieImage} />
+            </div>
+          ) : (
+            <p className="flex items-center gap-2 rounded-[12px] bg-shop-bg p-3.5 text-[11px] text-shop-text/60">
+              <UserIcon className="h-3.5 w-3.5 shrink-0" />
+              Uploaded documents aren&apos;t available for this demo merchant record.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mx-4 flex flex-wrap gap-2 border-t border-shop-border pt-4 lg:mx-8">
         {merchant.verification !== "verified" && (
@@ -186,6 +234,7 @@ export default function AdminMerchantDetailPage() {
           </div>
         </>
       )}
+      {bar}
     </div>
   );
 }

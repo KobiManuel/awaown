@@ -97,7 +97,7 @@ export default function NewMerchantProductPage() {
   const [stock, setStock] = useState("");
   const [optionGroups, setOptionGroups] = useState([{ name: "", valuesText: "" }]);
   const [variants, setVariants] = useState([]);
-  const [bulkPrice, setBulkPrice] = useState("");
+  // const [bulkPrice, setBulkPrice] = useState(""); — "Apply to All" removed, see below
 
   const [bundleItems, setBundleItems] = useState([]);
   const [bundleItemTitle, setBundleItemTitle] = useState("");
@@ -111,6 +111,12 @@ export default function NewMerchantProductPage() {
     if (!hasVariants) return;
     setVariants((prev) => buildVariants(optionGroups, prev));
   }, [optionGroups, hasVariants]);
+
+  // Digital products skip the Simple/Variable/Group distinction entirely — always
+  // treated as Simple, so the plain Price/Stock fields show without a type picker.
+  useEffect(() => {
+    if (deliveryType === "digital") setProductType("simple");
+  }, [deliveryType]);
 
   const handleImageChange = async (e, index) => {
     const file = e.target.files?.[0];
@@ -162,14 +168,15 @@ export default function NewMerchantProductPage() {
   const updateVariant = (id, field, value) =>
     setVariants((v) => v.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
 
-  const applyBulkPrice = () => {
-    if (!bulkPrice) return;
-    setVariants((v) => v.map((row) => ({ ...row, price: bulkPrice })));
-  };
+  // const applyBulkPrice = () => {
+  //   if (!bulkPrice) return;
+  //   setVariants((v) => v.map((row) => ({ ...row, price: bulkPrice })));
+  // };
 
-  const minPriceForPreview = hasVariants
-    ? Math.min(...variants.map((v) => Number(v.price) || Infinity).filter((n) => n !== Infinity), Infinity)
-    : Number(price) || 0;
+  // Every product type now has one main price/stock (see the Price/Stock fields
+  // rendered above the variant list) — variants still carry their own price/stock too,
+  // but the main fields are the source of truth for the listing itself.
+  const minPriceForPreview = Number(price) || 0;
 
   const partnerRateValid =
     !offerCommission || (partnerProfitAmount && Number(partnerProfitAmount) >= PARTNER_PROGRAM_MIN_PROFIT);
@@ -177,9 +184,11 @@ export default function NewMerchantProductPage() {
   const isValid = isGroup
     ? title.trim().length > 0 && bundleItems.length >= 2 && price && stock !== ""
     : title.trim().length > 0 &&
+      price &&
+      stock !== "" &&
       (hasVariants
-        ? variants.length > 0 && variants.every((v) => v.price && v.stock !== "")
-        : price && stock !== "") &&
+        ? variants.length > 0 && variants.every((v) => v.id === "default" || (v.price && v.stock !== ""))
+        : true) &&
       partnerRateValid;
 
   const handleSubmit = (e) => {
@@ -199,12 +208,8 @@ export default function NewMerchantProductPage() {
         video,
         productType,
         hasVariants,
-        price: isGroup
-          ? Number(price)
-          : hasVariants
-            ? (Number.isFinite(minPriceForPreview) ? minPriceForPreview : 0)
-            : Number(price),
-        stock: isGroup ? Number(stock) : hasVariants ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0) : Number(stock),
+        price: Number(price),
+        stock: Number(stock),
         variants: hasVariants
           ? variants.map((v) => ({ id: v.id, label: v.label, price: Number(v.price), stock: Number(v.stock) }))
           : [],
@@ -392,37 +397,39 @@ export default function NewMerchantProductPage() {
           </label>
         </div>
 
-        {/* Product type */}
-        <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
-          <p className="text-[11.5px] text-shop-text">
-            Choose how this product is sold — as-is, with color/size options, or as a
-            bundle of items sold together.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <TypeCard
-              selected={productType === "simple"}
-              onClick={() => setProductType("simple")}
-              icon={Package}
-              title="Simple product"
-              description="Sold as-is, with one price and one stock number."
-            />
-            <TypeCard
-              selected={productType === "variable"}
-              onClick={() => setProductType("variable")}
-              icon={Layers}
-              title={'Variable Product ("has options")'}
-              description="e.g. color, size — priced separately."
-            />
-            <TypeCard
-              selected={isGroup}
-              onClick={() => setProductType("group")}
-              icon={Boxes}
-              title="Group product"
-              description="A bundle of items sold together as one listing."
-            />
+        {/* Product type — not shown for digital products, which are always Simple */}
+        {deliveryType !== "digital" && (
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
+            <p className="text-[11.5px] text-shop-text">
+              Choose how this product is sold — as-is, with color/size options, or as a
+              bundle of items sold together.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <TypeCard
+                selected={productType === "simple"}
+                onClick={() => setProductType("simple")}
+                icon={Package}
+                title="Simple product"
+                description="Sold as-is, with one price and one stock number."
+              />
+              <TypeCard
+                selected={productType === "variable"}
+                onClick={() => setProductType("variable")}
+                icon={Layers}
+                title={'Variable Product ("has options")'}
+                description="e.g. color, size — priced separately."
+              />
+              <TypeCard
+                selected={isGroup}
+                onClick={() => setProductType("group")}
+                icon={Boxes}
+                title="Group product"
+                description="A bundle of items sold together as one listing."
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {isGroup ? (
           <div className="flex flex-col gap-4">
@@ -539,6 +546,36 @@ export default function NewMerchantProductPage() {
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2.5">
+              <p className="text-[13px] font-semibold text-shop-heading">Price (₦) &amp; Stock</p>
+              <p className="text-[11.5px] text-shop-text">
+                The main price and stock for this listing — each option below can still
+                be priced and stocked separately.
+              </p>
+              <div className="flex gap-3">
+                <label className="flex flex-1 flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">Price (₦)</span>
+                  <input
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                    inputMode="numeric"
+                    placeholder="15000"
+                    className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                  />
+                </label>
+                <label className="flex flex-1 flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">Stock</span>
+                  <input
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                    inputMode="numeric"
+                    placeholder="24"
+                    className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
               {optionGroups.map((group, i) => (
                 <div key={i} className="flex items-end gap-2">
                   <label className="flex w-28 shrink-0 flex-col gap-1.5">
@@ -548,18 +585,18 @@ export default function NewMerchantProductPage() {
                     <input
                       value={group.name}
                       onChange={(e) => updateOptionGroup(i, "name", e.target.value)}
-                      placeholder="Color"
+                      placeholder="e.g. Size"
                       className="rounded-[8px] border border-shop-border bg-white px-3 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
                     />
                   </label>
                   <label className="flex flex-1 flex-col gap-1.5">
                     <span className="text-[11.5px] font-semibold text-shop-heading">
-                      Values (comma separated)
+                      Option Values (comma separated)
                     </span>
                     <input
                       value={group.valuesText}
                       onChange={(e) => updateOptionGroup(i, "valuesText", e.target.value)}
-                      placeholder="Black, Brown, White"
+                      placeholder="e.g. Small, Medium, Large"
                       className="rounded-[8px] border border-shop-border bg-white px-3 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
                     />
                   </label>
@@ -588,20 +625,16 @@ export default function NewMerchantProductPage() {
               </button>
             </div>
 
-            <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <p className="text-[13px] font-semibold text-shop-heading">
-                    {variants.length === 1 && variants[0].id === "default"
-                      ? "Pricing"
-                      : `Pricing (${variants.length} options)`}
-                  </p>
-                </div>
-                {variants.length === 1 && variants[0].id === "default" && (
-                  <p className="text-[11px] text-shop-text/60">
-                    Add an option name and values above to price each option separately —
-                    until then, set a single price and stock below.
-                  </p>
-                )}
+            {!(variants.length === 1 && variants[0].id === "default") && (
+              <div className="flex flex-col gap-2.5">
+                <p className="text-[13px] font-semibold text-shop-heading">
+                  Pricing ({variants.length} option{variants.length === 1 ? "" : "s"})
+                </p>
+                <p className="text-[11px] text-shop-text/60">
+                  Each option below has its own price and stock, separate from the main
+                  price and stock above.
+                </p>
+                {/* "Apply to All" removed — each option keeps its own price/stock field.
                 <div className="flex items-center gap-2 rounded-[10px] bg-shop-bg p-2.5">
                   <span className="text-[11.5px] text-shop-text">Set the same price for all:</span>
                   <input
@@ -619,6 +652,7 @@ export default function NewMerchantProductPage() {
                     Apply to All
                   </button>
                 </div>
+                */}
                 <div className="hidden items-center gap-2 px-2.5 sm:flex">
                   <span className="flex-1 text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
                     Option
@@ -671,6 +705,7 @@ export default function NewMerchantProductPage() {
                   ))}
                 </div>
               </div>
+            )}
           </div>
         )}
 

@@ -56,18 +56,19 @@ const VerificationModal = ({ modalProps }) => {
 
   const [idType, setIdType] = useState(ID_TYPES[0].id);
   const [idNumber, setIdNumber] = useState("");
-  const [idImage, setIdImage] = useState(null);
+  const [idImageFront, setIdImageFront] = useState(null);
+  const [idImageBack, setIdImageBack] = useState(null);
   const [selfieImage, setSelfieImage] = useState(null);
   const [justSubmitted, setJustSubmitted] = useState(false);
 
   const submitAction = role === "partner" ? submitPartnerVerification : submitMerchantVerification;
   const approveAction = role === "partner" ? approvePartnerVerification : approveMerchantVerification;
 
-  const isValid = idNumber.trim().length >= 5 && idImage && selfieImage;
+  const isValid = idNumber.trim().length >= 5 && idImageFront && idImageBack && selfieImage;
 
   const handleSubmit = () => {
     if (!isValid) return;
-    dispatch(submitAction({ idType, idNumber, idImage, selfieImage }));
+    dispatch(submitAction({ idType, idNumber, idImageFront, idImageBack, selfieImage }));
     setJustSubmitted(true);
     setTimeout(() => {
       dispatch(approveAction());
@@ -133,7 +134,8 @@ const VerificationModal = ({ modalProps }) => {
 
               <p className="mb-4 text-[12.5px] leading-[18px] text-shop-text">
                 Merchants and Partners must verify their identity before requesting a
-                payout. Upload a government-issued ID and a selfie of you holding it.
+                payout. Upload both sides of a government-issued ID and a selfie of you
+                holding it.
               </p>
 
               <div className="mb-3 flex flex-col gap-1.5">
@@ -161,8 +163,11 @@ const VerificationModal = ({ modalProps }) => {
                 />
               </div>
 
+              <div className="mb-3 grid grid-cols-2 gap-3">
+                <UploadSlot label="ID Document (Front)" image={idImageFront} onChange={setIdImageFront} />
+                <UploadSlot label="ID Document (Back)" image={idImageBack} onChange={setIdImageBack} />
+              </div>
               <div className="mb-5 grid grid-cols-2 gap-3">
-                <UploadSlot label="ID Document" image={idImage} onChange={setIdImage} />
                 <UploadSlot
                   label="Selfie Holding ID"
                   image={selfieImage}

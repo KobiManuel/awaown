@@ -30,7 +30,7 @@ const SCHEMA_KEY = "awaown_schema_version";
 // "why don't I see my new demo products" and "why is this order missing a
 // timestamp" reports. Bumping this wipes all `awaown_*` keys once, so the next
 // load starts clean from the current seed data.
-const SCHEMA_VERSION = "2026-08-27.1";
+const SCHEMA_VERSION = "2026-08-27.2";
 
 const ReduxProvider = ({ children }) => {
   const storeRef = useRef(null);
