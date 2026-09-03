@@ -1,13 +1,8 @@
 import React from "react";
-import ProductCarousel from "@/app/Components/Product/ProductCarousel";
-import { bestSellingProducts } from "@/lib/shop-data";
+import HomeProductRow from "@/app/Sections/HomeProductRow";
 
-const BestSelling = () => {
-  return (
-    <div className="mt-12 md:mt-16">
-      <ProductCarousel title="Best Selling Products" products={bestSellingProducts} />
-    </div>
-  );
-};
+const BestSelling = () => (
+  <HomeProductRow title="Best Selling Products" params={{ sort: "rating" }} />
+);
 
 export default BestSelling;

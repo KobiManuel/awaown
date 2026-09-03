@@ -1,33 +1,12 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState } from "react";
+import { HelpCircle, Plus, Trash2, Info, LayoutTemplate, Loader2 } from "lucide-react";
 import {
-  Image as ImageIcon,
-  HelpCircle,
-  Users,
-  Plus,
-  Pencil,
-  Trash2,
-  ImagePlus,
-  Info,
-  LayoutTemplate,
-  MonitorSmartphone,
-} from "lucide-react";
-import { BANNER_LOCATIONS } from "@/lib/admin-data";
-import {
-  toggleBannerStatus,
-  addBanner,
-  updateBanner,
-  removeBanner,
-  saveCommunitySection,
-  addFaq,
-  updateFaq,
-  toggleFaqStatus,
-  removeFaq,
-} from "@/lib/store/adminSlice";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+  useGetAdminFaqsQuery,
+  useSaveAdminFaqMutation,
+  useRemoveAdminFaqMutation,
+} from "@/lib/api/adminApi";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
@@ -40,176 +19,84 @@ const STATUS_TONE = {
   published: "bg-emerald-100 text-emerald-700",
 };
 
-const FIELD = "w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1";
+const FIELD =
+  "w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1";
 const LABEL = "text-[10.5px] font-semibold uppercase tracking-wide text-shop-text/60";
 
-function BannerEditor() {
-  const dispatch = useDispatch();
+function FaqEditor() {
   const showToast = useToast();
-  const banners = useSelector((s) => s.admin.banners);
+  const { data: faqs = [], isLoading } = useGetAdminFaqsQuery();
+  const [saveFaq, saveState] = useSaveAdminFaqMutation();
+  const [removeFaq] = useRemoveAdminFaqMutation();
   const { run, bar } = useUndoBuffer();
-  const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({ title: "", location: BANNER_LOCATIONS[0] });
+  // per-row local edits, keyed by faq id
+  const [drafts, setDrafts] = useState({});
 
-  const startEdit = (banner) => {
-    setEditingId(banner.id);
-    setDraft({ title: banner.title, location: banner.location });
-  };
-
-  const handleAdd = () => {
-    const banner = { id: `cb-${Date.now()}`, title: "New Banner", location: BANNER_LOCATIONS[0], status: "draft" };
-    dispatch(addBanner(banner));
-    startEdit(banner);
-  };
-
-  const handleSave = (id) => {
-    dispatch(updateBanner({ id, changes: draft }));
-    showToast("Banner saved");
-    setEditingId(null);
-  };
-
-  const handleRemove = (banner) => {
-    dispatch(removeBanner(banner.id));
-    showToast(`"${banner.title}" removed`);
-    if (editingId === banner.id) setEditingId(null);
-    run(
-      `"${banner.title}" removed — undo within 8 seconds`,
-      () => {
-        dispatch(addBanner(banner));
-        showToast("Undone");
-      },
-      () => {},
+  const draftFor = (f) =>
+    drafts[f.id] ?? { question: f.question ?? "", answer: f.answer ?? "" };
+  const setField = (f, key, value) =>
+    setDrafts((d) => ({ ...d, [f.id]: { ...draftFor(f), [key]: value } }));
+  const isDirty = (f) => {
+    const d = drafts[f.id];
+    return (
+      !!d &&
+      (d.question !== (f.question ?? "") || (d.answer ?? "") !== (f.answer ?? ""))
     );
   };
 
-  return (
-    <div className="flex flex-col gap-2.5 px-4 lg:px-8">
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-          <ImageIcon className="h-4 w-4 text-shop-accent-1" />
-          Banners
-        </p>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Banner
-        </button>
-      </div>
-      <div className="flex flex-col gap-2">
-        {banners.map((b) => (
-          <div key={b.id} className="rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-shop-heading">{b.title}</p>
-                <p className="text-[11.5px] text-shop-text/70">{b.location}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    dispatch(toggleBannerStatus(b.id));
-                    showToast(`"${b.title}" updated`);
-                  }}
-                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[b.status]}`}
-                >
-                  {b.status}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Edit banner"
-                  onClick={() => (editingId === b.id ? setEditingId(null) : startEdit(b))}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text hover:bg-shop-bg"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Remove banner"
-                  onClick={() => handleRemove(b)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {editingId === b.id && (
-              <div className="mt-3 flex flex-col gap-2.5 border-t border-shop-border pt-3">
-                <div className="flex flex-col gap-1">
-                  <span className={LABEL}>Title</span>
-                  <input
-                    value={draft.title}
-                    onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))}
-                    className={FIELD}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={LABEL}>Location</span>
-                  <select
-                    value={draft.location}
-                    onChange={(e) => setDraft((p) => ({ ...p, location: e.target.value }))}
-                    className={FIELD}
-                  >
-                    {BANNER_LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSave(b.id)}
-                  className="self-start rounded-[8px] bg-shop-accent-1 px-4 py-2 text-[12px] font-semibold text-white"
-                >
-                  Save Changes
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      {bar}
-    </div>
-  );
-}
-
-function FaqEditor() {
-  const dispatch = useDispatch();
-  const showToast = useToast();
-  const faqs = useSelector((s) => s.admin.faqs);
-  const { run, bar } = useUndoBuffer();
-  const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState("");
-
-  const startEdit = (faq) => {
-    setEditingId(faq.id);
-    setDraft(faq.question);
+  const handleAdd = async () => {
+    try {
+      await saveFaq({
+        question: "New question",
+        answer: "Answer goes here.",
+        status: "draft",
+      }).unwrap();
+      showToast("FAQ added — edit the question and answer below");
+    } catch {
+      showToast("Could not add FAQ");
+    }
   };
 
-  const handleAdd = () => {
-    const faq = { id: `faq-${Date.now()}`, question: "New question", status: "draft" };
-    dispatch(addFaq(faq));
-    startEdit(faq);
+  const handleSave = async (f) => {
+    const d = draftFor(f);
+    try {
+      await saveFaq({ id: f.id, question: d.question, answer: d.answer }).unwrap();
+      setDrafts((s) => {
+        const n = { ...s };
+        delete n[f.id];
+        return n;
+      });
+      showToast("FAQ saved");
+    } catch {
+      showToast("Could not save FAQ");
+    }
   };
 
-  const handleSave = (id) => {
-    dispatch(updateFaq({ id, changes: { question: draft } }));
-    showToast("FAQ saved");
-    setEditingId(null);
+  const handleToggleStatus = async (faq) => {
+    const next = faq.status === "published" ? "draft" : "published";
+    try {
+      await saveFaq({ id: faq.id, status: next }).unwrap();
+      showToast(`This FAQ is now ${next}`);
+    } catch {
+      showToast("Could not update FAQ");
+    }
   };
 
-  const handleRemove = (faq) => {
-    dispatch(removeFaq(faq.id));
-    showToast(`"${faq.question}" removed`);
-    if (editingId === faq.id) setEditingId(null);
+  const handleRemove = async (faq) => {
+    try {
+      await removeFaq(faq.id).unwrap();
+    } catch {
+      showToast("Could not remove FAQ");
+      return;
+    }
     run(
       `"${faq.question}" removed — undo within 8 seconds`,
-      () => {
-        dispatch(addFaq(faq));
+      async () => {
+        await saveFaq({
+          question: faq.question,
+          answer: faq.answer ?? "",
+          status: faq.status,
+        }).unwrap();
         showToast("Undone");
       },
       () => {},
@@ -232,282 +119,107 @@ function FaqEditor() {
           Add FAQ
         </button>
       </div>
-      <div className="flex flex-col gap-2">
-        {faqs.map((f) => (
-          <div key={f.id} className="rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              {editingId === f.id ? (
-                <input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  autoFocus
-                  className={`${FIELD} flex-1`}
-                />
-              ) : (
-                <p className="text-[13px] text-shop-heading">{f.question}</p>
-              )}
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    dispatch(toggleFaqStatus(f.id));
-                    showToast(`"${f.question}" updated`);
-                  }}
-                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status]}`}
-                >
-                  {f.status}
-                </button>
-                {editingId === f.id ? (
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {faqs.map((f) => {
+            const d = draftFor(f);
+            return (
+              <div
+                key={f.id}
+                className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-3.5"
+              >
+                <div className="flex items-center justify-between gap-2">
                   <button
                     type="button"
-                    onClick={() => handleSave(f.id)}
-                    className="rounded-full bg-shop-accent-1 px-3 py-1 text-[11px] font-semibold text-white"
+                    onClick={() => handleToggleStatus(f)}
+                    className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[f.status] ?? STATUS_TONE.draft}`}
                   >
-                    Save
+                    {f.status}
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    aria-label="Edit FAQ"
-                    onClick={() => startEdit(f)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text hover:bg-shop-bg"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  aria-label="Remove FAQ"
-                  onClick={() => handleRemove(f)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      {bar}
-    </div>
-  );
-}
-
-const COMMUNITY_CARDS = [
-  {
-    key: "vendorSpotlight",
-    label: "Vendor Spotlight",
-    fields: [
-      { name: "vendorName", label: "Vendor Name", type: "text" },
-      { name: "description", label: "Description", type: "textarea" },
-      { name: "buttonText", label: "Button Text", type: "text" },
-      { name: "image", label: "Image", type: "image" },
-    ],
-  },
-  {
-    key: "webinar",
-    label: "Upcoming Webinar",
-    fields: [
-      { name: "title", label: "Title", type: "text" },
-      { name: "dateText", label: "Date / Time", type: "text" },
-      { name: "buttonText", label: "Button Text", type: "text" },
-      { name: "url", label: "Registration Link (Zoom, Meet, landing page, etc.)", type: "text" },
-    ],
-  },
-  {
-    key: "tip",
-    label: "Community Tip",
-    fields: [{ name: "text", label: "Tip", type: "textarea" }],
-  },
-  {
-    key: "challenge",
-    label: "Challenge of the Week",
-    fields: [
-      { name: "text", label: "Challenge", type: "textarea" },
-      { name: "buttonText", label: "Button Text", type: "text" },
-    ],
-  },
-  {
-    key: "announcement",
-    label: "Announcement",
-    fields: [
-      { name: "text", label: "Announcement", type: "textarea" },
-      { name: "date", label: "Date", type: "text" },
-    ],
-  },
-];
-
-function CommunityCardEditor({ card, values, onSave }) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(values);
-  const fileInputRef = useRef(null);
-
-  const openEditor = () => {
-    setDraft(values);
-    setOpen(true);
-  };
-
-  const handleImagePick = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const image = await readImageAsCompressedDataURL(file);
-    setDraft((p) => ({ ...p, image }));
-    e.target.value = "";
-  };
-
-  return (
-    <div className="rounded-[14px] border border-shop-border bg-white p-3.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-medium text-shop-heading">{card.label}</p>
-        <button
-          type="button"
-          onClick={() => (open ? setOpen(false) : openEditor())}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text hover:bg-shop-bg"
-          aria-label={`Edit ${card.label}`}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {open && (
-        <div className="mt-3 flex flex-col gap-2.5 border-t border-shop-border pt-3">
-          {card.fields.map((f) => (
-            <div key={f.name} className="flex flex-col gap-1">
-              <span className={LABEL}>{f.label}</span>
-              {f.type === "textarea" ? (
-                <textarea
-                  rows={3}
-                  value={draft[f.name] ?? ""}
-                  onChange={(e) => setDraft((p) => ({ ...p, [f.name]: e.target.value }))}
-                  className={`${FIELD} resize-none`}
-                />
-              ) : f.type === "image" ? (
-                <div className="flex items-center gap-3">
-                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
-                    {draft.image && (
-                      <Image src={draft.image} alt="" fill className="object-cover" />
+                  <div className="flex items-center gap-1.5">
+                    {isDirty(f) && (
+                      <button
+                        type="button"
+                        onClick={() => handleSave(f)}
+                        disabled={saveState.isLoading}
+                        className="rounded-full bg-shop-accent-1 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                      >
+                        Save
+                      </button>
                     )}
+                    <button
+                      type="button"
+                      aria-label="Remove FAQ"
+                      onClick={() => handleRemove(f)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-red-500 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImagePick}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 rounded-full border border-shop-border px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-                  >
-                    <ImagePlus className="h-3.5 w-3.5" />
-                    Change Image
-                  </button>
                 </div>
-              ) : (
-                <input
-                  value={draft[f.name] ?? ""}
-                  onChange={(e) => setDraft((p) => ({ ...p, [f.name]: e.target.value }))}
-                  className={FIELD}
-                />
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              onSave(draft);
-              setOpen(false);
-            }}
-            className="self-start rounded-[8px] bg-shop-accent-1 px-4 py-2 text-[12px] font-semibold text-white"
-          >
-            Save Changes
-          </button>
+
+                <div className="flex flex-col gap-1">
+                  <span className={LABEL}>Question</span>
+                  <input
+                    value={d.question}
+                    onChange={(e) => setField(f, "question", e.target.value)}
+                    className={FIELD}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={LABEL}>Answer</span>
+                  <textarea
+                    rows={3}
+                    value={d.answer}
+                    onChange={(e) => setField(f, "answer", e.target.value)}
+                    placeholder="Type the answer shoppers will see…"
+                    className={`${FIELD} resize-none`}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
-  );
-}
-
-function CommunitySectionEditor() {
-  const dispatch = useDispatch();
-  const showToast = useToast();
-  const communitySection = useSelector((s) => s.admin.communitySection);
-
-  const handleSaveCard = (key, values) => {
-    dispatch(saveCommunitySection({ ...communitySection, [key]: values }));
-    showToast("Community section updated");
-  };
-
-  return (
-    <div className="flex flex-col gap-2.5 px-4 lg:px-8">
-      <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-        <Users className="h-4 w-4 text-shop-accent-1" />
-        Our Community
-      </p>
-      <div className="flex flex-col gap-2">
-        {COMMUNITY_CARDS.map((card) => (
-          <CommunityCardEditor
-            key={card.key}
-            card={card}
-            values={communitySection[card.key]}
-            onSave={(values) => handleSaveCard(card.key, values)}
-          />
-        ))}
-      </div>
+      {bar}
     </div>
   );
 }
 
 export default function AdminContentPage() {
   return (
-    <div className="pb-4 font-shop">
+    <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1200px]">
       <AppHeader title="Content" backHref="/admin" />
 
-      {/* Desktop / tablet: the real editor */}
-      <div className="hidden flex-col gap-6 lg:mx-auto lg:flex lg:w-full lg:max-w-[1200px]">
-        <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
-          Homepage content, banners, FAQs, announcements, categories, blogs and static pages.
-        </p>
+      <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
+        Homepage content, banners, FAQs, announcements, categories, blogs and static pages.
+      </p>
 
-        <div className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8">
-          <Info className="h-4.5 w-4.5 shrink-0 text-amber-700" strokeWidth={1.75} />
-          <p className="text-[12px] leading-[18px] text-amber-800">
-            Changes here save to the admin panel, but won&apos;t appear on the live
-            homepage until content editing is wired up to a real backend.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2.5 px-4 lg:px-8">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <LayoutTemplate className="h-4 w-4 text-shop-accent-1" />
-            Homepage Sections
-          </p>
-          <p className="text-[11.5px] text-shop-text/60">
-            This is how each section looks on the homepage. Click any text to edit or
-            erase it, or use the image icon to swap a picture.
-          </p>
-        </div>
-        <HomepageEditor />
-
-        <CommunitySectionEditor />
-
-        <BannerEditor />
-
-        <FaqEditor />
-      </div>
-
-      {/* Mobile: this editor needs real screen space to be usable */}
-      <div className="flex flex-col items-center gap-3 px-8 py-16 text-center lg:hidden">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-shop-accent-1-light">
-          <MonitorSmartphone className="h-6 w-6 text-shop-accent-1" strokeWidth={1.75} />
-        </div>
-        <p className="text-[15px] font-semibold text-shop-heading">Desktop Only</p>
-        <p className="max-w-[280px] text-[13px] leading-[19px] text-shop-text">
-          The homepage content editor needs more screen space than a phone can give it.
-          Switch to a desktop or tablet to edit this page.
+      <div className="mx-4 flex items-center gap-3 rounded-[12px] bg-emerald-50 p-3.5 lg:mx-8">
+        <Info className="h-4.5 w-4.5 shrink-0 text-emerald-700" strokeWidth={1.75} />
+        <p className="text-[12px] leading-[18px] text-emerald-800">
+          Changes here save to the platform and are served to the live homepage and
+          storefront through the content API.
         </p>
       </div>
+
+      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+          <LayoutTemplate className="h-4 w-4 text-shop-accent-1" />
+          Homepage Sections
+        </p>
+        <p className="text-[11.5px] text-shop-text/60">
+          This is how each section looks on the homepage. Click any text to edit or
+          erase it, or use the image icon to swap a picture.
+        </p>
+      </div>
+      <HomepageEditor />
+
+      <FaqEditor />
     </div>
   );
 }

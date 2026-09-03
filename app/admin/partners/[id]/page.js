@@ -3,14 +3,19 @@
 import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import { BadgeCheck, Ban, Play, Store, TrendingUp, IdCard, User as UserIcon } from "lucide-react";
-import { VERIFICATION_TONE, formatPrice } from "@/lib/admin-data";
-import { setPartnerStatus, setPartnerVerification } from "@/lib/store/adminSlice";
-import { adminSetVerificationStatus } from "@/lib/store/partnerSlice";
+import { Store, TrendingUp, IdCard } from "lucide-react";
+import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
-import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetAdminPartnerQuery } from "@/lib/api/adminApi";
+import ModerationActions from "@/app/Components/Admin/ModerationActions";
+
+const VERIFICATION_TONE = {
+  VERIFIED: "bg-emerald-100 text-emerald-700",
+  PENDING: "bg-amber-100 text-amber-700",
+  REJECTED: "bg-red-50 text-shop-accent-3",
+  UNVERIFIED: "bg-shop-bg text-shop-text",
+};
 
 const DocSlot = ({ label, image }) => (
   <div className="flex flex-col gap-1.5">
@@ -34,19 +39,15 @@ const Stat = ({ label, value }) => (
 
 export default function AdminPartnerDetailPage() {
   const { id } = useParams();
-  const dispatch = useDispatch();
-  const showToast = useToast();
-  const partner = useSelector((s) => s.admin.partners.find((p) => p.id === id));
+  const { data: p, isLoading, isError } = useGetAdminPartnerQuery(id);
 
-  const isLive = id === "p-1";
-  const walletBalance = useSelector((s) => s.partner.walletBalance);
-  const earnings = useSelector((s) => s.partner.earnings);
-  const withdrawals = useSelector((s) => s.partner.withdrawals);
-  const storeProductIds = useSelector((s) => s.partner.storeProductIds);
-  const liveVerification = useSelector((s) => s.partner.verification);
-  const { run, bar } = useUndoBuffer();
-
-  if (!partner) {
+  if (isLoading)
+    return (
+      <div className="p-4 lg:p-8">
+        <Skeleton className="h-64 w-full rounded-[14px]" />
+      </div>
+    );
+  if (isError || !p)
     return (
       <div className="flex flex-col gap-4 font-shop">
         <AppHeader title="Partner" backHref="/admin/partners" showBackOnDesktop />
@@ -55,43 +56,31 @@ export default function AdminPartnerDetailPage() {
         </p>
       </div>
     );
-  }
 
-  const handleVerify = (verification) => {
-    const previous = partner.verification;
-    dispatch(setPartnerVerification({ id: partner.id, verification }));
-    if (isLive) dispatch(adminSetVerificationStatus(verification));
-    const label = verification === "verified" ? "approved" : "rejected";
-    showToast(`${partner.name} verification ${label}`);
-    run(
-      `${partner.name} verification ${label} — undo within 8 seconds`,
-      () => {
-        dispatch(setPartnerVerification({ id: partner.id, verification: previous }));
-        if (isLive) dispatch(adminSetVerificationStatus(previous));
-        showToast("Undone");
-      },
-      () => {},
-    );
-  };
-
-  const handleStatus = (status) => {
-    dispatch(setPartnerStatus({ id: partner.id, status }));
-    showToast(`${partner.name} ${status === "suspended" ? "suspended" : "reactivated"}`);
-  };
+  const v = p.verification;
+  const verificationStatus = v?.status ?? "UNVERIFIED";
 
   return (
     <div className="flex flex-col gap-5 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title={partner.name} backHref="/admin/partners" showBackOnDesktop />
+      <AppHeader title={p.displayName} backHref="/admin/partners" showBackOnDesktop />
 
       <div className="mx-4 flex items-center gap-4 lg:mx-8">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-shop-accent-1 text-[18px] font-semibold text-white">
-          {partner.name.charAt(0)}
+          {p.displayName.charAt(0)}
         </div>
         <div>
-          <p className="text-[16px] font-semibold text-shop-heading">{partner.name}</p>
-          <p className="text-[12.5px] text-shop-text">{partner.storeName}</p>
+          <p className="text-[16px] font-semibold text-shop-heading">{p.displayName}</p>
+          <p className="text-[12.5px] text-shop-text">
+            {p.storeName ? `${p.storeName} · ` : ""}
+            {p.user.fullName} · {p.user.email}
+          </p>
           <p className="text-[11px] text-shop-text/60">
-            Joined {new Date(partner.joinedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+            Code {p.referralCode} · Joined{" "}
+            {new Date(p.createdAt).toLocaleDateString("en-NG", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
           </p>
         </div>
       </div>
@@ -99,139 +88,113 @@ export default function AdminPartnerDetailPage() {
       <div className="mx-4 flex flex-wrap gap-2 lg:mx-8">
         <span
           className={`rounded-full px-3 py-1 text-[11.5px] font-semibold capitalize ${
-            partner.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-red-50 text-shop-accent-3"
+            p.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-red-50 text-shop-accent-3"
           }`}
         >
-          {partner.status}
+          {p.status}
         </span>
-        <span className={`rounded-full px-3 py-1 text-[11.5px] font-semibold capitalize ${VERIFICATION_TONE[partner.verification]}`}>
-          {partner.verification}
+        <span
+          className={`rounded-full px-3 py-1 text-[11.5px] font-semibold capitalize ${
+            VERIFICATION_TONE[verificationStatus] || "bg-shop-bg text-shop-text"
+          }`}
+        >
+          {verificationStatus.toLowerCase()}
         </span>
       </div>
 
       <div className="mx-4 grid grid-cols-2 gap-3 lg:mx-8 lg:grid-cols-4">
-        <Stat label="Referrals" value={partner.referrals} />
-        <Stat label="Net Profit" value={formatPrice(partner.netProfit)} />
-        {isLive ? (
-          <>
-            <Stat label="Wallet Balance" value={formatPrice(walletBalance)} />
-            <Stat label="Store Items" value={storeProductIds.length} />
-          </>
-        ) : (
-          <p className="col-span-2 flex items-center rounded-[12px] bg-shop-bg p-3.5 text-[11px] text-shop-text/60">
-            Wallet and store detail isn&apos;t available for this demo partner.
-          </p>
-        )}
+        <Stat label="Referrals" value={p.referrals} />
+        <Stat label="Net Profit" value={formatPrice(p.netProfit)} />
+        <Stat label="Wallet Balance" value={formatPrice(p.walletBalance)} />
+        <Stat label="Store Items" value={p.storeItems} />
       </div>
 
-      {partner.verification !== "unverified" && (
+      {v && (
         <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
             <IdCard className="h-4 w-4 text-shop-accent-1" />
-            Verification Documents
+            Verification Documents — {v.status}
           </p>
-          {isLive ? (
-            <div className="grid grid-cols-3 gap-3">
-              <DocSlot label="ID Front" image={liveVerification.idImageFront} />
-              <DocSlot label="ID Back" image={liveVerification.idImageBack} />
-              <DocSlot label="Selfie Holding ID" image={liveVerification.selfieImage} />
-            </div>
-          ) : (
-            <p className="flex items-center gap-2 rounded-[12px] bg-shop-bg p-3.5 text-[11px] text-shop-text/60">
-              <UserIcon className="h-3.5 w-3.5 shrink-0" />
-              Uploaded documents aren&apos;t available for this demo partner record.
+          {(v.idType || v.idNumber) && (
+            <p className="text-[12px] text-shop-text">
+              {[v.idType, v.idNumber].filter(Boolean).join(" · ")}
             </p>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <DocSlot label="ID Front" image={v.idFrontUrl} />
+            <DocSlot label="ID Back" image={v.idBackUrl} />
+            <DocSlot label="Selfie Holding ID" image={v.selfieUrl} />
+          </div>
+          {v.reviewNote && (
+            <p className="text-[11.5px] text-shop-accent-3">Review note: {v.reviewNote}</p>
           )}
         </div>
       )}
 
-      <div className="mx-4 flex flex-wrap gap-2 border-t border-shop-border pt-4 lg:mx-8">
-        {partner.verification !== "verified" && (
-          <button
-            type="button"
-            onClick={() => handleVerify("verified")}
-            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-4 py-2.5 text-[12.5px] font-semibold text-white"
-          >
-            <BadgeCheck className="h-4 w-4" />
-            Approve Verification
-          </button>
-        )}
-        {partner.verification === "pending" && (
-          <button
-            type="button"
-            onClick={() => handleVerify("unverified")}
-            className="rounded-full border border-shop-border px-4 py-2.5 text-[12.5px] font-semibold text-shop-heading"
-          >
-            Reject
-          </button>
-        )}
-        {partner.status === "active" ? (
-          <button
-            type="button"
-            onClick={() => handleStatus("suspended")}
-            className="flex items-center gap-1.5 rounded-full border border-shop-border px-4 py-2.5 text-[12.5px] font-semibold text-shop-accent-3"
-          >
-            <Ban className="h-4 w-4" />
-            Suspend
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => handleStatus("active")}
-            className="flex items-center gap-1.5 rounded-full border border-shop-border px-4 py-2.5 text-[12.5px] font-semibold text-emerald-700"
-          >
-            <Play className="h-4 w-4" />
-            Reactivate
-          </button>
-        )}
+      <ModerationActions
+        kind="partner"
+        id={p.id}
+        status={p.status}
+        verification={verificationStatus}
+        name={p.displayName}
+      />
+
+      <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+          <TrendingUp className="h-4 w-4 text-shop-accent-1" />
+          Recent Earnings
+        </p>
+        <div className="flex flex-col gap-2">
+          {p.earnings.slice(0, 6).map((e) => (
+            <div
+              key={e.id}
+              className="flex items-center justify-between rounded-[12px] border border-shop-border bg-white p-3"
+            >
+              <div>
+                <p className="text-[12.5px] font-medium text-shop-heading">{e.productTitle}</p>
+                <p className="text-[11px] capitalize text-shop-text/60">{e.status.toLowerCase()}</p>
+              </div>
+              <span className="text-[12.5px] font-semibold text-emerald-600">
+                {formatPrice(e.netProfit)}
+              </span>
+            </div>
+          ))}
+          {p.earnings.length === 0 && (
+            <p className="text-[12px] text-shop-text/60">No earnings yet.</p>
+          )}
+        </div>
       </div>
 
-      {isLive && (
-        <>
-          <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-              <TrendingUp className="h-4 w-4 text-shop-accent-1" />
-              Recent Earnings
-            </p>
-            <div className="flex flex-col gap-2">
-              {earnings.slice(0, 5).map((e) => (
-                <div key={e.id} className="flex items-center justify-between rounded-[12px] border border-shop-border bg-white p-3">
-                  <div>
-                    <p className="text-[12.5px] font-medium text-shop-heading">{e.product}</p>
-                    <p className="text-[11px] text-shop-text/60 capitalize">{e.status}</p>
-                  </div>
-                  <span className="text-[12.5px] font-semibold text-emerald-600">{formatPrice(e.netProfit)}</span>
+      <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+          <Store className="h-4 w-4 text-shop-accent-1" />
+          Withdrawals
+        </p>
+        {p.withdrawals.length === 0 ? (
+          <p className="rounded-[12px] bg-shop-bg p-3.5 text-[11.5px] text-shop-text/60">
+            No withdrawals requested yet.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {p.withdrawals.map((w) => (
+              <div
+                key={w.id}
+                className="flex items-center justify-between rounded-[12px] border border-shop-border bg-white p-3"
+              >
+                <div>
+                  <p className="text-[12.5px] font-medium text-shop-heading">{w.reference}</p>
+                  <p className="text-[11px] capitalize text-shop-text/60">
+                    {String(w.status).toLowerCase()}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-              <Store className="h-4 w-4 text-shop-accent-1" />
-              Withdrawals
-            </p>
-            {withdrawals.length === 0 ? (
-              <p className="rounded-[12px] bg-shop-bg p-3.5 text-[11.5px] text-shop-text/60">
-                No withdrawals requested yet.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {withdrawals.slice(0, 5).map((w) => (
-                  <div key={w.id} className="flex items-center justify-between rounded-[12px] border border-shop-border bg-white p-3">
-                    <div>
-                      <p className="text-[12.5px] font-medium text-shop-heading">{w.id}</p>
-                      <p className="text-[11px] text-shop-text/60 capitalize">{w.status}</p>
-                    </div>
-                    <span className="text-[12.5px] font-semibold text-shop-heading">{formatPrice(w.amount)}</span>
-                  </div>
-                ))}
+                <span className="text-[12.5px] font-semibold text-shop-heading">
+                  {formatPrice(w.amount)}
+                </span>
               </div>
-            )}
+            ))}
           </div>
-        </>
-      )}
-      {bar}
+        )}
+      </div>
     </div>
   );
 }

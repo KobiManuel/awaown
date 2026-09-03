@@ -1,17 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Search, Layers, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
+import { Search, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 
 const MainHeader = ({ onMenuClick }) => {
+  const router = useRouter();
+  const [term, setTerm] = useState("");
   const cartCount = useSelector((state) =>
     state.cart.items.reduce((sum, item) => sum + item.qty, 0),
   );
   const wishlistCount = useSelector((state) => state.wishlist.items.length);
+
+  const submitSearch = (e) => {
+    e.preventDefault();
+    const q = term.trim();
+    router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+  };
 
   return (
     <div className="border-b border-shop-border bg-white font-shop">
@@ -32,22 +41,24 @@ const MainHeader = ({ onMenuClick }) => {
           <ThemedLogo fill className="object-contain object-left" priority />
         </Link>
 
-        <div className="hidden flex-1 items-center md:flex">
+        <form onSubmit={submitSearch} className="hidden flex-1 items-center md:flex">
           <div className="flex w-full max-w-[720px] items-center">
             <input
               type="text"
-              placeholder="Search"
-              className="h-11 w-full rounded-l-[4px]  px-4 text-[14px] text-shop-heading outline-none placeholder:text-shop-text/60 border border-shop-accent-1 focus:border-shop-accent-1"
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder="Search products, brands..."
+              className="h-11 w-full rounded-l-[4px] border border-shop-accent-1 px-4 text-[14px] text-shop-heading outline-none placeholder:text-shop-text/60 focus:border-shop-accent-1"
             />
             <button
-              type="button"
+              type="submit"
               className="flex h-11 shrink-0 items-center gap-2 bg-shop-accent-1 px-6 text-[13px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-shop-accent-1-dark"
             >
               <Search className="h-4 w-4" />
               <span className="hidden lg:inline">Search</span>
             </button>
           </div>
-        </div>
+        </form>
 
         <div className="ml-auto flex items-center gap-5">
           <div className="hidden items-center gap-2 xl:flex">
@@ -62,19 +73,13 @@ const MainHeader = ({ onMenuClick }) => {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <button type="button" aria-label="Compare" className="relative">
-              <Layers className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
-              <span className="absolute -right-2 -top-2 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-shop-accent-1 text-[10px] text-white">
-                0
-              </span>
-            </button>
-            <Link href="/wishlist" aria-label="Wishlist" className="relative">
+            <Link href="/dashboard/wishlist" aria-label="Wishlist" className="relative">
               <Heart className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
               <span className="absolute -right-2 -top-2 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-shop-accent-1 text-[10px] text-white">
                 {wishlistCount}
               </span>
             </Link>
-            <Link href="/cart" aria-label="Cart" className="relative">
+            <Link href="/dashboard/cart" aria-label="Cart" className="relative">
               <ShoppingCart
                 className="h-6 w-6 text-shop-heading"
                 strokeWidth={1.5}
@@ -88,19 +93,21 @@ const MainHeader = ({ onMenuClick }) => {
       </div>
 
       {/* Mobile search row */}
-      <div className="flex items-center px-4 pb-4 md:hidden">
+      <form onSubmit={submitSearch} className="flex items-center px-4 pb-4 md:hidden">
         <input
           type="text"
-          placeholder="Search"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Search products, brands..."
           className="h-10 w-full rounded-l-[4px] border border-shop-border px-3 text-[14px] outline-none placeholder:text-shop-text/60"
         />
         <button
-          type="button"
+          type="submit"
           className="flex h-10 shrink-0 items-center justify-center bg-shop-accent-1 px-4 text-white"
         >
           <Search className="h-4 w-4" />
         </button>
-      </div>
+      </form>
     </div>
   );
 };

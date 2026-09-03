@@ -2,58 +2,76 @@
 
 import React from "react";
 import Link from "next/link";
-import { useSelector } from "react-redux";
-import { ShieldCheck, User, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ShieldCheck, User, Clock, Loader2 } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
-import StorefrontProductCard from "@/app/Components/Product/StorefrontProductCard";
+import PublicStoreProductCard from "@/app/Components/Product/PublicStoreProductCard";
+import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
 
 export default function PublicPartnerStorePage() {
-  const storeName = useSelector((s) => s.partner.storeName);
-  const storeBio = useSelector((s) => s.partner.storeBio);
-  const storeProfileImage = useSelector((s) => s.partner.storeProfileImage);
-  const storeBanner = useSelector((s) => s.partner.storeBanner);
-  const storeProductIds = useSelector((s) => s.partner.storeProductIds);
-  const themeId = useSelector((s) => s.partner.storeTheme);
-  const accentId = useSelector((s) => s.partner.storeAccent);
-  const fontId = useSelector((s) => s.partner.storeFont);
-  const merchantProducts = useSelector((s) => s.merchant.products);
-  const productDiscounts = useSelector((s) => s.partner.productDiscounts);
+  const { code } = useParams();
+  const { data: store, isLoading, isError } = useGetPartnerStorefrontQuery(code);
 
-  const products = merchantProducts
-    .filter((p) => storeProductIds.includes(p.id))
-    .map((p) => {
-      const discount = productDiscounts[p.id] || 0;
-      const buyerPrice = Math.max(0, p.price - (p.partnerProfitAmount || 0) - discount);
-      return { ...p, price: buyerPrice };
-    });
-
-  const theme = getTheme(themeId);
-  const accent = getAccent(accentId);
-  const fontPairing = getFontPairing(fontId);
+  const theme = getTheme(store?.theme);
+  const accent = getAccent(store?.accent);
+  const fontPairing = getFontPairing(store?.font);
   const headingFont = STORE_FONT_FAMILIES[fontPairing.heading];
   const bodyFont = STORE_FONT_FAMILIES[fontPairing.body];
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="h-6 w-6 animate-spin text-shop-accent-1" />
+      </div>
+    );
+  }
+
+  if (isError || !store) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-white px-8 text-center font-shop">
+        <p className="text-[15px] font-semibold text-shop-heading">
+          Store not found
+        </p>
+        <p className="text-[13px] text-shop-text">
+          This partner store link may be inactive.
+        </p>
+        <Link
+          href="/"
+          className="mt-2 rounded-full bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
+        >
+          Go to AwaOwn
+        </Link>
+      </div>
+    );
+  }
+
+  const products = store.products ?? [];
 
   return (
     <div
       className="min-h-screen w-full"
-      style={{ backgroundColor: theme.pageBg, color: theme.textColor, fontFamily: bodyFont.style.fontFamily }}
+      style={{
+        backgroundColor: theme.pageBg,
+        color: theme.textColor,
+        fontFamily: bodyFont.style.fontFamily,
+      }}
     >
       <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">
-        {/* Banner */}
         <div
           className="relative h-40 w-full overflow-hidden rounded-[20px] sm:h-56"
           style={{
             backgroundColor: accent.value,
-            backgroundImage: storeBanner ? `url(${storeBanner})` : undefined,
+            backgroundImage: store.bannerUrl
+              ? `url(${store.bannerUrl})`
+              : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
-          {storeBanner && <div className="absolute inset-0 bg-black/25" />}
+          {store.bannerUrl && <div className="absolute inset-0 bg-black/25" />}
         </div>
 
-        {/* Identity card, overlapping the banner */}
         <div
           className="-mt-16 flex flex-col gap-5 rounded-[16px] border p-5 sm:-mt-20 sm:flex-row sm:items-end sm:gap-5"
           style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
@@ -62,8 +80,12 @@ export default function PublicPartnerStorePage() {
             className="relative -mt-16 flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 shadow sm:-mt-20 sm:h-28 sm:w-28"
             style={{ borderColor: theme.cardBg, backgroundColor: accent.value }}
           >
-            {storeProfileImage ? (
-              <img src={storeProfileImage} alt={storeName} className="h-full w-full object-cover" />
+            {store.profileImageUrl ? (
+              <img
+                src={store.profileImageUrl}
+                alt={store.name}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <User className="h-9 w-9 text-white" strokeWidth={1.75} />
             )}
@@ -72,16 +94,22 @@ export default function PublicPartnerStorePage() {
             <div className="flex flex-wrap items-center gap-1.5">
               <h1
                 className="text-[20px] font-bold sm:text-[24px]"
-                style={{ fontFamily: headingFont.style.fontFamily, color: theme.textColor }}
+                style={{
+                  fontFamily: headingFont.style.fontFamily,
+                  color: theme.textColor,
+                }}
               >
-                {storeName}
+                {store.name}
               </h1>
               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10.5px] font-semibold text-emerald-700">
                 Store Open
               </span>
             </div>
-            <p className="max-w-[560px] pt-2 text-[13px] leading-[19px]" style={{ color: theme.subtleText }}>
-              {storeBio || "Curated picks, shared with you on AwaOwn."}
+            <p
+              className="max-w-[560px] pt-2 text-[13px] leading-[19px]"
+              style={{ color: theme.subtleText }}
+            >
+              {store.bio || "Curated picks, shared with you on AwaOwn."}
             </p>
             <div
               className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-[12px] font-semibold"
@@ -95,19 +123,32 @@ export default function PublicPartnerStorePage() {
           </div>
         </div>
 
-        {/* Products */}
         <div className="flex flex-col gap-3">
-          <p className="text-[14px] font-semibold" style={{ color: theme.textColor, fontFamily: headingFont.style.fontFamily }}>
+          <p
+            className="text-[14px] font-semibold"
+            style={{
+              color: theme.textColor,
+              fontFamily: headingFont.style.fontFamily,
+            }}
+          >
             Products
           </p>
           {products.length === 0 ? (
-            <p className="py-16 text-center text-[13px]" style={{ color: theme.subtleText }}>
+            <p
+              className="py-16 text-center text-[13px]"
+              style={{ color: theme.subtleText }}
+            >
               This store doesn&apos;t have any products yet — check back soon.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {products.map((product) => (
-                <StorefrontProductCard key={product.id} product={product} accentColor={accent.value} />
+                <PublicStoreProductCard
+                  key={product.slug}
+                  product={product}
+                  href={`/product/${product.slug}?ref=${store.code}`}
+                  accentColor={accent.value}
+                />
               ))}
             </div>
           )}

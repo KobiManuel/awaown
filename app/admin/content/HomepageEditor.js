@@ -1,12 +1,20 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
-import { ImagePlus, Plus, Trash2, Quote } from "lucide-react";
-import { saveHomepageContent, saveSectionVisibility } from "@/lib/store/adminSlice";
-import { formatPrice } from "@/lib/admin-data";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+import { Loader2, ImagePlus, Plus, Trash2, Quote } from "lucide-react";
+import {
+  formatPrice,
+  homepageContentDefaults,
+  sectionVisibilityDefaults,
+  communitySectionDefaults,
+} from "@/lib/admin-data";
+import {
+  useGetHomepageCmsQuery,
+  useSaveHomepageCmsMutation,
+  useGetAdminMerchantsQuery,
+} from "@/lib/api/adminApi";
+import { useMediaUpload } from "@/lib/api/mediaApi";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const LABEL = "text-[10.5px] font-semibold uppercase tracking-wide text-shop-text/60";
@@ -29,6 +37,20 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
   };
 
   if (editing) {
+    // The preview className often carries a light text colour (cards on dark or
+    // coloured backgrounds). Strip anything that would make the text invisible
+    // once it's on the white editing field, and force readable colours.
+    const safe = className
+      .split(/\s+/)
+      .filter(
+        (c) =>
+          !/^!?text-(white|black)(\/\d+)?$/.test(c) &&
+          !/^!?text-white\b/.test(c) &&
+          !/^!?bg-/.test(c),
+      )
+      .join(" ");
+    const editStyles =
+      "w-full rounded-[4px] border border-shop-accent-1 bg-white! px-1.5 py-1 text-shop-heading! outline-none";
     if (multiline) {
       return (
         <textarea
@@ -37,7 +59,7 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
           value={local}
           onChange={(e) => setLocal(e.target.value)}
           onBlur={commit}
-          className={`${className} w-full resize-none rounded-[4px] border border-shop-accent-1 bg-white px-1.5 py-1 text-shop-heading outline-none`}
+          className={`${safe} resize-none ${editStyles}`}
         />
       );
     }
@@ -53,7 +75,7 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
             commit();
           }
         }}
-        className={`${className} w-full rounded-[4px] border border-shop-accent-1 bg-white px-1.5 py-1 text-shop-heading outline-none`}
+        className={`${safe} ${editStyles}`}
       />
     );
   }
@@ -72,14 +94,19 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
 function ImageEditButton({ onPick, label = "Change image" }) {
   const showToast = useToast();
   const inputRef = useRef(null);
+  const { upload, uploading } = useMediaUpload("banners");
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await readImageAsCompressedDataURL(file);
-    onPick(dataUrl);
-    showToast("Image updated");
     e.target.value = "";
+    const url = await upload(file);
+    if (url) {
+      onPick(url);
+      showToast("Image updated");
+    } else {
+      showToast("Image upload failed");
+    }
   };
 
   return (
@@ -89,9 +116,10 @@ function ImageEditButton({ onPick, label = "Change image" }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         aria-label={label}
-        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/75"
+        disabled={uploading}
+        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/75 disabled:opacity-60"
       >
-        <ImagePlus className="h-4 w-4" />
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
       </button>
     </>
   );
@@ -479,7 +507,8 @@ function ReviewsEditor({ data, onChange, visible, onToggleVisible }) {
 // recurring homepage feature without a code change each time: pick a merchant, add a
 // note, flip it on. The same shape could grow into "Partner of the Month" etc. later.
 function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
-  const merchants = useSelector((s) => s.admin.merchants);
+  const { data: merchantsData } = useGetAdminMerchantsQuery();
+  const merchants = merchantsData?.items ?? [];
   const selected = merchants.find((m) => m.id === data.merchantId);
 
   return (
@@ -502,7 +531,7 @@ function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
         </div>
         {selected && (
           <p className="text-[11px] text-shop-text/60">
-            {selected.owner} · {formatPrice(selected.revenue || 0)} in revenue
+            {selected.owner} · {formatPrice(selected.walletBalance || 0)} wallet balance
           </p>
         )}
         <div className="flex flex-col gap-1">
@@ -520,16 +549,200 @@ function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
+// Live preview of the homepage "Our Community" section, edited inline — same
+// interaction model as every other section on this page.
+function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
+  const vs = data.vendorSpotlight ?? {};
+  const web = data.webinar ?? {};
+  const tip = data.tip ?? {};
+  const ch = data.challenge ?? {};
+  const ann = data.announcement ?? {};
+
+  const setCard = (key, patch) =>
+    onChange({ [key]: { ...(data[key] ?? {}), ...patch } });
+
+  return (
+    <SectionShell title="Our Community" visible={visible} onToggleVisible={onToggleVisible}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {/* Vendor spotlight */}
+        <div className="relative col-span-1 flex min-h-[240px] flex-col justify-end overflow-hidden rounded-[20px] bg-shop-heading p-5 md:col-span-2">
+          {vs.image && (
+            <Image src={vs.image} alt="" fill className="object-cover opacity-70" sizes="60vw" />
+          )}
+          <ImageEditButton onPick={(url) => setCard("vendorSpotlight", { image: url })} />
+          <div className="relative flex flex-col gap-2">
+            <span className="w-fit rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
+              Vendor of the Week
+            </span>
+            <InlineText
+              value={vs.vendorName}
+              onChange={(v) => setCard("vendorSpotlight", { vendorName: v })}
+              placeholder="Vendor name"
+              className="text-[20px] font-bold text-white"
+            />
+            <InlineText
+              value={vs.description}
+              onChange={(v) => setCard("vendorSpotlight", { description: v })}
+              placeholder="Short description"
+              multiline
+              className="max-w-[380px] text-[12.5px] leading-[19px] text-white/80"
+            />
+            <InlineText
+              value={vs.buttonText}
+              onChange={(v) => setCard("vendorSpotlight", { buttonText: v })}
+              placeholder="Button text"
+              className="w-fit rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-shop-heading"
+            />
+            <InlineText
+              value={vs.buttonUrl}
+              onChange={(v) => setCard("vendorSpotlight", { buttonUrl: v })}
+              placeholder="Button link (optional — defaults to /shop)"
+              className="text-[11px] text-white/70"
+            />
+          </div>
+          <DimensionHint text="1200×800px" />
+        </div>
+
+        {/* Webinar */}
+        <div className="col-span-1 flex min-h-[240px] flex-col justify-between rounded-[20px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-5">
+          <div className="flex flex-col gap-2">
+            <span className="w-fit rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
+              Upcoming Webinar
+            </span>
+            <InlineText
+              value={web.title}
+              onChange={(v) => setCard("webinar", { title: v })}
+              placeholder="Webinar title"
+              className="text-[15px] font-bold text-white"
+            />
+            <InlineText
+              value={web.dateText}
+              onChange={(v) => setCard("webinar", { dateText: v })}
+              placeholder="Date / time"
+              className="text-[12px] text-white/75"
+            />
+          </div>
+          <div className="mt-3 flex flex-col gap-1.5 border-t border-white/15 pt-3">
+            <InlineText
+              value={web.buttonText}
+              onChange={(v) => setCard("webinar", { buttonText: v })}
+              placeholder="Button text"
+              className="w-fit rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-shop-heading"
+            />
+            <InlineText
+              value={web.url}
+              onChange={(v) => setCard("webinar", { url: v })}
+              placeholder="Registration link (Zoom, Meet, landing page…)"
+              className="text-[11px] text-white/70"
+            />
+          </div>
+        </div>
+
+        {/* Tip */}
+        <div className="col-span-1 flex min-h-[180px] flex-col justify-between rounded-[20px] bg-[#C6F24C] p-5">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-shop-heading/70">
+            Community Tip
+          </span>
+          <InlineText
+            value={tip.text}
+            onChange={(v) => setCard("tip", { text: v })}
+            placeholder="Share a tip"
+            multiline
+            className="text-[13.5px] font-semibold leading-[20px] text-shop-heading"
+          />
+        </div>
+
+        {/* Challenge */}
+        <div className="col-span-1 flex min-h-[180px] flex-col justify-between rounded-[20px] bg-[#FF6A45] p-5">
+          <span className="w-fit rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
+            Challenge of the Week
+          </span>
+          <InlineText
+            value={ch.text}
+            onChange={(v) => setCard("challenge", { text: v })}
+            placeholder="Challenge details"
+            multiline
+            className="text-[13px] font-semibold leading-[20px] text-white"
+          />
+          <InlineText
+            value={ch.buttonText}
+            onChange={(v) => setCard("challenge", { buttonText: v })}
+            placeholder="Button text"
+            className="w-fit rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-shop-heading"
+          />
+          <InlineText
+            value={ch.buttonUrl}
+            onChange={(v) => setCard("challenge", { buttonUrl: v })}
+            placeholder="Button link (optional — defaults to /shop)"
+            className="text-[11px] text-white/80"
+          />
+        </div>
+
+        {/* Announcement */}
+        <div className="col-span-1 flex min-h-[180px] flex-col justify-between rounded-[20px] bg-shop-accent-2 p-5">
+          <span className="w-fit rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
+            Announcement
+          </span>
+          <div className="flex flex-col gap-1">
+            <InlineText
+              value={ann.text}
+              onChange={(v) => setCard("announcement", { text: v })}
+              placeholder="Announcement text"
+              multiline
+              className="text-[13px] font-semibold leading-[20px] text-white"
+            />
+            <InlineText
+              value={ann.date}
+              onChange={(v) => setCard("announcement", { date: v })}
+              placeholder="Date"
+              className="text-[11px] text-white/60"
+            />
+          </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 export default function HomepageEditor() {
-  const dispatch = useDispatch();
   const showToast = useToast();
-  const homepageContent = useSelector((s) => s.admin.homepageContent);
-  const sectionVisibility = useSelector((s) => s.admin.sectionVisibility);
-  const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(homepageContent)));
-  const [visibility, setVisibility] = useState(() => ({ ...sectionVisibility }));
+  const { data: cms, isLoading } = useGetHomepageCmsQuery();
+  const [saveHomepageCms, { isLoading: isSaving }] = useSaveHomepageCmsMutation();
+
+  // Only overrides are persisted server-side — deep-merge onto the code defaults so
+  // sections the admin has never touched still render with their live homepage copy.
+  const mergedContent = { ...homepageContentDefaults, ...(cms?.content ?? {}) };
+  const mergedVisibility = {
+    ...sectionVisibilityDefaults,
+    ...(cms?.sectionVisibility ?? {}),
+  };
+
+  const mergedCommunity = {
+    ...communitySectionDefaults,
+    ...(cms?.community ?? {}),
+  };
+
+  const [draft, setDraft] = useState(null);
+  const [visibility, setVisibility] = useState(null);
+  const [community, setCommunity] = useState(null);
+  const ready = draft !== null;
+
+  // Seed local editing state once the server payload has arrived.
+  useEffect(() => {
+    if (draft === null && cms) {
+      setDraft(JSON.parse(JSON.stringify(mergedContent)));
+      setVisibility({ ...mergedVisibility });
+      setCommunity(JSON.parse(JSON.stringify(mergedCommunity)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cms]);
 
   const updateSection = (key, patch) => {
     setDraft((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  };
+
+  const updateCommunity = (patch) => {
+    setCommunity((prev) => ({ ...prev, ...patch }));
   };
 
   const toggleVisible = (...keys) => {
@@ -541,11 +754,26 @@ export default function HomepageEditor() {
     });
   };
 
-  const handleSave = () => {
-    dispatch(saveHomepageContent(draft));
-    dispatch(saveSectionVisibility(visibility));
-    showToast("Homepage content saved");
+  const handleSave = async () => {
+    try {
+      await saveHomepageCms({
+        content: draft,
+        sectionVisibility: visibility,
+        community,
+      }).unwrap();
+      showToast("Homepage content saved");
+    } catch {
+      showToast("Could not save homepage content");
+    }
   };
+
+  if (isLoading || !ready) {
+    return (
+      <div className="flex items-center justify-center px-4 py-16 lg:px-8">
+        <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-4 lg:px-8">
@@ -593,13 +821,26 @@ export default function HomepageEditor() {
         visible={visibility.merchantOfWeek}
         onToggleVisible={() => toggleVisible("merchantOfWeek")}
       />
+      <CommunityEditor
+        data={community}
+        onChange={updateCommunity}
+        visible={visibility.community !== false}
+        onToggleVisible={() =>
+          setVisibility((prev) => ({
+            ...prev,
+            community: prev.community === false ? true : false,
+          }))
+        }
+      />
 
       <div className="sticky bottom-4 z-30 flex justify-end">
         <button
           type="button"
           onClick={handleSave}
-          className="rounded-full bg-shop-accent-1 px-6 py-3 text-[13px] font-semibold text-white shadow-lg hover:bg-shop-accent-1-dark"
+          disabled={isSaving}
+          className="flex items-center gap-2 rounded-full bg-shop-accent-1 px-6 py-3 text-[13px] font-semibold text-white shadow-lg hover:bg-shop-accent-1-dark disabled:opacity-60"
         >
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Save Changes
         </button>
       </div>

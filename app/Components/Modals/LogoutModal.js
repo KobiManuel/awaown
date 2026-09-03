@@ -2,20 +2,35 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { LogOut } from "lucide-react";
-import { logout } from "@/lib/store/authSlice";
+import { clearAuth } from "@/lib/store/authSlice";
 import { closeModal } from "@/lib/store/modalSlice";
+import { useLogoutMutation } from "@/lib/api/authApi";
 import ModalShell from "./ModalShell";
+
+const LOGIN_HREF = {
+  customer: "/login/customer",
+  merchant: "/login/merchant",
+  partner: "/login/partner",
+  admin: "/login/admin",
+};
 
 const LogoutModal = () => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const role = useSelector((s) => s.auth.role);
+  const [logout, { isLoading }] = useLogoutMutation();
 
-  const handleConfirm = () => {
-    dispatch(logout());
+  const handleConfirm = async () => {
+    try {
+      if (role) await logout({ role }).unwrap();
+    } catch {
+      // even if the server call fails, drop the local session
+    }
+    dispatch(clearAuth());
     dispatch(closeModal());
-    router.push("/");
+    router.push(LOGIN_HREF[role] || "/");
   };
 
   return (
@@ -42,9 +57,10 @@ const LogoutModal = () => {
             <button
               type="button"
               onClick={handleConfirm}
-              className="flex-1 rounded-[10px] bg-shop-accent-3 py-3 text-[13.5px] font-semibold text-white"
+              disabled={isLoading}
+              className="flex-1 rounded-[10px] bg-shop-accent-3 py-3 text-[13.5px] font-semibold text-white disabled:opacity-70"
             >
-              Log Out
+              {isLoading ? "Logging out…" : "Log Out"}
             </button>
           </div>
         </div>

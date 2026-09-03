@@ -3,11 +3,20 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSelector } from "react-redux";
-import { TrendingUp, Clock, Store, Copy, Check, Share2, ShieldAlert, ImagePlus } from "lucide-react";
-import { partnerProfile, formatPrice } from "@/lib/partner-data";
-import { SITE_URL } from "@/lib/site-config";
+import {
+  TrendingUp,
+  Clock,
+  Store,
+  Copy,
+  Check,
+  Share2,
+  ShieldAlert,
+  ImagePlus,
+} from "lucide-react";
+import { formatPrice } from "@/lib/partner-data";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetPartnerOverviewQuery } from "@/lib/api/partnerApi";
 
 const StatCard = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -27,25 +36,20 @@ const StatCard = ({ icon: Icon, label, value, href }) => {
 
 export default function PartnerHome() {
   const showToast = useToast();
-  const walletBalance = useSelector((s) => s.partner.walletBalance);
-  const earnings = useSelector((s) => s.partner.earnings);
-  const storeName = useSelector((s) => s.partner.storeName);
-  const storeBanner = useSelector((s) => s.partner.storeBanner);
-  const verification = useSelector((s) => s.partner.verification);
+  const { data, isLoading } = useGetPartnerOverviewQuery();
   const [copied, setCopied] = useState(false);
-  const storeLink = partnerProfile.referralLink.replace(SITE_URL, "");
 
-  const clearedProfit = earnings
-    .filter((e) => e.status === "cleared")
-    .reduce((sum, e) => sum + e.netProfit, 0);
-  const pendingProfit = earnings
-    .filter((e) => e.status === "escrow")
-    .reduce((sum, e) => sum + e.netProfit, 0);
+  const p = data?.profile;
+  const stats = data?.stats;
+  const verified = data?.verification?.status === "VERIFIED";
+  const pendingVerif = data?.verification?.status === "PENDING";
+
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const fullLink = p ? `${origin}${p.referralLink}` : "";
 
   const handleCopy = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(partnerProfile.referralLink).catch(() => {});
-    }
+    if (navigator?.clipboard) navigator.clipboard.writeText(fullLink).catch(() => {});
     setCopied(true);
     showToast("Store link copied");
     setTimeout(() => setCopied(false), 1600);
@@ -53,59 +57,98 @@ export default function PartnerHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      {/* Store banner */}
       <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
-        {storeBanner && (
-          <Image src={storeBanner} alt="Store banner" fill className="object-cover" priority />
+        {p?.bannerUrl && (
+          <Image
+            src={p.bannerUrl}
+            alt="Store banner"
+            fill
+            className="object-cover"
+            priority
+          />
         )}
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative flex w-full items-end justify-between p-4">
-          <p className="text-[16px] font-bold text-white lg:text-[20px]">{storeName}</p>
+          <p className="text-[16px] font-bold text-white lg:text-[20px]">
+            {p?.storeName ?? "…"}
+          </p>
           <div className="flex gap-2">
             <Link
               href="/partner/customize"
               className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
             >
               <ImagePlus className="h-3.5 w-3.5" />
-              {storeBanner ? "Edit Banner" : "Add Banner"}
+              {p?.bannerUrl ? "Edit Banner" : "Add Banner"}
             </Link>
-            <Link
-              href={storeLink}
-              target="_blank"
-              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-            >
-              Preview Store
-            </Link>
+            {p?.referralLink && (
+              <Link
+                href={p.referralLink}
+                target="_blank"
+                className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+              >
+                Preview Store
+              </Link>
+            )}
           </div>
         </div>
       </div>
 
       <div className="px-4 lg:px-8">
-        <p className="text-[13px] text-shop-text">Hi, {partnerProfile.name.split(" ")[0]} 👋</p>
+        <p className="text-[13px] text-shop-text">
+          Hi, {p?.displayName?.split(" ")[0] ?? "there"} 👋
+        </p>
         <p className="text-[17px] font-semibold text-shop-heading lg:text-[22px]">
           Welcome back
         </p>
       </div>
 
-      {verification.status !== "verified" && (
+      {!verified && (
         <Link
           href="/partner/account"
           className="mx-4 flex items-center gap-3 rounded-[12px] bg-amber-50 p-3.5 lg:mx-8"
         >
-          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700" strokeWidth={1.75} />
+          <ShieldAlert
+            className="h-5 w-5 shrink-0 text-amber-700"
+            strokeWidth={1.75}
+          />
           <span className="text-[12.5px] leading-[18px] text-amber-800">
-            {verification.status === "pending"
+            {pendingVerif
               ? "Your identity verification is under review — we'll notify you once it's approved."
-              : "You'll need to verify your identity before your first withdrawal. You can do this any time before then."}
+              : "You'll need to verify your identity before your first withdrawal."}
           </span>
         </Link>
       )}
 
       <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:gap-5 lg:px-8">
-        <StatCard icon={TrendingUp} label="Cleared Profit (net)" value={formatPrice(clearedProfit)} />
-        <StatCard icon={Clock} label="Pending in Escrow" value={formatPrice(pendingProfit)} />
-        <StatCard icon={TrendingUp} label="Wallet Balance" value={formatPrice(walletBalance)} />
-        <StatCard icon={Store} label="My Store" value="View" href="/partner/store" />
+        {isLoading || !stats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-[14px]" />
+          ))
+        ) : (
+          <>
+            <StatCard
+              icon={TrendingUp}
+              label="Cleared Profit (net)"
+              value={formatPrice(stats.clearedProfit)}
+            />
+            <StatCard
+              icon={Clock}
+              label="Pending in Escrow"
+              value={formatPrice(stats.pendingProfit)}
+            />
+            <StatCard
+              icon={TrendingUp}
+              label="Wallet Balance"
+              value={formatPrice(stats.walletBalance)}
+            />
+            <StatCard
+              icon={Store}
+              label="My Store"
+              value={`${stats.listings} items`}
+              href="/partner/store"
+            />
+          </>
+        )}
       </div>
 
       <div className="mx-4 flex flex-col gap-3 rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-5 text-white lg:mx-8">
@@ -115,7 +158,7 @@ export default function PartnerHome() {
         </div>
         <div className="flex items-center gap-2 rounded-[10px] bg-white/15 px-3.5 py-3">
           <span className="flex-1 truncate text-[12.5px] text-white/90">
-            {partnerProfile.referralLink}
+            {fullLink || "…"}
           </span>
           <button
             type="button"
@@ -127,13 +170,16 @@ export default function PartnerHome() {
           </button>
         </div>
         <p className="text-[12px] text-white/75">
-          Share this link to send people to your whole store, or grab a link to a single
-          product from My Store.
+          Share this link to send people to your whole store. Add{" "}
+          <code className="rounded bg-white/15 px-1">?ref={p?.referralCode}</code>{" "}
+          to any product link to earn on that sale.
         </p>
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-6 lg:px-8">
-        <p className="text-[14px] font-semibold text-shop-heading lg:text-[16px]">Quick Links</p>
+        <p className="text-[14px] font-semibold text-shop-heading lg:text-[16px]">
+          Quick Links
+        </p>
         <div className="grid grid-cols-2 gap-3">
           <Link
             href="/partner/store"
@@ -148,12 +194,20 @@ export default function PartnerHome() {
             View Earnings History
           </Link>
           <Link
-            href={partnerProfile.referralLink.replace(SITE_URL, "")}
-            target="_blank"
-            className="col-span-2 rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
+            href="/partner/store/marketplace"
+            className="rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
           >
-            Preview My Store — see it the way visitors do
+            Add from the Marketplace
           </Link>
+          {p?.referralLink && (
+            <Link
+              href={p.referralLink}
+              target="_blank"
+              className="rounded-[14px] border border-shop-border bg-white p-4 text-[13px] font-medium text-shop-heading hover:border-shop-accent-1"
+            >
+              Preview My Store
+            </Link>
+          )}
         </div>
       </div>
     </div>

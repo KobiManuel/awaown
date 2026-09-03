@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# backend (NestJS API) — lives in its own repo: Rheel-Git/awaown-be
+/backend/
+
+# local agent config
+/.claude/
 
 # vercel
 .vercel

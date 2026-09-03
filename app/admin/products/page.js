@@ -2,20 +2,18 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
 import { Package, Star, BadgeCheck, X, Trash2, Store, User } from "lucide-react";
-import { formatPrice, PRODUCT_CATEGORIES, merchantProfile } from "@/lib/merchant-data";
-import { toggleProductField, adminSetProductApproval, removeProduct } from "@/lib/store/merchantSlice";
+import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
+import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import {
+  useGetAdminProductsQuery,
+  useSetAdminProductApprovalMutation,
+} from "@/lib/api/adminApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 
-function categoryLabel(slug) {
-  return PRODUCT_CATEGORIES.find((c) => c.slug === slug)?.label || slug;
-}
-
-// This dummy build only ever has one seeded merchant, so every product's "vendor" is
-// merchantProfile. A real backend would look this up per-product via a merchantId.
 function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, tab }) {
   const [activeImage, setActiveImage] = useState(0);
   if (!product) return null;
@@ -75,24 +73,28 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             <Store className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[12.5px] font-semibold text-shop-heading">{merchantProfile.storeName}</p>
-            <p className="flex items-center gap-1 truncate text-[11px] text-shop-text/70">
-              <User className="h-3 w-3" />
-              {merchantProfile.ownerName}
+            <p className="truncate text-[12.5px] font-semibold text-shop-heading">
+              {product.storeName || product.vendor}
             </p>
+            {product.ownerName && (
+              <p className="flex items-center gap-1 truncate text-[11px] text-shop-text/70">
+                <User className="h-3 w-3" />
+                {product.ownerName}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2.5 text-[12.5px]">
           <div className="rounded-[10px] bg-shop-bg p-3">
             <p className="text-shop-text/60">Category</p>
-            <p className="font-semibold text-shop-heading">{categoryLabel(product.category)}</p>
+            <p className="font-semibold text-shop-heading">{product.category || "—"}</p>
           </div>
           <div className="rounded-[10px] bg-shop-bg p-3">
             <p className="text-shop-text/60">Price</p>
             <p className="font-semibold text-shop-heading">{formatPrice(product.price)}</p>
           </div>
-          {product.hasVariants && product.variants?.length ? (
+          {product.variants?.length ? (
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
               <p className="mb-1.5 text-shop-text/60">Variants ({product.variants.length})</p>
               <div className="flex flex-col gap-1">
@@ -127,7 +129,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         </div>
 
         <div className="flex gap-2 border-t border-shop-border pt-3">
-          {tab !== "approved" && (
+          {tab !== "APPROVED" && (
             <button
               type="button"
               onClick={() => onApprove(product)}
@@ -137,7 +139,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
               Approve
             </button>
           )}
-          {tab !== "rejected" && (
+          {tab !== "REJECTED" && (
             <button
               type="button"
               onClick={() => onReject(product)}
@@ -162,61 +164,63 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
 }
 
 const TABS = [
-  { id: "pending", label: "Pending" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
+  { id: "PENDING", label: "Pending" },
+  { id: "APPROVED", label: "Approved" },
+  { id: "REJECTED", label: "Rejected" },
 ];
 
 export default function AdminProductsPage() {
-  const dispatch = useDispatch();
   const showToast = useToast();
-  const products = useSelector((s) => s.merchant.products);
-  const { run, bar } = useUndoBuffer();
-  const [tab, setTab] = useState("pending");
+  const confirm = useConfirm();
+  const { data, isLoading } = useGetAdminProductsQuery();
+  const [setApproval] = useSetAdminProductApprovalMutation();
+  const [tab, setTab] = useState("PENDING");
   const [detailProduct, setDetailProduct] = useState(null);
 
-  const filtered = products.filter((p) => (p.approvalStatus || "approved") === tab);
+  const products = data?.items ?? [];
+  const filtered = products.filter((p) => (p.approvalStatus || "APPROVED") === tab);
 
-  const handleApprove = (product) => {
-    const previous = { approvalStatus: product.approvalStatus, rejectionReason: product.rejectionReason };
-    dispatch(adminSetProductApproval({ id: product.id, approvalStatus: "approved" }));
-    showToast(`${product.title} approved`);
-    run(
-      "Email to merchant sending in a few seconds...",
-      () => {
-        dispatch(adminSetProductApproval({ id: product.id, approvalStatus: previous.approvalStatus, reason: previous.rejectionReason }));
-        showToast("Undone");
-      },
-      () => showToast(`Email sent: "${product.title}" approved`),
-    );
+  const act = async (id, action, reason, ok) => {
+    try {
+      await setApproval({ id, action, reason }).unwrap();
+      if (ok) showToast(ok);
+    } catch (e) {
+      showToast(errorMessage(e));
+    }
   };
 
-  const handleReject = (product) => {
-    const reason = window.prompt(`Reason for rejecting "${product.title}"?`);
-    if (reason === null) return;
-    const previous = { approvalStatus: product.approvalStatus, rejectionReason: product.rejectionReason };
-    dispatch(adminSetProductApproval({ id: product.id, approvalStatus: "rejected", reason }));
-    showToast(`${product.title} rejected`);
-    run(
-      "Email to merchant sending in a few seconds...",
-      () => {
-        dispatch(adminSetProductApproval({ id: product.id, approvalStatus: previous.approvalStatus, reason: previous.rejectionReason }));
-        showToast("Undone");
-      },
-      () => showToast(`Email sent: "${product.title}" rejected — ${reason}`),
-    );
+  const handleApprove = async (product) => {
+    const res = await confirm({
+      title: `Approve "${product.title}"?`,
+      message: "It goes live on the marketplace and the merchant is emailed.",
+      confirmLabel: "Approve",
+    });
+    if (!res) return;
+    act(product.id, "approve", undefined, `${product.title} approved`);
   };
 
-  const handleRemove = (product) => {
-    const reason = window.prompt(`Reason for permanently removing "${product.title}"?`);
-    if (reason === null) return;
-    dispatch(removeProduct(product.id));
-    showToast(`${product.title} removed`);
-    run(
-      "Email to merchant sending in a few seconds...",
-      () => showToast("This item was removed — restoring it isn't possible from here."),
-      () => showToast(`Email sent: "${product.title}" removed — ${reason}`),
-    );
+  const handleReject = async (product) => {
+    const res = await confirm({
+      title: `Reject "${product.title}"?`,
+      message: "The merchant is emailed the reason and the product stays as a draft.",
+      confirmLabel: "Reject",
+      tone: "danger",
+      reason: { label: "Reason for rejection (emailed to the merchant)", required: true },
+    });
+    if (!res) return;
+    act(product.id, "reject", res.reason, `${product.title} rejected`);
+  };
+
+  const handleRemove = async (product) => {
+    const res = await confirm({
+      title: `Remove "${product.title}"?`,
+      message: "This archives the listing. The merchant is notified.",
+      confirmLabel: "Remove",
+      tone: "danger",
+      reason: { label: "Reason for removal (emailed to the merchant)", required: true },
+    });
+    if (!res) return;
+    act(product.id, "remove", res.reason, `${product.title} removed`);
   };
 
   return (
@@ -236,93 +240,98 @@ export default function AdminProductsPage() {
               tab === t.id ? "border-shop-accent-1 bg-shop-accent-1 text-white" : "border-shop-border text-shop-text"
             }`}
           >
-            {t.label} ({products.filter((p) => (p.approvalStatus || "approved") === t.id).length})
+            {t.label} ({products.filter((p) => (p.approvalStatus || "APPROVED") === t.id).length})
           </button>
         ))}
       </div>
 
-      <div className="flex flex-col gap-2.5 px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-8">
-        {filtered.map((p) => (
-          <div key={p.id} className="flex flex-col gap-2.5 rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => setDetailProduct(p)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") setDetailProduct(p);
-              }}
-              className="flex cursor-pointer items-center gap-3"
-            >
-              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
-                {p.images?.[0] ? (
-                  <Image src={p.images[0]} alt={p.title} fill className="object-contain p-1.5" sizes="56px" />
-                ) : (
-                  <Package className="h-5 w-5 text-shop-text/40" strokeWidth={1.5} />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">{p.title}</p>
-                <p className="text-[11.5px] text-shop-text/70">
-                  {formatPrice(p.price)} · {categoryLabel(p.category)}
-                </p>
-                {p.rejectionReason && (
-                  <p className="mt-0.5 text-[10.5px] text-shop-accent-3">Reason: {p.rejectionReason}</p>
-                )}
-              </div>
-              <button
-                type="button"
-                aria-label="Toggle featured"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dispatch(toggleProductField({ id: p.id, field: "featured" }));
-                  showToast(p.featured ? "Removed from Featured" : "Marked as Featured");
+      {isLoading ? (
+        <div className="px-4 lg:px-8">
+          <SkeletonRows count={4} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5 px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-8">
+          {filtered.map((p) => (
+            <div key={p.id} className="flex flex-col gap-2.5 rounded-[14px] border border-shop-border bg-white p-3.5">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailProduct(p)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setDetailProduct(p);
                 }}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                  p.featured ? "bg-amber-100 text-amber-600" : "bg-shop-bg text-shop-text/40"
-                }`}
+                className="flex cursor-pointer items-center gap-3"
               >
-                <Star className="h-4 w-4" fill={p.featured ? "currentColor" : "none"} />
-              </button>
-            </div>
-            <div className="flex gap-2 border-t border-shop-border pt-2.5">
-              {tab !== "approved" && (
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
+                  {p.image ? (
+                    <Image src={p.image} alt={p.title} fill className="object-contain p-1.5" sizes="56px" />
+                  ) : (
+                    <Package className="h-5 w-5 text-shop-text/40" strokeWidth={1.5} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">{p.title}</p>
+                  <p className="text-[11.5px] text-shop-text/70">
+                    {formatPrice(p.price)} · {p.category || "—"}
+                  </p>
+                  {p.rejectionReason && (
+                    <p className="mt-0.5 text-[10.5px] text-shop-accent-3">Reason: {p.rejectionReason}</p>
+                  )}
+                </div>
                 <button
                   type="button"
-                  onClick={() => handleApprove(p)}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-shop-accent-1 py-2 text-[11.5px] font-semibold text-white"
+                  aria-label="Toggle featured"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    act(p.id, p.featured ? "unfeature" : "feature");
+                    showToast(p.featured ? "Removed from Featured" : "Marked as Featured");
+                  }}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    p.featured ? "bg-amber-100 text-amber-600" : "bg-shop-bg text-shop-text/40"
+                  }`}
                 >
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  Approve
+                  <Star className="h-4 w-4" fill={p.featured ? "currentColor" : "none"} />
                 </button>
-              )}
-              {tab !== "rejected" && (
+              </div>
+              <div className="flex gap-2 border-t border-shop-border pt-2.5">
+                {tab !== "APPROVED" && (
+                  <button
+                    type="button"
+                    onClick={() => handleApprove(p)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-shop-accent-1 py-2 text-[11.5px] font-semibold text-white"
+                  >
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Approve
+                  </button>
+                )}
+                {tab !== "REJECTED" && (
+                  <button
+                    type="button"
+                    onClick={() => handleReject(p)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] border border-shop-border py-2 text-[11.5px] font-semibold text-shop-heading"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Reject
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => handleReject(p)}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] border border-shop-border py-2 text-[11.5px] font-semibold text-shop-heading"
+                  onClick={() => handleRemove(p)}
+                  aria-label="Remove product"
+                  className="flex items-center justify-center rounded-[8px] border border-shop-border px-3 text-shop-accent-3"
                 >
-                  <X className="h-3.5 w-3.5" />
-                  Reject
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => handleRemove(p)}
-                aria-label="Remove product"
-                className="flex items-center justify-center rounded-[8px] border border-shop-border px-3 text-shop-accent-3"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              </div>
             </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
-            No {tab} products.
-          </p>
-        )}
-      </div>
-      {bar}
+          ))}
+          {filtered.length === 0 && (
+            <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
+              No {TABS.find((t) => t.id === tab)?.label.toLowerCase()} products.
+            </p>
+          )}
+        </div>
+      )}
       <ProductDetailModal
         product={detailProduct}
         tab={tab}

@@ -3,41 +3,60 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
-import { removeFromCart, updateQty } from "@/lib/store/cartSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import {
+  useGetCartQuery,
+  useUpdateCartQtyMutation,
+  useRemoveCartItemMutation,
+} from "@/lib/api/commerceApi";
 
-const FREE_SHIPPING_THRESHOLD = 50000;
 const SHIPPING_FEE = 1500;
 
 export default function CartPage() {
-  const dispatch = useDispatch();
   const showToast = useToast();
-  const items = useSelector((s) => s.cart.items);
+  const { data, isLoading, isError } = useGetCartQuery();
+  const [updateQty] = useUpdateCartQtyMutation();
+  const [removeItem, removeState] = useRemoveCartItemMutation();
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const shipping = items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+  const items = data?.items ?? [];
+  const subtotal = data?.subtotal ?? 0;
+  const shipping = items.length === 0 ? 0 : SHIPPING_FEE;
   const total = subtotal + shipping;
 
-  const handleRemove = (id, title) => {
-    dispatch(removeFromCart(id));
-    showToast(`${title} removed from cart`);
+  const handleRemove = async (id, title) => {
+    try {
+      await removeItem(id).unwrap();
+      showToast(`${title} removed from cart`);
+    } catch {
+      showToast("Couldn't remove item");
+    }
   };
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader title="My Cart" />
 
-      {items.length === 0 ? (
+      {isLoading ? (
+        <div className="px-4 lg:px-8">
+          <SkeletonRows count={3} />
+        </div>
+      ) : isError ? (
+        <p className="px-4 py-10 text-center text-[13px] text-red-600">
+          Couldn&apos;t load your cart.
+        </p>
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-shop-bg">
             <ShoppingBag className="h-7 w-7 text-shop-text/40" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-[14px] font-semibold text-shop-heading">Your cart is empty</p>
+            <p className="text-[14px] font-semibold text-shop-heading">
+              Your cart is empty
+            </p>
             <p className="mt-1 text-[13px] text-shop-text">
               Browse the shop and add items you love.
             </p>
@@ -57,22 +76,29 @@ export default function CartPage() {
                 key={item.id}
                 className="flex gap-3 rounded-[14px] border border-shop-border bg-white p-3"
               >
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[10px] bg-shop-bg">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    fill
-                    className="object-contain p-2"
-                    sizes="80px"
-                  />
-                </div>
+                <Link
+                  href={`/product/${item.slug}`}
+                  className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[10px] bg-shop-bg"
+                >
+                  {item.image && (
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      className="object-contain p-2"
+                      sizes="80px"
+                    />
+                  )}
+                </Link>
                 <div className="flex flex-1 flex-col justify-between">
                   <div>
                     <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
                       {item.title}
                     </p>
                     {item.variantLabel && (
-                      <p className="text-[11px] text-shop-text/70">{item.variantLabel}</p>
+                      <p className="text-[11px] text-shop-text/70">
+                        {item.variantLabel}
+                      </p>
                     )}
                   </div>
                   <div className="flex items-center justify-between">
@@ -81,7 +107,7 @@ export default function CartPage() {
                         type="button"
                         aria-label="Decrease quantity"
                         onClick={() =>
-                          dispatch(updateQty({ id: item.id, qty: item.qty - 1 }))
+                          updateQty({ id: item.id, qty: item.qty - 1 })
                         }
                         className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-shop-bg"
                       >
@@ -93,22 +119,24 @@ export default function CartPage() {
                       <button
                         type="button"
                         aria-label="Increase quantity"
+                        disabled={item.qty >= item.maxQty}
                         onClick={() =>
-                          dispatch(updateQty({ id: item.id, qty: item.qty + 1 }))
+                          updateQty({ id: item.id, qty: item.qty + 1 })
                         }
-                        className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-shop-bg"
+                        className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-shop-bg disabled:opacity-40"
                       >
                         <Plus className="h-3 w-3 text-shop-heading" />
                       </button>
                     </div>
                     <span className="text-[13px] font-semibold text-shop-heading">
-                      {formatPrice(item.price * item.qty)}
+                      {formatPrice(item.lineTotal)}
                     </span>
                   </div>
                 </div>
                 <button
                   type="button"
                   aria-label="Remove item"
+                  disabled={removeState.isLoading}
                   onClick={() => handleRemove(item.id, item.title)}
                   className="flex h-7 w-7 shrink-0 items-center justify-center self-start rounded-full text-shop-text/50 hover:bg-shop-bg hover:text-shop-accent-3"
                 >
@@ -122,12 +150,14 @@ export default function CartPage() {
             <div className="flex flex-col gap-2 rounded-[14px] bg-shop-bg p-4">
               <div className="flex items-center justify-between text-[13px] text-shop-text">
                 <span>Subtotal</span>
-                <span className="font-medium text-shop-heading">{formatPrice(subtotal)}</span>
+                <span className="font-medium text-shop-heading">
+                  {formatPrice(subtotal)}
+                </span>
               </div>
               <div className="flex items-center justify-between text-[13px] text-shop-text">
                 <span>Shipping</span>
                 <span className="font-medium text-shop-heading">
-                  {shipping === 0 ? "Free" : formatPrice(shipping)}
+                  {formatPrice(shipping)}
                 </span>
               </div>
               <div className="mt-1 flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">

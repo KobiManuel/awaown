@@ -1,43 +1,40 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-
-const slides = [
-  {
-    image: "/v2/images/main-banner-1.webp",
-    discount: "FLAT 40% DISCOUNT",
-    title: "Unihertz Tank 3 Pro 5G Smartphone",
-    price: "STARTS AT: ₦599.50",
-  },
-  {
-    image: "/v2/images/main-banner-2.webp",
-    discount: "FLAT 30% DISCOUNT",
-    title: "Women's Solid Formal Pink Blazer",
-    price: "STARTS AT: ₦69.50",
-  },
-];
+import Link from "next/link";
+import { useHomepageContent } from "@/lib/useHomepageContent";
 
 const AUTOPLAY_MS = 5000;
 
 const HeroSlider = () => {
+  const { content } = useHomepageContent();
+  const slides = content.hero?.slides ?? [];
   const [active, setActive] = useState(0);
   const timerRef = useRef(null);
 
-  const goTo = useCallback((idx) => {
-    setActive((idx + slides.length) % slides.length);
-  }, []);
+  const count = slides.length;
+
+  const goTo = useCallback(
+    (idx) => {
+      if (count) setActive((idx + count) % count);
+    },
+    [count],
+  );
 
   const restartTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (count < 2) return;
     timerRef.current = setInterval(() => {
-      setActive((prev) => (prev + 1) % slides.length);
+      setActive((prev) => (prev + 1) % count);
     }, AUTOPLAY_MS);
-  }, []);
+  }, [count]);
 
   useEffect(() => {
     restartTimer();
     return () => clearInterval(timerRef.current);
   }, [restartTimer]);
+
+  if (count === 0) return null;
 
   const handleDotClick = (idx) => {
     goTo(idx);
@@ -68,18 +65,26 @@ const HeroSlider = () => {
               <h1 className="max-w-[420px] text-[26px] font-semibold leading-[32px] sm:text-[38px] sm:leading-[44px] md:text-[46px] md:leading-[52px]">
                 {slide.title}
               </h1>
-              <p className="text-[14px] font-medium sm:text-[16px]">
-                {slide.price.split(":")[0]}:{" "}
-                <strong className="text-[18px] sm:text-[22px]">
-                  {slide.price.split(":")[1]}
-                </strong>
-              </p>
-              <a
-                href="#"
+              {slide.price && (
+                <p className="text-[14px] font-medium sm:text-[16px]">
+                  {slide.price.includes(":") ? (
+                    <>
+                      {slide.price.split(":")[0]}:{" "}
+                      <strong className="text-[18px] sm:text-[22px]">
+                        {slide.price.split(":").slice(1).join(":")}
+                      </strong>
+                    </>
+                  ) : (
+                    <strong className="text-[18px] sm:text-[22px]">{slide.price}</strong>
+                  )}
+                </p>
+              )}
+              <Link
+                href="/shop"
                 className="pointer-events-auto mt-2 w-fit bg-white px-6 py-3 text-[13px] font-semibold uppercase tracking-wide text-shop-heading transition-colors hover:bg-shop-accent-1 hover:text-white"
               >
                 Shop Now
-              </a>
+              </Link>
             </div>
           </div>
         ))}

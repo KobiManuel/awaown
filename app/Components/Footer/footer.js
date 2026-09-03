@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 
 const Facebook = (props) => (
@@ -27,20 +28,31 @@ const Twitter = (props) => (
 
 const columns = [
   {
-    title: "Quick Links",
-    links: ["Privacy Policy", "Refund Policy", "Shipping Policy", "Terms of Service", "Policy for Buyers", "Policy for Sellers"],
+    title: "Shop",
+    links: [
+      { label: "All Products", href: "/shop" },
+      { label: "Your Cart", href: "/dashboard/cart" },
+      { label: "Your Wishlist", href: "/dashboard/wishlist" },
+      { label: "Your Orders", href: "/dashboard/orders" },
+    ],
   },
   {
-    title: "Information",
-    links: ["Size Chart", "Contact", "About Us", "FAQs", "Shipping & Refund", "Sitemap"],
+    title: "Sell & Earn",
+    links: [
+      { label: "Become a Merchant", href: "/login/merchant?mode=signup" },
+      { label: "Become a Partner", href: "/login/partner?mode=signup" },
+      { label: "Merchant Sign In", href: "/login/merchant" },
+      { label: "Partner Sign In", href: "/login/partner" },
+    ],
   },
   {
-    title: "Your Account",
-    links: ["Search", "About Us", "Delivery Information", "Contact", "FAQs", "Shipping"],
-  },
-  {
-    title: "Find Product",
-    links: ["Furniture", "Men's Clothes", "Leather Watch", "Electronics", "Sunglasses", "Jewellery"],
+    title: "Support",
+    links: [
+      { label: "Help Centre", href: "/dashboard/help" },
+      { label: "Track an Order", href: "/dashboard/orders" },
+      { label: "Contact Support", href: "mailto:support@awaown.com" },
+      { label: "How Escrow Works", href: "/dashboard/help" },
+    ],
   },
 ];
 
@@ -56,7 +68,7 @@ const Footer = () => {
 
   return (
     <footer className="mt-16 border-t border-shop-border bg-white font-shop">
-      <div className="mx-auto grid w-full max-w-[1460px] grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 md:grid-cols-6 md:px-8">
+      <div className="mx-auto grid w-full max-w-[1460px] grid-cols-2 gap-x-6 gap-y-10 px-4 py-14 md:grid-cols-5 md:px-8">
         <div className="col-span-2 flex flex-col gap-4">
           <ThemedLogo width={220} height={60} className="h-14 w-auto object-contain" />
           <p className="text-[13px] font-semibold uppercase tracking-wide text-shop-heading">
@@ -69,10 +81,10 @@ const Footer = () => {
             <p>+234 803 210 5000</p>
           </div>
           <a
-            href="#"
+            href="mailto:support@awaown.com"
             className="mt-2 w-fit rounded-[4px] bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
           >
-            Online Chat — Get Expert Help
+            Email our Support Team
           </a>
         </div>
 
@@ -82,13 +94,13 @@ const Footer = () => {
               {col.title}
             </p>
             {col.links.map((link) => (
-              <a
-                key={link}
-                href="#"
+              <Link
+                key={link.label}
+                href={link.href}
                 className="text-[13px] text-shop-text hover:text-shop-accent-1"
               >
-                {link}
-              </a>
+                {link.label}
+              </Link>
             ))}
           </div>
         ))}
@@ -112,7 +124,7 @@ const Footer = () => {
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {["Visa", "Mastercard", "Amex", "PayPal", "Diners Club", "Discover"].map((p) => (
+            {["Visa", "Mastercard", "Verve", "Bank Transfer", "Secured by Paystack"].map((p) => (
               <span
                 key={p}
                 className="rounded-[4px] border border-shop-border px-2.5 py-1 text-[11px] font-medium text-shop-text"

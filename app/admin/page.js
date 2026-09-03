@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
 import {
   Search,
   Bell,
@@ -17,7 +16,6 @@ import {
   Activity,
   CalendarClock,
   Zap,
-  ChevronRight,
   Package,
   FileText,
   Megaphone,
@@ -25,22 +23,27 @@ import {
   UserCog,
   Settings,
   History,
+  Mail,
+  LifeBuoy,
   ImagePlus,
+  Loader2,
 } from "lucide-react";
 import {
-  businessOverview,
   todaysSnapshot,
   platformHealth,
-  recentActivity,
   campaignCalendar,
-  failedPaymentsSeed,
   formatPrice,
   HEALTH_TONE,
-  customersDirectory,
 } from "@/lib/admin-data";
-import { setDashboardBanner } from "@/lib/store/adminSlice";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import {
+  useGetAdminOverviewQuery,
+  useAdminSearchQuery,
+  useGetAdminSettingsQuery,
+  useUpdateAdminSettingsMutation,
+} from "@/lib/api/adminApi";
+import { useMediaUpload } from "@/lib/api/mediaApi";
 
 const KPI = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -62,9 +65,11 @@ const KPI = ({ icon: Icon, label, value, href }) => {
 
 const MANAGE_LINKS = [
   { href: "/admin/customers", label: "Customers", icon: Users, tone: "bg-blue-100 text-blue-700" },
+  { href: "/admin/support", label: "Support", icon: LifeBuoy, tone: "bg-shop-accent-1-light text-shop-accent-1" },
   { href: "/admin/products", label: "Products", icon: Package, tone: "bg-amber-100 text-amber-700" },
   { href: "/admin/content", label: "Content", icon: FileText, tone: "bg-emerald-100 text-emerald-700" },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone, tone: "bg-shop-accent-1-light text-shop-accent-1" },
+  { href: "/admin/emails", label: "Email Templates", icon: Mail, tone: "bg-blue-100 text-blue-700" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, tone: "bg-blue-100 text-blue-700" },
   { href: "/admin/team", label: "Access Control", icon: UserCog, tone: "bg-amber-100 text-amber-700" },
   { href: "/admin/settings", label: "Settings", icon: Settings, tone: "bg-shop-bg text-shop-heading" },
@@ -72,91 +77,54 @@ const MANAGE_LINKS = [
   { href: "/admin/audit-log", label: "Audit Log", icon: History, tone: "bg-shop-accent-1-light text-shop-accent-1" },
 ];
 
+const ACTION_LABELS = {
+  pendingVerifications: { label: "Verifications to review", href: "/admin/merchants" },
+  pendingRefunds: { label: "Refunds to decide", href: "/admin/finance" },
+  openComplaints: { label: "Open complaints", href: "/admin/support" },
+  failedPayments: { label: "Failed payments", href: "/admin/finance" },
+  pendingProducts: { label: "Products awaiting approval", href: "/admin/products" },
+};
+
 export default function AdminHome() {
-  const dispatch = useDispatch();
   const showToast = useToast();
   const bannerInputRef = useRef(null);
   const [query, setQuery] = useState("");
-  const dashboardBanner = useSelector((s) => s.admin.dashboardBanner);
-  const merchantVerification = useSelector((s) => s.merchant.verification);
-  const partnerVerification = useSelector((s) => s.partner.verification);
-  const refunds = useSelector((s) => s.admin.refunds);
-  const complaints = useSelector((s) => s.admin.complaints);
-  const merchantPayouts = useSelector((s) => s.merchant.payouts);
-  const partnerWithdrawals = useSelector((s) => s.partner.withdrawals);
-  const escrowBalance = useSelector((s) => s.merchant.escrowBalance);
-  const adminMerchants = useSelector((s) => s.admin.merchants);
-  const adminPartners = useSelector((s) => s.admin.partners);
-  const merchantOrders = useSelector((s) => s.merchant.orders);
-  const merchantProducts = useSelector((s) => s.merchant.products);
 
-  const actionItems = useMemo(() => {
-    const items = [];
-    if (merchantVerification.status === "pending") {
-      items.push({ id: "av-1", label: "1 merchant verification awaiting review", href: "/admin/merchants" });
-    }
-    if (partnerVerification.status === "pending") {
-      items.push({ id: "av-2", label: "1 partner verification awaiting review", href: "/admin/partners" });
-    }
-    const pendingRefunds = refunds.filter((r) => r.status === "pending");
-    if (pendingRefunds.length) {
-      items.push({ id: "av-3", label: `${pendingRefunds.length} refund${pendingRefunds.length > 1 ? "s" : ""} pending`, href: "/admin/finance" });
-    }
-    const openComplaints = complaints.filter((c) => c.status === "open");
-    if (openComplaints.length) {
-      items.push({ id: "av-4", label: `${openComplaints.length} open complaint${openComplaints.length > 1 ? "s" : ""}`, href: "/admin/customers" });
-    }
-    const pendingPayouts = merchantPayouts.filter((p) => p.status === "processing");
-    const pendingWithdrawals = partnerWithdrawals.filter((w) => w.status === "pending");
-    const totalWithdrawals = pendingPayouts.length + pendingWithdrawals.length;
-    if (totalWithdrawals) {
-      items.push({ id: "av-5", label: `${totalWithdrawals} withdrawal${totalWithdrawals > 1 ? "s" : ""} to process`, href: "/admin/finance" });
-    }
-    if (failedPaymentsSeed.length) {
-      items.push({ id: "av-6", label: `${failedPaymentsSeed.length} failed payment${failedPaymentsSeed.length > 1 ? "s" : ""}`, href: "/admin/finance" });
-    }
-    return items;
-  }, [merchantVerification, partnerVerification, refunds, complaints, merchantPayouts, partnerWithdrawals]);
+  const { data, isLoading } = useGetAdminOverviewQuery();
+  const { data: results } = useAdminSearchQuery(query, {
+    skip: query.trim().length < 2,
+  });
+  const { data: settings } = useGetAdminSettingsQuery();
+  const [updateSettings] = useUpdateAdminSettingsMutation();
+  const { upload, uploading } = useMediaUpload("banners");
 
-  const searchResults = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return null;
-    const results = [];
-    for (const m of adminMerchants) {
-      if (m.storeName.toLowerCase().includes(q) || m.owner.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) {
-        results.push({ type: "Merchant", label: m.storeName, sub: m.owner, href: `/admin/merchants/${m.id}` });
-      }
-    }
-    for (const p of adminPartners) {
-      if (p.name.toLowerCase().includes(q) || p.storeName.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) {
-        results.push({ type: "Partner", label: p.name, sub: p.storeName, href: `/admin/partners/${p.id}` });
-      }
-    }
-    for (const c of customersDirectory) {
-      if (c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)) {
-        results.push({ type: "Customer", label: c.name, sub: c.email, href: "/admin/customers" });
-      }
-    }
-    for (const o of merchantOrders) {
-      if (o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q)) {
-        results.push({ type: "Order", label: o.id, sub: o.customerName, href: `/admin/orders/${o.id}` });
-      }
-    }
-    for (const p of merchantProducts) {
-      if (p.title.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) {
-        results.push({ type: "Product", label: p.title, sub: formatPrice(p.price), href: "/admin/products" });
-      }
-    }
-    return results.slice(0, 12);
-  }, [query, adminMerchants, adminPartners, merchantOrders, merchantProducts]);
+  const kpis = data?.kpis;
+  const action = data?.actionRequired ?? {};
+  const dashboardBanner = settings?.dashboardBanner || null;
 
   const handleBannerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    dispatch(setDashboardBanner(await readImageAsCompressedDataURL(file)));
-    showToast("Dashboard banner updated");
     e.target.value = "";
+    const url = await upload(file);
+    if (!url) return showToast("Image upload failed");
+    try {
+      await updateSettings({ dashboardBanner: url }).unwrap();
+      showToast("Dashboard banner updated");
+    } catch {
+      showToast("Could not save the banner");
+    }
   };
+
+  const searchRows = results
+    ? [
+        ...results.merchants.map((m) => ({ label: m.storeName, sub: "", href: `/admin/merchants/${m.id}`, type: "Merchant" })),
+        ...results.partners.map((p) => ({ label: p.displayName, sub: "", href: `/admin/partners/${p.id}`, type: "Partner" })),
+        ...results.customers.map((c) => ({ label: c.fullName, sub: c.email, href: `/admin/customers`, type: "Customer" })),
+        ...results.orders.map((o) => ({ label: o.reference, sub: o.status, href: `/admin/orders/${o.reference}`, type: "Order" })),
+        ...results.products.map((p) => ({ label: p.title, sub: "", href: `/admin/products`, type: "Product" })),
+      ].slice(0, 12)
+    : null;
 
   return (
     <div className="flex flex-col gap-6 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1200px] lg:gap-8">
@@ -178,18 +146,23 @@ export default function AdminHome() {
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+              disabled={uploading}
+              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading disabled:opacity-60"
             >
-              <ImagePlus className="h-3.5 w-3.5" />
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ImagePlus className="h-3.5 w-3.5" />
+              )}
               {dashboardBanner ? "Edit Banner" : "Add Banner"}
             </button>
-            <button
-              type="button"
+            <Link
+              href="/admin/audit-log"
               aria-label="Notifications"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
             >
               <Bell className="h-4 w-4 text-white" strokeWidth={1.75} />
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -205,12 +178,14 @@ export default function AdminHome() {
             className="w-full bg-transparent text-[13px] text-shop-heading outline-none placeholder:text-shop-text/50"
           />
         </div>
-        {searchResults && (
+        {searchRows && (
           <div className="absolute inset-x-4 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-[14px] border border-shop-border bg-white shadow-lg lg:inset-x-8">
-            {searchResults.length === 0 ? (
-              <p className="p-4 text-center text-[12.5px] text-shop-text">No results for &quot;{query}&quot;</p>
+            {searchRows.length === 0 ? (
+              <p className="p-4 text-center text-[12.5px] text-shop-text">
+                No results for &quot;{query}&quot;
+              </p>
             ) : (
-              searchResults.map((r, i) => (
+              searchRows.map((r, i) => (
                 <Link
                   key={i}
                   href={r.href}
@@ -218,8 +193,12 @@ export default function AdminHome() {
                   className="flex items-center justify-between gap-3 border-b border-shop-border px-4 py-3 last:border-b-0 hover:bg-shop-bg"
                 >
                   <div className="min-w-0">
-                    <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">{r.label}</p>
-                    <p className="line-clamp-1 text-[11px] text-shop-text/60">{r.sub}</p>
+                    <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
+                      {r.label}
+                    </p>
+                    {r.sub && (
+                      <p className="line-clamp-1 text-[11px] text-shop-text/60">{r.sub}</p>
+                    )}
                   </div>
                   <span className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10px] font-semibold text-shop-accent-1">
                     {r.type}
@@ -232,37 +211,48 @@ export default function AdminHome() {
       </div>
 
       {/* Action Required */}
-      {actionItems.length > 0 && (
-        <div className="flex flex-col gap-3 px-4 lg:px-8">
-          <p className="flex items-center gap-1.5 text-[14px] font-semibold text-shop-heading">
-            <ShieldAlert className="h-4 w-4 text-shop-accent-3" />
-            Action Required
-          </p>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {actionItems.map((item) => (
+      <div className="flex flex-col gap-3 px-4 lg:px-8">
+        <p className="flex items-center gap-1.5 text-[14px] font-semibold text-shop-heading">
+          <ShieldAlert className="h-4 w-4 text-shop-accent-3" />
+          Action Required
+        </p>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {Object.entries(ACTION_LABELS).map(([key, meta]) => {
+            const count = action[key] ?? 0;
+            return (
               <Link
-                key={item.id}
-                href={item.href}
-                className="flex items-center justify-between rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3.5"
+                key={key}
+                href={meta.href}
+                className={`flex flex-col gap-1 rounded-[12px] border p-3.5 ${
+                  count > 0 ? "border-amber-300 bg-amber-50" : "border-shop-border bg-white"
+                }`}
               >
-                <span className="text-[12.5px] font-medium text-amber-800">{item.label}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-amber-700" />
+                <span className="text-[20px] font-bold text-shop-heading">{count}</span>
+                <span className="text-[11.5px] text-shop-text">{meta.label}</span>
               </Link>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Business Overview */}
       <div className="flex flex-col gap-3 px-4 lg:px-8">
         <p className="text-[14px] font-semibold text-shop-heading">Business Overview</p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(businessOverview.revenueToday)} href="/admin/finance" />
-          <KPI icon={ShoppingBag} label="Orders Today" value={businessOverview.ordersToday} href="/admin/orders" />
-          <KPI icon={Users} label="Customers" value={businessOverview.customers.toLocaleString()} href="/admin/customers" />
-          <KPI icon={Store} label="Merchants" value={businessOverview.merchants} href="/admin/merchants" />
-          <KPI icon={Users2} label="Partners" value={businessOverview.partners} href="/admin/partners" />
-          <KPI icon={Wallet} label="Escrow Balance" value={formatPrice(escrowBalance)} href="/admin/finance" />
+          {isLoading || !kpis ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-[14px]" />
+            ))
+          ) : (
+            <>
+              <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(kpis.revenueToday)} href="/admin/finance" />
+              <KPI icon={ShoppingBag} label="Orders Today" value={kpis.ordersToday} href="/admin/orders" />
+              <KPI icon={Users} label="Customers" value={kpis.customers.toLocaleString()} href="/admin/customers" />
+              <KPI icon={Store} label="Merchants" value={kpis.merchants} href="/admin/merchants" />
+              <KPI icon={Users2} label="Partners" value={kpis.partners} href="/admin/partners" />
+              <KPI icon={Wallet} label="Escrow Balance" value={formatPrice(kpis.escrowBalance)} href="/admin/finance" />
+            </>
+          )}
         </div>
       </div>
 
@@ -273,11 +263,15 @@ export default function AdminHome() {
           <div className="grid grid-cols-2 gap-3 text-[12.5px]">
             <div>
               <p className="text-shop-text/60">Revenue</p>
-              <p className="font-semibold text-shop-heading">{formatPrice(todaysSnapshot.revenue)}</p>
+              <p className="font-semibold text-shop-heading">
+                {formatPrice(kpis?.revenueToday ?? todaysSnapshot.revenue)}
+              </p>
             </div>
             <div>
               <p className="text-shop-text/60">Orders</p>
-              <p className="font-semibold text-shop-heading">{todaysSnapshot.orders}</p>
+              <p className="font-semibold text-shop-heading">
+                {kpis?.ordersToday ?? todaysSnapshot.orders}
+              </p>
             </div>
             <div>
               <p className="text-shop-text/60">New Customers</p>
@@ -312,16 +306,34 @@ export default function AdminHome() {
 
         {/* Recent Activity */}
         <div className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <Activity className="h-4 w-4 text-shop-accent-1" />
-            Recent Activity
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+              <Activity className="h-4 w-4 text-shop-accent-1" />
+              Recent Activity
+            </p>
+            <Link
+              href="/admin/audit-log"
+              className="text-[12px] font-semibold text-shop-accent-1"
+            >
+              View all
+            </Link>
+          </div>
           <div className="flex flex-col gap-2.5">
-            {recentActivity.map((a) => (
-              <div key={a.id} className="text-[12px] text-shop-text">
-                <span className="text-shop-heading">{a.text}</span>
+            {(data?.recentActivity ?? []).length === 0 && (
+              <p className="text-[12px] text-shop-text/60">No activity yet.</p>
+            )}
+            {(data?.recentActivity ?? []).slice(0, 5).map((a, i) => (
+              <div key={i} className="text-[12px] text-shop-text">
+                <span className="capitalize text-shop-heading">
+                  {a.action.replace(/^admin\./, "").replace(/[._]/g, " ")}
+                </span>
                 <p className="text-[10.5px] text-shop-text/50">
-                  {new Date(a.at).toLocaleString("en-NG", { hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })}
+                  {new Date(a.createdAt).toLocaleString("en-NG", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    day: "numeric",
+                    month: "short",
+                  })}
                 </p>
               </div>
             ))}

@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Menu, ChevronRight } from "lucide-react";
-import { categoryMenu } from "@/lib/shop-data";
+import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
 
 const FloatingCategoryTrigger = () => {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const rootRef = useRef(null);
+  const { data: categories } = useGetCategoriesQuery();
+  const list = categories ?? [];
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 480);
@@ -41,34 +44,26 @@ const FloatingCategoryTrigger = () => {
       </button>
 
       {open && (
-        <div className="absolute left-10 top-1/2 z-40 w-[280px] -translate-y-1/2 rounded-r-[10px] bg-white py-2 shadow-2xl">
-          {categoryMenu.map((cat) => (
-            <div key={cat.title} className="group/item relative">
-              <a
-                href={cat.href}
-                className="flex items-center justify-between px-5 py-[10px] text-[14px] text-shop-heading transition-colors hover:bg-shop-bg hover:text-shop-accent-1"
-              >
-                {cat.title}
-                {cat.children && <ChevronRight className="h-3.5 w-3.5" />}
-              </a>
-
-              {cat.children && (
-                <div className="invisible absolute left-full top-0 z-50 min-h-full w-[260px] rounded-r-[10px] bg-white opacity-0 shadow-xl transition-opacity duration-150 group-hover/item:visible group-hover/item:opacity-100">
-                  <div className="flex flex-col py-2">
-                    {cat.children.map((c) => (
-                      <a
-                        key={c}
-                        href="#"
-                        className="px-5 py-[10px] text-[14px] text-shop-text transition-colors hover:bg-shop-bg hover:text-shop-accent-1"
-                      >
-                        {c}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        <div className="absolute left-10 top-1/2 z-40 max-h-[70vh] w-[280px] -translate-y-1/2 overflow-y-auto rounded-r-[10px] bg-white py-2 shadow-2xl">
+          {list.map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/shop?category=${cat.slug}`}
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between px-5 py-[10px] text-[14px] text-shop-heading transition-colors hover:bg-shop-bg hover:text-shop-accent-1"
+            >
+              {cat.label}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
           ))}
+          <Link
+            href="/shop"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-between px-5 py-[10px] text-[14px] font-semibold text-shop-accent-1 hover:bg-shop-bg"
+          >
+            All Products
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       )}
     </div>

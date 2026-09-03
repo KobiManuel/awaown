@@ -1,28 +1,40 @@
 "use client";
 
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { X, Loader2, CheckCircle2, CalendarClock, ShieldAlert } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { PAYOUT_BANKS } from "@/lib/payout-banks";
 import { BANK_LOGOS } from "@/app/Components/Icons/BrandLogos";
-import { requestWithdrawal } from "@/lib/store/partnerSlice";
+import {
+  useGetPartnerWithdrawalsQuery,
+  useRequestWithdrawalMutation,
+} from "@/lib/api/partnerApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 import ModalShell from "./ModalShell";
 
-const MIN_WITHDRAWAL = 2000;
+const MIN_WITHDRAWAL = 1000;
 
 const WithdrawModal = () => {
-  const dispatch = useDispatch();
-  const balance = useSelector((s) => s.partner.walletBalance);
-  const verification = useSelector((s) => s.partner.verification);
+  const { data } = useGetPartnerWithdrawalsQuery();
+  const [requestWithdrawal] = useRequestWithdrawalMutation();
+  const balance = data?.balance ?? 0;
+  const verified = data?.verification === "VERIFIED";
+
   const [step, setStep] = useState("amount"); // amount | processing | success
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState(PAYOUT_BANKS[0].id);
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [error, setError] = useState("");
 
   const numericAmount = amount ? Number(amount) : 0;
-  const isValid = numericAmount >= MIN_WITHDRAWAL && numericAmount <= balance;
+  const isValid =
+    numericAmount >= MIN_WITHDRAWAL &&
+    numericAmount <= balance &&
+    accountNumber.length >= 10 &&
+    accountName.trim().length > 1;
 
-  if (verification.status !== "verified") {
+  if (!verified) {
     return (
       <ModalShell variant="sheet">
         {(close) => (
@@ -54,13 +66,22 @@ const WithdrawModal = () => {
     setAmount(value.replace(/[^0-9]/g, ""));
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid || step === "processing") return;
+    setError("");
     setStep("processing");
-    setTimeout(() => {
-      dispatch(requestWithdrawal({ amount: numericAmount, bank }));
+    try {
+      await requestWithdrawal({
+        amount: numericAmount,
+        bankName: PAYOUT_BANKS.find((b) => b.id === bank)?.label ?? bank,
+        accountNumber,
+        accountName: accountName.trim(),
+      }).unwrap();
       setStep("success");
-    }, 1200);
+    } catch (err) {
+      setError(errorMessage(err));
+      setStep("amount");
+    }
   };
 
   return (
@@ -149,13 +170,39 @@ const WithdrawModal = () => {
                 })}
               </div>
 
+              <input
+                value={accountNumber}
+                onChange={(e) =>
+                  setAccountNumber(
+                    e.target.value.replace(/[^0-9]/g, "").slice(0, 10),
+                  )
+                }
+                placeholder="Account number"
+                inputMode="numeric"
+                className="mb-2 w-full rounded-[10px] border border-shop-border px-3.5 py-3 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+              <input
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="Account name"
+                className="mb-5 w-full rounded-[10px] border border-shop-border px-3.5 py-3 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+
+              {error && (
+                <p className="mb-3 text-[12.5px] font-medium text-red-600">
+                  {error}
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isValid}
                 className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
               >
-                {numericAmount > 0 ? `Withdraw ${formatPrice(numericAmount).replace(".00", "")}` : "Enter an amount"}
+                {numericAmount > 0
+                  ? `Withdraw ${formatPrice(numericAmount)}`
+                  : "Enter an amount"}
               </button>
             </>
           )}

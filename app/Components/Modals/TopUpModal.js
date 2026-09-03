@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
 import { X, Loader2, CheckCircle2, Wallet } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
-import { topUpWallet } from "@/lib/store/authSlice";
+import {
+  useTopUpWalletMutation,
+  useVerifyWalletTopUpMutation,
+} from "@/lib/api/walletApi";
+import { errorMessage } from "@/lib/api/errorMessage";
+import { openPaystackPopup } from "@/lib/paystack";
 import ModalShell from "./ModalShell";
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000];
@@ -14,11 +18,13 @@ const FUNDING_METHODS = [
 ];
 
 const TopUpModal = () => {
-  const dispatch = useDispatch();
   const [step, setStep] = useState("amount"); // amount | processing | success
   const [amount, setAmount] = useState(0);
   const [customAmount, setCustomAmount] = useState("");
   const [method, setMethod] = useState(FUNDING_METHODS[0].id);
+  const [error, setError] = useState("");
+  const [topUp] = useTopUpWalletMutation();
+  const [verifyTopUp] = useVerifyWalletTopUpMutation();
 
   const handleCustomAmount = (value) => {
     const digits = value.replace(/[^0-9]/g, "");
@@ -26,13 +32,56 @@ const TopUpModal = () => {
     setAmount(digits ? Number(digits) : 0);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (amount <= 0 || step === "processing") return;
+    setError("");
     setStep("processing");
-    setTimeout(() => {
-      dispatch(topUpWallet(amount));
+    try {
+      const res = await topUp(amount).unwrap();
+
+      // Live gateway → inline popup (desktop) with hosted-page fallback.
+      if (res?.provider === "paystack" && res.accessCode) {
+        try {
+          sessionStorage.setItem("awaown_wallet_topup", res.reference);
+        } catch {}
+        const outcome = await openPaystackPopup({
+          accessCode: res.accessCode,
+          fallbackUrl: res.authorizationUrl,
+          onSuccess: async () => {
+            try {
+              await verifyTopUp(res.reference).unwrap();
+            } catch {
+              // webhook will still settle it; the wallet refreshes on next view
+            }
+            setStep("success");
+          },
+          onCancel: () => {
+            setError("Payment cancelled.");
+            setStep("amount");
+          },
+          onError: (e) => {
+            setError(e?.message || "Payment could not be completed.");
+            setStep("amount");
+          },
+        });
+        if (outcome === "redirected") return;
+        return;
+      }
+
+      // Older redirect-only response, or non-Paystack
+      if (res?.authorizationUrl) {
+        try {
+          sessionStorage.setItem("awaown_wallet_topup", res.reference);
+        } catch {}
+        window.location.href = res.authorizationUrl;
+        return;
+      }
+
       setStep("success");
-    }, 1200);
+    } catch (err) {
+      setError(errorMessage(err));
+      setStep("amount");
+    }
   };
 
   return (
@@ -118,6 +167,11 @@ const TopUpModal = () => {
                 })}
               </div>
 
+              {error && (
+                <p className="mb-3 text-[12.5px] font-medium text-red-600">
+                  {error}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleConfirm}

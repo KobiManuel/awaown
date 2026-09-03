@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
   Store,
   ClipboardList,
@@ -14,17 +14,22 @@ import {
   ShieldCheck,
   ShieldAlert,
   ImagePlus,
-  Eye,
   MapPin,
   User,
   Check,
+  Loader2,
 } from "lucide-react";
-import { merchantProfile, NIGERIAN_STATES } from "@/lib/merchant-data";
-import { dummyUser } from "@/lib/dashboard-data";
+import { NIGERIAN_STATES } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
-import { saveStoreProfile, setStoreDetails } from "@/lib/store/merchantSlice";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+import { useMediaUpload } from "@/lib/api/mediaApi";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useGetMerchantOverviewQuery,
+  useGetMerchantStoreQuery,
+  useUpdateMerchantStoreMutation,
+} from "@/lib/api/merchantApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 
 const links = [
   { href: "/merchant/products", label: "Manage Products", icon: Store },
@@ -34,213 +39,250 @@ const links = [
   { href: "/merchant/help", label: "Help Centre", icon: HelpCircle },
 ];
 
-const VERIFICATION_COPY = {
-  unverified: { label: "Not Verified", tone: "bg-red-50 text-shop-accent-3" },
-  pending: { label: "Verification Pending", tone: "bg-amber-100 text-amber-700" },
-  verified: { label: "Verified Merchant", tone: "bg-emerald-100 text-emerald-700" },
+const VERIF = {
+  UNVERIFIED: { label: "Not Verified", tone: "bg-red-50 text-shop-accent-3" },
+  PENDING: { label: "Verification Pending", tone: "bg-amber-100 text-amber-700" },
+  VERIFIED: { label: "Verified Merchant", tone: "bg-emerald-100 text-emerald-700" },
+  REJECTED: { label: "Verification Rejected", tone: "bg-red-50 text-shop-accent-3" },
 };
 
 export default function MerchantAccountPage() {
   const dispatch = useDispatch();
   const showToast = useToast();
-  const user = useSelector((s) => s.auth.user) || dummyUser;
-  const verification = useSelector((s) => s.merchant.verification);
-  const verificationInfo = VERIFICATION_COPY[verification.status];
-  const bannerInputRef = useRef(null);
-  const logoInputRef = useRef(null);
+  const { data: overview } = useGetMerchantOverviewQuery();
+  const { data: store, isLoading } = useGetMerchantStoreQuery();
+  const [updateStore, { isLoading: saving }] = useUpdateMerchantStoreMutation();
+  const { upload: uploadStoreImage, uploading: imageUploading } =
+    useMediaUpload("stores");
 
-  const savedProfile = useSelector((s) => ({
-    storeBanner: s.merchant.storeBanner,
-    storeLogo: s.merchant.storeLogo,
-    storeBio: s.merchant.storeBio,
-  }));
-  const savedDetails = useSelector((s) => s.merchant.storeDetails);
-
-  const [profileDraft, setProfileDraft] = useState(savedProfile);
-  const [detailsDraft, setDetailsDraft] = useState(savedDetails);
+  const bannerRef = useRef(null);
+  const logoRef = useRef(null);
+  const [draft, setDraft] = useState(null);
 
   useEffect(() => {
-    setProfileDraft(savedProfile);
-    setDetailsDraft(savedDetails);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (store && !draft) {
+      setDraft({
+        bio: store.bio ?? "",
+        bannerUrl: store.bannerUrl ?? null,
+        logoUrl: store.logoUrl ?? null,
+        state: store.state ?? "",
+        address: store.address ?? "",
+        phone: store.phone ?? "",
+      });
+    }
+  }, [store, draft]);
 
-  const update = (patch) => setProfileDraft((prev) => ({ ...prev, ...patch }));
-  const updateDetails = (patch) => setDetailsDraft((prev) => ({ ...prev, ...patch }));
+  const verif = VERIF[overview?.verification?.status ?? "UNVERIFIED"];
+  const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
+  const dirty =
+    store &&
+    draft &&
+    JSON.stringify({
+      bio: store.bio ?? "",
+      bannerUrl: store.bannerUrl ?? null,
+      logoUrl: store.logoUrl ?? null,
+      state: store.state ?? "",
+      address: store.address ?? "",
+      phone: store.phone ?? "",
+    }) !== JSON.stringify(draft);
+  const detailsComplete = draft?.state && draft?.address && draft?.phone;
 
-  const isProfileDirty = Object.keys(savedProfile).some((key) => savedProfile[key] !== profileDraft[key]);
-  const isDetailsDirty = JSON.stringify(savedDetails) !== JSON.stringify(detailsDraft);
-
-  const detailsComplete = Boolean(detailsDraft.state && detailsDraft.address && detailsDraft.phone);
-
-  const handleBannerChange = async (e) => {
+  const pickImage = async (e, key) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    update({ storeBanner: await readImageAsCompressedDataURL(file) });
     e.target.value = "";
+    const url = await uploadStoreImage(file);
+    if (url) set({ [key]: url });
+    else showToast("Image upload failed");
   };
 
-  const handleLogoChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    update({ storeLogo: await readImageAsCompressedDataURL(file) });
-    e.target.value = "";
-  };
-
-  const handleSaveProfile = () => {
-    dispatch(saveStoreProfile({ ...profileDraft, storeDetails: savedDetails }));
-    showToast("Store changes saved");
-  };
-
-  const handleSaveDetails = () => {
-    dispatch(setStoreDetails(detailsDraft));
-    showToast("Store details saved");
+  const save = async () => {
+    try {
+      await updateStore(draft).unwrap();
+      showToast("Store changes saved");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
   };
 
   return (
     <div className="flex flex-col gap-5 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[640px] lg:pb-10">
       <div className="flex items-center gap-4 px-4 pt-5 lg:px-0 lg:pt-10">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-shop-accent-1 text-[22px] font-semibold text-white">
-          {(merchantProfile.storeName || "S").charAt(0)}
+          {(overview?.profile?.storeName || "S").charAt(0)}
         </div>
         <div>
           <p className="text-[16px] font-semibold text-shop-heading">
-            {merchantProfile.storeName}
+            {overview?.profile?.storeName ?? "…"}
           </p>
-          <p className="text-[12.5px] text-shop-text">{user.name}</p>
-          <p className="text-[12.5px] text-shop-text">{user.email}</p>
+          {overview?.profile?.ownerName && (
+            <p className="text-[12.5px] text-shop-text">
+              {overview.profile.ownerName}
+            </p>
+          )}
+          <p className="text-[12.5px] text-shop-text">
+            {overview?.profile?.businessName}
+          </p>
         </div>
       </div>
 
       <button
         type="button"
         onClick={() =>
-          dispatch(openModal({ modalType: MODAL_TYPES.VERIFY_IDENTITY, modalProps: { role: "merchant" } }))
+          dispatch(
+            openModal({
+              modalType: MODAL_TYPES.VERIFY_IDENTITY,
+              modalProps: { role: "merchant" },
+            }),
+          )
         }
-        className={`mx-4 flex items-center gap-2 rounded-full px-4 py-2.5 lg:mx-0 ${verificationInfo.tone}`}
+        className={`mx-4 flex items-center gap-2 rounded-full px-4 py-2.5 lg:mx-0 ${verif.tone}`}
       >
-        {verification.status === "verified" ? (
+        {overview?.verification?.status === "VERIFIED" ? (
           <ShieldCheck className="h-4 w-4" />
         ) : (
           <ShieldAlert className="h-4 w-4" />
         )}
-        <span className="text-[12.5px] font-semibold">{verificationInfo.label}</span>
+        <span className="text-[12.5px] font-semibold">{verif.label}</span>
       </button>
 
-      <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
-        <p className="text-[13.5px] font-semibold text-shop-heading">Store Settings</p>
+      {isLoading || !draft ? (
+        <Skeleton className="mx-4 h-64 rounded-[14px] lg:mx-0" />
+      ) : (
+        <>
+          <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
+            <p className="text-[13.5px] font-semibold text-shop-heading">
+              Store Settings
+            </p>
+            <div
+              className="relative flex h-28 items-end overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 bg-cover bg-center"
+              style={
+                draft.bannerUrl
+                  ? { backgroundImage: `url(${draft.bannerUrl})` }
+                  : undefined
+              }
+            >
+              <div className="absolute inset-0 bg-black/10" />
+              <input
+                ref={bannerRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => pickImage(e, "bannerUrl")}
+              />
+              <input
+                ref={logoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => pickImage(e, "logoUrl")}
+              />
+              <button
+                type="button"
+                onClick={() => logoRef.current?.click()}
+                className="absolute bottom-3 left-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow"
+              >
+                {draft.logoUrl ? (
+                  <img
+                    src={draft.logoUrl}
+                    alt="Store logo"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-6 w-6 text-shop-text/50" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => bannerRef.current?.click()}
+                disabled={imageUploading}
+                className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
+              >
+                {imageUploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5" />
+                )}
+                {draft.bannerUrl ? "Change Banner" : "Add Banner"}
+              </button>
+            </div>
+            <textarea
+              value={draft.bio}
+              onChange={(e) => set({ bio: e.target.value })}
+              placeholder="Write a short bio for your store..."
+              rows={3}
+              className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 focus:border-shop-accent-1 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={save}
+              disabled={!dirty || saving}
+              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
+            >
+              {saving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+              Save Changes
+            </button>
+          </div>
 
-        <div
-          className="relative flex h-28 items-end overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 bg-cover bg-center"
-          style={profileDraft.storeBanner ? { backgroundImage: `url(${profileDraft.storeBanner})` } : undefined}
-        >
-          <div className="absolute inset-0 bg-black/10" />
-          <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
-          <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-          <button
-            type="button"
-            onClick={() => logoInputRef.current?.click()}
-            className="absolute left-3 bottom-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow"
-          >
-            {profileDraft.storeLogo ? (
-              <img src={profileDraft.storeLogo} alt="Store logo" className="h-full w-full object-cover" />
-            ) : (
-              <User className="h-6 w-6 text-shop-text/50" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => bannerInputRef.current?.click()}
-            className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading"
-          >
-            <ImagePlus className="h-3.5 w-3.5" />
-            {profileDraft.storeBanner ? "Change Banner" : "Add Banner"}
-          </button>
-        </div>
-        <p className="text-[11px] text-shop-text/60">Tap the circle to set your store logo.</p>
-
-        <textarea
-          value={profileDraft.storeBio || ""}
-          onChange={(e) => update({ storeBio: e.target.value })}
-          placeholder="Write a short bio for your store..."
-          rows={3}
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 focus:border-shop-accent-1 focus:outline-none"
-        />
-
-        <Link
-          href="/shop/fashion-vault"
-          target="_blank"
-          className="flex items-center justify-center gap-1.5 rounded-full border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          Preview Store
-        </Link>
-
-        <button
-          type="button"
-          onClick={handleSaveProfile}
-          disabled={!isProfileDirty}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
-        >
-          <Check className="h-3.5 w-3.5" />
-          Save Changes
-        </button>
-      </div>
-
-      <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
-        <div className="flex items-center justify-between">
-          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-shop-heading">
-            <MapPin className="h-4 w-4 text-shop-accent-1" />
-            Store Details
-          </p>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-              detailsComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            {detailsComplete ? "Complete" : "Missing"}
-          </span>
-        </div>
-        <p className="text-[11.5px] text-shop-text">
-          Needed for delivery — couriers use this to plan pickup and shipping.
-        </p>
-        <select
-          value={detailsDraft.state || ""}
-          onChange={(e) => updateDetails({ state: e.target.value })}
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
-        >
-          <option value="" disabled>
-            Select state
-          </option>
-          {NIGERIAN_STATES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <input
-          value={detailsDraft.address || ""}
-          onChange={(e) => updateDetails({ address: e.target.value })}
-          placeholder="Full pickup address"
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
-        />
-        <input
-          value={detailsDraft.phone || ""}
-          onChange={(e) => updateDetails({ phone: e.target.value.replace(/[^0-9+]/g, "") })}
-          placeholder="Contact phone number"
-          inputMode="tel"
-          className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
-        />
-        <button
-          type="button"
-          onClick={handleSaveDetails}
-          disabled={!isDetailsDirty}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
-        >
-          <Check className="h-3.5 w-3.5" />
-          Save Changes
-        </button>
-      </div>
+          <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-shop-heading">
+                <MapPin className="h-4 w-4 text-shop-accent-1" />
+                Store Details
+              </p>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+                  detailsComplete
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {detailsComplete ? "Complete" : "Missing"}
+              </span>
+            </div>
+            <select
+              value={draft.state}
+              onChange={(e) => set({ state: e.target.value })}
+              className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+            >
+              <option value="">Select state</option>
+              {NIGERIAN_STATES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <input
+              value={draft.address}
+              onChange={(e) => set({ address: e.target.value })}
+              placeholder="Full pickup address"
+              className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
+            />
+            <input
+              value={draft.phone}
+              onChange={(e) =>
+                set({ phone: e.target.value.replace(/[^0-9+ ]/g, "") })
+              }
+              placeholder="Contact phone number"
+              inputMode="tel"
+              className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
+            />
+            <button
+              type="button"
+              onClick={save}
+              disabled={!dirty || saving}
+              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Save Changes
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
         {links.map(({ href, label, icon: Icon }) => (
@@ -250,9 +292,14 @@ export default function MerchantAccountPage() {
             className="flex items-center gap-3 rounded-[12px] px-2 py-3 hover:bg-shop-bg"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-bg">
-              <Icon className="h-4.5 w-4.5 text-shop-heading" strokeWidth={1.75} />
+              <Icon
+                className="h-4.5 w-4.5 text-shop-heading"
+                strokeWidth={1.75}
+              />
             </span>
-            <span className="flex-1 text-[13.5px] font-medium text-shop-heading">{label}</span>
+            <span className="flex-1 text-[13.5px] font-medium text-shop-heading">
+              {label}
+            </span>
             <ChevronRight className="h-4 w-4 text-shop-text/40" />
           </Link>
         ))}
@@ -263,9 +310,14 @@ export default function MerchantAccountPage() {
           className="mt-2 flex items-center gap-3 rounded-[12px] px-2 py-3 text-left hover:bg-shop-bg"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50">
-            <LogOut className="h-4.5 w-4.5 text-shop-accent-3" strokeWidth={1.75} />
+            <LogOut
+              className="h-4.5 w-4.5 text-shop-accent-3"
+              strokeWidth={1.75}
+            />
           </span>
-          <span className="flex-1 text-[13.5px] font-medium text-shop-accent-3">Log Out</span>
+          <span className="flex-1 text-[13.5px] font-medium text-shop-accent-3">
+            Log Out
+          </span>
         </button>
       </div>
     </div>

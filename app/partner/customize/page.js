@@ -2,12 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
-import { ImagePlus, User, Eye, RotateCcw, Check } from "lucide-react";
-import { partnerProfile } from "@/lib/partner-data";
-import { SITE_URL } from "@/lib/site-config";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
-import { saveStoreCustomization } from "@/lib/store/partnerSlice";
+import { ImagePlus, User, Eye, RotateCcw, Check, Loader2 } from "lucide-react";
+import { useMediaUpload } from "@/lib/api/mediaApi";
 import {
   STORE_THEMES,
   STORE_ACCENTS,
@@ -19,57 +15,83 @@ import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
 import { useThemePreview } from "@/app/Components/Dashboard/ThemePreviewContext";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import {
+  useGetPartnerOverviewQuery,
+  useSavePartnerCustomizationMutation,
+} from "@/lib/api/partnerApi";
+import { errorMessage } from "@/lib/api/errorMessage";
+
+function fromProfile(p) {
+  return {
+    storeName: p?.storeName ?? "",
+    storeBio: p?.bio ?? "",
+    storeProfileImage: p?.profileImageUrl ?? null,
+    storeBanner: p?.bannerUrl ?? null,
+    storeTheme: p?.theme ?? STORE_CUSTOMIZATION_DEFAULTS.theme,
+    storeAccent: p?.accent ?? STORE_CUSTOMIZATION_DEFAULTS.accent,
+    storeFont: p?.font ?? STORE_CUSTOMIZATION_DEFAULTS.font,
+  };
+}
 
 export default function PartnerCustomizePage() {
-  const dispatch = useDispatch();
   const showToast = useToast();
   const setThemePreview = useThemePreview();
   const profileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
-  const saved = useSelector((s) => ({
-    storeName: s.partner.storeName,
-    storeBio: s.partner.storeBio,
-    storeProfileImage: s.partner.storeProfileImage,
-    storeBanner: s.partner.storeBanner,
-    storeTheme: s.partner.storeTheme,
-    storeAccent: s.partner.storeAccent,
-    storeFont: s.partner.storeFont,
-  }));
+  const { data: overview } = useGetPartnerOverviewQuery();
+  const [saveCustomization, { isLoading: saving }] =
+    useSavePartnerCustomizationMutation();
+  const { upload: uploadStoreImage, uploading: imageUploading } =
+    useMediaUpload("stores");
 
-  const [draft, setDraft] = useState(saved);
+  const saved = fromProfile(overview?.profile);
+  const [draft, setDraft] = useState(null);
+  const refCode = overview?.profile?.referralCode;
 
   useEffect(() => {
-    setDraft(saved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (overview?.profile && !draft) setDraft(fromProfile(overview.profile));
+  }, [overview, draft]);
+
+  // Live-reskins the whole Partner dashboard shell as the draft theme changes,
+  // reverting to the saved theme the moment this page is left without saving.
+  useEffect(() => {
+    if (!draft) return;
+    setThemePreview(
+      buildPartnerThemeVars(draft.storeTheme, draft.storeAccent, draft.storeFont),
+    );
+    return () => setThemePreview(null);
+  }, [draft, setThemePreview]);
+
+  if (!draft) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-shop-accent-1" />
+      </div>
+    );
+  }
 
   const { storeName, storeBio, storeProfileImage, storeBanner, storeTheme, storeAccent, storeFont } = draft;
   const isDirty = Object.keys(saved).some((key) => saved[key] !== draft[key]);
-
-  // Live-reskins the whole Partner dashboard shell (sidebar, bottom nav, page
-  // background, card surfaces, text, every accent-colored control — not just this
-  // page) as the draft theme/accent/font changes, reverting to the saved theme
-  // the moment this page is left without saving.
-  useEffect(() => {
-    setThemePreview(buildPartnerThemeVars(storeTheme, storeAccent, storeFont));
-    return () => setThemePreview(null);
-  }, [storeTheme, storeAccent, storeFont, setThemePreview]);
 
   const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const handleProfileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    update({ storeProfileImage: await readImageAsCompressedDataURL(file) });
     e.target.value = "";
+    const url = await uploadStoreImage(file);
+    if (url) update({ storeProfileImage: url });
+    else showToast("Image upload failed");
   };
 
   const handleBannerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    update({ storeBanner: await readImageAsCompressedDataURL(file) });
     e.target.value = "";
+    const url = await uploadStoreImage(file);
+    if (url) update({ storeBanner: url });
+    else showToast("Image upload failed");
   };
 
   const handleReset = () => {
@@ -84,9 +106,21 @@ export default function PartnerCustomizePage() {
     });
   };
 
-  const handleSave = () => {
-    dispatch(saveStoreCustomization(draft));
-    showToast("Store changes saved");
+  const handleSave = async () => {
+    try {
+      await saveCustomization({
+        storeName: draft.storeName,
+        bio: draft.storeBio,
+        profileImageUrl: draft.storeProfileImage,
+        bannerUrl: draft.storeBanner,
+        theme: draft.storeTheme,
+        accent: draft.storeAccent,
+        font: draft.storeFont,
+      }).unwrap();
+      showToast("Store changes saved");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
   };
 
   return (
@@ -97,7 +131,7 @@ export default function PartnerCustomizePage() {
         showBackOnDesktop
         right={
           <Link
-            href={partnerProfile.referralLink.replace(SITE_URL, "")}
+            href={refCode ? `/store/${refCode}` : "#"}
             target="_blank"
             className="flex items-center gap-1.5 text-[12px] font-semibold text-shop-accent-1"
           >
@@ -144,9 +178,14 @@ export default function PartnerCustomizePage() {
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading"
+              disabled={imageUploading}
+              className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
             >
-              <ImagePlus className="h-3.5 w-3.5" />
+              {imageUploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ImagePlus className="h-3.5 w-3.5" />
+              )}
               {storeBanner ? "Change Banner" : "Add Banner"}
             </button>
             <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
@@ -289,10 +328,14 @@ export default function PartnerCustomizePage() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={!isDirty}
+            disabled={!isDirty || saving}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
           >
-            <Check className="h-3.5 w-3.5" />
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
             Save Changes
           </button>
         </div>

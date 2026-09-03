@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
 import {
   Camera,
   Video,
@@ -22,8 +21,9 @@ import {
   PROCESSING_TIME_OPTIONS,
   PARTNER_PROGRAM_MIN_PROFIT,
 } from "@/lib/merchant-data";
-import { readFileAsDataURL, readImageAsCompressedDataURL } from "@/lib/file-utils";
-import { addProduct } from "@/lib/store/merchantSlice";
+import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useCreateMerchantProductMutation } from "@/lib/api/merchantApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
@@ -78,8 +78,13 @@ const TypeCard = ({ selected, onClick, icon: Icon, title, description }) => (
 
 export default function NewMerchantProductPage() {
   const router = useRouter();
-  const dispatch = useDispatch();
   const showToast = useToast();
+  const [createProduct, { isLoading: submitting }] =
+    useCreateMerchantProductMutation();
+  const { upload: uploadProductImage, uploading: imageUploading } =
+    useMediaUpload("products");
+  const { upload: uploadProductFile, uploading: fileUploading } =
+    useMediaUpload("products");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -121,10 +126,15 @@ export default function NewMerchantProductPage() {
   const handleImageChange = async (e, index) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await readImageAsCompressedDataURL(file);
+    e.target.value = "";
+    const url = await uploadProductImage(file);
+    if (!url) {
+      showToast("Image upload failed");
+      return;
+    }
     setImages((prev) => {
       const next = [...prev];
-      next[index] = dataUrl;
+      next[index] = url;
       return next;
     });
   };
@@ -132,19 +142,28 @@ export default function NewMerchantProductPage() {
   const handleVideoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setVideo(await readFileAsDataURL(file));
+    e.target.value = "";
+    const url = await uploadProductFile(file, { image: false });
+    if (url) setVideo(url);
+    else showToast("Video upload failed");
   };
 
   const handleDigitalFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setDigitalFile(await readFileAsDataURL(file));
+    e.target.value = "";
+    const url = await uploadProductFile(file, { image: false });
+    if (url) setDigitalFile(url);
+    else showToast("File upload failed");
   };
 
   const handleBundleItemImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBundleItemImage(await readImageAsCompressedDataURL(file));
+    e.target.value = "";
+    const url = await uploadProductImage(file);
+    if (url) setBundleItemImage(url);
+    else showToast("Image upload failed");
   };
 
   const addBundleItem = () => {
@@ -191,38 +210,67 @@ export default function NewMerchantProductPage() {
         : true) &&
       partnerRateValid;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || submitting) return;
 
-    dispatch(
-      addProduct({
-        id: `mp-${Date.now()}`,
+    try {
+      await createProduct({
         title: title.trim(),
         description: description.trim(),
         category,
         deliveryType,
-        digitalFile: deliveryType === "digital" ? digitalFile : null,
-        processingTime: deliveryType === "digital" ? "same_day" : processingTime,
+        digitalFileUrl: deliveryType === "digital" ? digitalFile : undefined,
+        processingTime:
+          deliveryType === "digital" ? "same_day" : processingTime,
         images: images.filter(Boolean),
-        video,
         productType,
-        hasVariants,
         price: Number(price),
-        stock: Number(stock),
+        stock: deliveryType === "digital" ? undefined : Number(stock),
+        variantGroups: hasVariants
+          ? optionGroups
+              .filter((g) => g.name.trim() && g.valuesText.trim())
+              .map((g) => {
+                const key = g.name.trim().toLowerCase().replace(/\s+/g, "-");
+                return {
+                  name: g.name.trim(),
+                  key,
+                  options: [
+                    ...new Set(
+                      g.valuesText
+                        .split(",")
+                        .map((v) => v.trim())
+                        .filter(Boolean),
+                    ),
+                  ].map((v) => ({
+                    label: v,
+                    value: v.toLowerCase().replace(/\s+/g, "-"),
+                  })),
+                };
+              })
+          : undefined,
         variants: hasVariants
-          ? variants.map((v) => ({ id: v.id, label: v.label, price: Number(v.price), stock: Number(v.stock) }))
-          : [],
-        groupItems: isGroup ? bundleItems : [],
-        status: "active",
-        approvalStatus: "pending",
+          ? variants
+              .filter((v) => v.id !== "default")
+              .map((v) => ({
+                label: v.label,
+                price: Number(v.price),
+                stock: Number(v.stock),
+              }))
+          : undefined,
+        groupItems: isGroup
+          ? bundleItems.map((b) => ({ title: b.title, image: b.image }))
+          : undefined,
         offerCommission: isGroup ? false : offerCommission,
-        partnerProfitAmount: !isGroup && offerCommission ? Number(partnerProfitAmount) : null,
+        partnerProfitAmount:
+          !isGroup && offerCommission ? Number(partnerProfitAmount) : undefined,
         hideStock: isGroup ? false : hideStock,
-      }),
-    );
-    showToast(`${title.trim()} submitted for admin review`);
-    router.push("/merchant/products");
+      }).unwrap();
+      showToast(`${title.trim()} submitted for admin review`);
+      router.push("/merchant/products");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
   };
 
   return (
@@ -792,10 +840,10 @@ export default function NewMerchantProductPage() {
 
         <button
           type="submit"
-          disabled={!isValid}
+          disabled={!isValid || submitting || imageUploading || fileUploading}
           className="rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
         >
-          Submit for Review
+          {imageUploading || fileUploading ? "Uploading…" : "Submit for Review"}
         </button>
       </form>
     </div>

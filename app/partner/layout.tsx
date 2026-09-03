@@ -1,12 +1,32 @@
 "use client";
 
 import React from "react";
-import { useSelector } from "react-redux";
-import { LayoutDashboard, Store, TrendingUp, Banknote, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  Store,
+  TrendingUp,
+  Banknote,
+  User,
+} from "lucide-react";
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
 import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
+import { useGetPartnerOverviewQuery } from "@/lib/api/partnerApi";
+import { STORE_CUSTOMIZATION_DEFAULTS } from "@/lib/partner-store-options";
 
-export default function PartnerLayout({ children }: { children: React.ReactNode }) {
+export default function PartnerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { data } = useGetPartnerOverviewQuery(undefined);
+  const p = data?.profile;
+
+  const themeVars = buildPartnerThemeVars(
+    p?.theme ?? STORE_CUSTOMIZATION_DEFAULTS.theme,
+    p?.accent ?? STORE_CUSTOMIZATION_DEFAULTS.accent,
+    p?.font ?? STORE_CUSTOMIZATION_DEFAULTS.font,
+  );
+
   const navItems = [
     { href: "/partner", label: "Home", icon: LayoutDashboard, exact: true },
     { href: "/partner/store", label: "My Store", icon: Store },
@@ -14,14 +34,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     { href: "/partner/withdraw", label: "Withdraw", icon: Banknote },
     { href: "/partner/account", label: "Account", icon: User },
   ];
-
-  // The partner's saved store branding reskins their whole dashboard, not just
-  // their public storefront — Customize temporarily overrides this live via
-  // ThemePreviewContext while editing, before it's saved.
-  const storeTheme = useSelector((s: any) => s.partner.storeTheme);
-  const storeAccent = useSelector((s: any) => s.partner.storeAccent);
-  const storeFont = useSelector((s: any) => s.partner.storeFont);
-  const themeVars = buildPartnerThemeVars(storeTheme, storeAccent, storeFont);
 
   return (
     <AppFrame

@@ -1,31 +1,35 @@
 "use client";
 
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheck, Upload, CheckCircle2, Loader2, X } from "lucide-react";
 import { ID_TYPES } from "@/lib/merchant-data";
-import { readImageAsCompressedDataURL } from "@/lib/file-utils";
+import { useMediaUpload } from "@/lib/api/mediaApi";
 import {
-  submitVerification as submitMerchantVerification,
-  approveVerification as approveMerchantVerification,
-} from "@/lib/store/merchantSlice";
+  useGetMerchantVerificationQuery,
+  useSubmitMerchantVerificationMutation,
+} from "@/lib/api/merchantApi";
 import {
-  submitVerification as submitPartnerVerification,
-  approveVerification as approvePartnerVerification,
-} from "@/lib/store/partnerSlice";
+  useGetPartnerVerificationQuery,
+  useSubmitPartnerVerificationMutation,
+} from "@/lib/api/partnerApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 import ModalShell from "./ModalShell";
 
 const UploadSlot = ({ label, image, onChange }) => {
   const inputRef = React.useRef(null);
+  const { upload, uploading } = useMediaUpload("kyc");
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[12.5px] font-semibold text-shop-heading">{label}</span>
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg"
+        disabled={uploading}
+        className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg disabled:opacity-70"
       >
-        {image ? (
+        {uploading ? (
+          <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
+        ) : image ? (
           <img src={image} alt={label} className="h-full w-full object-cover" />
         ) : (
           <span className="flex flex-col items-center gap-1.5 text-shop-text/60">
@@ -42,7 +46,9 @@ const UploadSlot = ({ label, image, onChange }) => {
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
-          onChange(await readImageAsCompressedDataURL(file));
+          e.target.value = "";
+          const url = await upload(file);
+          if (url) onChange(url);
         }}
       />
     </div>
@@ -50,33 +56,54 @@ const UploadSlot = ({ label, image, onChange }) => {
 };
 
 const VerificationModal = ({ modalProps }) => {
-  const dispatch = useDispatch();
   const role = modalProps?.role === "partner" ? "partner" : "merchant";
-  const verification = useSelector((s) => s[role].verification);
+
+  const merchantVerif = useGetMerchantVerificationQuery(undefined, {
+    skip: role !== "merchant",
+  });
+  const partnerVerif = useGetPartnerVerificationQuery(undefined, {
+    skip: role !== "partner",
+  });
+  const [submitMerchant, merchantSubmit] =
+    useSubmitMerchantVerificationMutation();
+  const [submitPartner, partnerSubmit] = useSubmitPartnerVerificationMutation();
+
+  const verification =
+    role === "partner" ? partnerVerif.data : merchantVerif.data;
+  const submit = role === "partner" ? submitPartner : submitMerchant;
+  const submitting =
+    role === "partner" ? partnerSubmit.isLoading : merchantSubmit.isLoading;
 
   const [idType, setIdType] = useState(ID_TYPES[0].id);
   const [idNumber, setIdNumber] = useState("");
-  const [idImageFront, setIdImageFront] = useState(null);
-  const [idImageBack, setIdImageBack] = useState(null);
-  const [selfieImage, setSelfieImage] = useState(null);
-  const [justSubmitted, setJustSubmitted] = useState(false);
+  const [idFrontUrl, setIdFrontUrl] = useState(null);
+  const [idBackUrl, setIdBackUrl] = useState(null);
+  const [selfieUrl, setSelfieUrl] = useState(null);
+  const [error, setError] = useState("");
 
-  const submitAction = role === "partner" ? submitPartnerVerification : submitMerchantVerification;
-  const approveAction = role === "partner" ? approvePartnerVerification : approveMerchantVerification;
+  const isValid =
+    idNumber.trim().length >= 5 && idFrontUrl && idBackUrl && selfieUrl;
 
-  const isValid = idNumber.trim().length >= 5 && idImageFront && idImageBack && selfieImage;
-
-  const handleSubmit = () => {
-    if (!isValid) return;
-    dispatch(submitAction({ idType, idNumber, idImageFront, idImageBack, selfieImage }));
-    setJustSubmitted(true);
-    setTimeout(() => {
-      dispatch(approveAction());
-    }, 2500);
+  const handleSubmit = async () => {
+    if (!isValid || submitting) return;
+    setError("");
+    try {
+      await submit({
+        idType,
+        idNumber: idNumber.trim(),
+        idFrontUrl,
+        idBackUrl,
+        selfieUrl,
+      }).unwrap();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   };
 
-  const showPending = verification.status === "pending" || justSubmitted;
-  const showVerified = verification.status === "verified";
+  const status = verification?.status;
+  const showVerified = status === "VERIFIED";
+  const showPending = status === "PENDING";
+  const showRejected = status === "REJECTED";
 
   return (
     <ModalShell variant="sheet">
@@ -85,10 +112,15 @@ const VerificationModal = ({ modalProps }) => {
           {showVerified ? (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600" strokeWidth={1.75} />
+                <CheckCircle2
+                  className="h-8 w-8 text-emerald-600"
+                  strokeWidth={1.75}
+                />
               </div>
               <div>
-                <p className="text-[16px] font-semibold text-shop-heading">You&apos;re Verified!</p>
+                <p className="text-[16px] font-semibold text-shop-heading">
+                  You&apos;re Verified!
+                </p>
                 <p className="mt-1 text-[12.5px] text-shop-text">
                   You can now request a payout at any time.
                 </p>
@@ -106,18 +138,28 @@ const VerificationModal = ({ modalProps }) => {
               <Loader2 className="h-10 w-10 animate-spin text-shop-accent-1" />
               <div>
                 <p className="text-[14px] font-semibold text-shop-heading">
-                  Reviewing your documents...
+                  Reviewing your documents…
                 </p>
                 <p className="mt-1 text-[12.5px] text-shop-text">
-                  This usually takes a few minutes.
+                  Our team will review this and update you shortly.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={close}
+                className="w-full rounded-[10px] border border-shop-border py-3 text-[13.5px] font-semibold text-shop-heading"
+              >
+                Close
+              </button>
             </div>
           ) : (
             <>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
+                  <ShieldCheck
+                    className="h-5 w-5 text-shop-accent-1"
+                    strokeWidth={1.75}
+                  />
                   <p className="text-[16px] font-semibold text-shop-heading">
                     Verify Your Identity
                   </p>
@@ -132,14 +174,22 @@ const VerificationModal = ({ modalProps }) => {
                 </button>
               </div>
 
+              {showRejected && verification?.reviewNote && (
+                <p className="mb-3 rounded-[8px] bg-red-50 px-3 py-2 text-[12px] text-shop-accent-3">
+                  Previous submission rejected: {verification.reviewNote}
+                </p>
+              )}
+
               <p className="mb-4 text-[12.5px] leading-[18px] text-shop-text">
-                Merchants and Partners must verify their identity before requesting a
-                payout. Upload both sides of a government-issued ID and a selfie of you
-                holding it.
+                Merchants and Partners must verify their identity before
+                requesting a payout. Upload both sides of a government-issued ID
+                and a selfie of you holding it.
               </p>
 
               <div className="mb-3 flex flex-col gap-1.5">
-                <span className="text-[12.5px] font-semibold text-shop-heading">ID Type</span>
+                <span className="text-[12.5px] font-semibold text-shop-heading">
+                  ID Type
+                </span>
                 <select
                   value={idType}
                   onChange={(e) => setIdType(e.target.value)}
@@ -154,7 +204,9 @@ const VerificationModal = ({ modalProps }) => {
               </div>
 
               <div className="mb-4 flex flex-col gap-1.5">
-                <span className="text-[12.5px] font-semibold text-shop-heading">ID Number</span>
+                <span className="text-[12.5px] font-semibold text-shop-heading">
+                  ID Number
+                </span>
                 <input
                   value={idNumber}
                   onChange={(e) => setIdNumber(e.target.value)}
@@ -164,23 +216,38 @@ const VerificationModal = ({ modalProps }) => {
               </div>
 
               <div className="mb-3 grid grid-cols-2 gap-3">
-                <UploadSlot label="ID Document (Front)" image={idImageFront} onChange={setIdImageFront} />
-                <UploadSlot label="ID Document (Back)" image={idImageBack} onChange={setIdImageBack} />
+                <UploadSlot
+                  label="ID Document (Front)"
+                  image={idFrontUrl}
+                  onChange={setIdFrontUrl}
+                />
+                <UploadSlot
+                  label="ID Document (Back)"
+                  image={idBackUrl}
+                  onChange={setIdBackUrl}
+                />
               </div>
               <div className="mb-5 grid grid-cols-2 gap-3">
                 <UploadSlot
                   label="Selfie Holding ID"
-                  image={selfieImage}
-                  onChange={setSelfieImage}
+                  image={selfieUrl}
+                  onChange={setSelfieUrl}
                 />
               </div>
+
+              {error && (
+                <p className="mb-3 text-[12.5px] font-medium text-red-600">
+                  {error}
+                </p>
+              )}
 
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!isValid}
+                disabled={!isValid || submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
               >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Submit for Verification
               </button>
             </>
