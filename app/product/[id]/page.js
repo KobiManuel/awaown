@@ -1,9 +1,9 @@
+import { SITE_URL } from "@/lib/site-config";
 import ProductView from "./ProductView";
 
 const API =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-const SITE =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://awaown.com";
+const SITE = SITE_URL;
 
 async function getProduct(slug) {
   try {
