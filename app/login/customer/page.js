@@ -12,7 +12,7 @@ function CustomerLogin() {
       role="customer"
       mode={mode}
       eyebrow="Welcome"
-      title="Sign in to your account"
+      title={mode === "signup" ? "Create your account" : "Sign in to your account"}
       subtitle="Enter your email and we'll send you a one-time code."
     />
   );

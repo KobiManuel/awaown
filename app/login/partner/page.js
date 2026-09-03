@@ -12,7 +12,7 @@ function PartnerLogin() {
       role="partner"
       mode={mode}
       eyebrow="Partner"
-      title="Sign in to your partner dashboard"
+      title={mode === "signup" ? "Create your partner account" : "Sign in to your partner dashboard"}
       subtitle="Share products with your audience and make profit from every sale."
     />
   );
