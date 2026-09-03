@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
@@ -29,8 +30,18 @@ const ShopByCategories = () => {
                 key={cat.slug}
                 className="group flex w-[130px] shrink-0 flex-col items-center gap-3 text-center md:w-[150px]"
               >
-                <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full bg-shop-accent-1-light text-[32px] font-bold text-shop-accent-1 transition-transform group-hover:scale-105 md:h-[130px] md:w-[130px]">
-                  {cat.label.charAt(0)}
+                <div className="relative flex h-[110px] w-[110px] items-center justify-center overflow-hidden rounded-full bg-shop-accent-1-light text-[32px] font-bold text-shop-accent-1 transition-transform group-hover:scale-105 md:h-[130px] md:w-[130px]">
+                  {cat.image ? (
+                    <Image
+                      src={cat.image}
+                      alt={cat.label}
+                      fill
+                      className="object-cover"
+                      sizes="130px"
+                    />
+                  ) : (
+                    cat.label.charAt(0)
+                  )}
                 </div>
                 <div>
                   <p className="text-[14px] font-medium text-shop-heading group-hover:text-shop-accent-1">

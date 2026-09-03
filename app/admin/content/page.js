@@ -11,6 +11,7 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useUndoBuffer } from "@/app/Components/Dashboard/UndoBar";
 import HomepageEditor from "./HomepageEditor";
+import CategoriesEditor from "./CategoriesEditor";
 
 const STATUS_TONE = {
   live: "bg-emerald-100 text-emerald-700",
@@ -218,6 +219,8 @@ export default function AdminContentPage() {
         </p>
       </div>
       <HomepageEditor />
+
+      <CategoriesEditor />
 
       <FaqEditor />
     </div>
