@@ -1,8 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { UserCog, Plus, Trash2 } from "lucide-react";
 import { TEAM_ROLES } from "@/lib/admin-data";
+
+const SUPER_ALIASES = ["super_admin", "Super Admin", "SUPER_ADMIN", "superadmin"];
+const isSuperRole = (r) => SUPER_ALIASES.includes((r ?? "").trim());
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -31,10 +35,14 @@ export default function AdminTeamPage() {
   const [remove] = useRemoveTeamMemberMutation();
 
   const members = data ?? [];
+  const amSuper = isSuperRole(useSelector((s) => s.auth.profile?.teamRole));
+  const assignableRoles = amSuper
+    ? TEAM_ROLES
+    : TEAM_ROLES.filter((r) => !isSuperRole(r.id));
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole_] = useState(TEAM_ROLES[0]?.id || "");
+  const [role, setRole_] = useState("administrator");
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -44,7 +52,7 @@ export default function AdminTeamPage() {
       showToast(`${name.trim()} invited to the team`);
       setName("");
       setEmail("");
-      setRole_(TEAM_ROLES[0]?.id || "");
+      setRole_("administrator");
       setFormOpen(false);
     } catch (err) {
       showToast(errorMessage(err));
@@ -84,7 +92,7 @@ export default function AdminTeamPage() {
         }
       />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
-        Super Admin, Operations, Finance, Marketing, Support and Content access levels.
+        Super Admin, Administrator, Operations, Finance, Marketing, Support and Content access levels.
       </p>
 
       {formOpen && (
@@ -107,7 +115,7 @@ export default function AdminTeamPage() {
             className={FIELD}
           />
           <select value={role} onChange={(e) => setRole_(e.target.value)} className={FIELD}>
-            {TEAM_ROLES.map((r) => (
+            {assignableRoles.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.label}
               </option>
@@ -148,6 +156,7 @@ export default function AdminTeamPage() {
               <div className="flex items-center gap-2">
                 <select
                   value={member.teamRole}
+                  disabled={!amSuper && isSuperRole(member.teamRole)}
                   onChange={(e) => {
                     setRole({ id: member.id, teamRole: e.target.value })
                       .unwrap()
@@ -156,25 +165,29 @@ export default function AdminTeamPage() {
                       )
                       .catch((err) => showToast(errorMessage(err)));
                   }}
-                  className="rounded-[8px] border border-shop-border bg-white px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+                  className="rounded-[8px] border border-shop-border bg-white px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1 disabled:opacity-60"
                 >
-                  {TEAM_ROLES.map((r) => (
+                  {assignableRoles.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.label}
                     </option>
                   ))}
-                  {!TEAM_ROLES.some((r) => r.id === member.teamRole) && (
-                    <option value={member.teamRole}>{member.teamRole}</option>
+                  {!assignableRoles.some((r) => r.id === member.teamRole) && (
+                    <option value={member.teamRole}>
+                      {roleLabel(member.teamRole)}
+                    </option>
                   )}
                 </select>
-                <button
-                  type="button"
-                  aria-label="Remove from team"
-                  onClick={() => handleRemove(member)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {amSuper && (
+                  <button
+                    type="button"
+                    aria-label="Remove from team"
+                    onClick={() => handleRemove(member)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
