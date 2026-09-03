@@ -9,6 +9,7 @@ import AuthLayout from "@/app/Components/Auth/AuthLayout";
 import FormField from "@/app/Components/Auth/FormField";
 import OtpInput from "@/app/Components/Auth/OtpInput";
 import { setSession } from "@/lib/store/authSlice";
+import { markSignedIn } from "@/lib/session-cookie";
 import { errorMessage } from "@/lib/api/errorMessage";
 import {
   useRegisterMutation,
@@ -87,7 +88,15 @@ export default function OtpAuthFlow({
       if (mode === "signup") {
         await register({ role, fullName, email }).unwrap();
       } else {
-        await requestLogin({ role, email }).unwrap();
+        const res = await requestLogin({ role, email }).unwrap();
+        if (res && res.exists === false) {
+          setFormError(
+            allowSignupToggle
+              ? "We couldn't find an account for that email. Switch to sign up to create one."
+              : "We couldn't find an account for that email.",
+          );
+          return;
+        }
       }
       setStep("code");
       setCooldown(RESEND_COOLDOWN);
@@ -107,6 +116,10 @@ export default function OtpAuthFlow({
           : await verifyLogin({ role, email, code: value }).unwrap();
 
       dispatch(setSession({ ...data, role }));
+      // Tell the route guard (proxy.ts) this browser is signed into `role`
+      // before navigating into a guarded shell — the API's own session cookie
+      // is on a different domain and invisible to the middleware.
+      markSignedIn(role);
       if (!data.onboardingComplete) {
         router.replace(
           nextDest

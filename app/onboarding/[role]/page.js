@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import { Loader2, ArrowRight } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
 import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
+import { markSignedIn } from "@/lib/session-cookie";
 import { useCompleteOnboardingMutation } from "@/lib/api/authApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { NIGERIAN_STATES, PRODUCT_CATEGORIES } from "@/lib/merchant-data";
@@ -67,6 +68,10 @@ function OnboardingForm() {
   }, [unauth, role, router]);
 
   useEffect(() => {
+    if (authed) markSignedIn(role);
+  }, [authed, role]);
+
+  useEffect(() => {
     if (authed && onboardingComplete) router.replace(dest);
   }, [authed, onboardingComplete, dest, router]);
 
@@ -100,6 +105,7 @@ function OnboardingForm() {
 
     try {
       await complete(body).unwrap();
+      markSignedIn(role);
       router.replace(dest);
     } catch (err) {
       setFormError(errorMessage(err));

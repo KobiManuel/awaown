@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { LogOut } from "lucide-react";
 import { clearAuth } from "@/lib/store/authSlice";
 import { closeModal } from "@/lib/store/modalSlice";
+import { markSignedOut } from "@/lib/session-cookie";
 import { useLogoutMutation } from "@/lib/api/authApi";
 import ModalShell from "./ModalShell";
 
@@ -28,6 +29,7 @@ const LogoutModal = () => {
     } catch {
       // even if the server call fails, drop the local session
     }
+    markSignedOut(role);
     dispatch(clearAuth());
     dispatch(closeModal());
     router.push(LOGIN_HREF[role] || "/");
