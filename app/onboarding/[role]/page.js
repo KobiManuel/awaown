@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Loader2, ArrowRight } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
@@ -44,9 +44,14 @@ function Field({ label, children, hint }) {
 const inputCls =
   "rounded-[8px] border border-shop-border bg-white px-3.5 py-3 text-[14px] text-shop-heading outline-none focus:border-shop-accent-1 focus:ring-2 focus:ring-shop-accent-1-light";
 
-export default function OnboardingPage() {
+function OnboardingForm() {
   const router = useRouter();
   const { role } = useParams();
+  const nextParam = useSearchParams().get("next");
+  const dest =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : DASHBOARD_HOME[role] || "/";
   const { resolving, authed, unauth, onboardingComplete } =
     useAuthBootstrap(role);
   const userName = useSelector((s) => s.auth.user?.name);
@@ -62,8 +67,8 @@ export default function OnboardingPage() {
   }, [unauth, role, router]);
 
   useEffect(() => {
-    if (authed && onboardingComplete) router.replace(DASHBOARD_HOME[role] || "/");
-  }, [authed, onboardingComplete, role, router]);
+    if (authed && onboardingComplete) router.replace(dest);
+  }, [authed, onboardingComplete, dest, router]);
 
   if (resolving || !authed || onboardingComplete || !DASHBOARD_HOME[role]) {
     return (
@@ -95,7 +100,7 @@ export default function OnboardingPage() {
 
     try {
       await complete(body).unwrap();
-      router.replace(DASHBOARD_HOME[role]);
+      router.replace(dest);
     } catch (err) {
       setFormError(errorMessage(err));
     }
@@ -243,5 +248,13 @@ export default function OnboardingPage() {
         </button>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingForm />
+    </Suspense>
   );
 }

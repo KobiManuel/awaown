@@ -214,13 +214,44 @@ function ProductDetail() {
                   {product.rating} ({product.reviewCount} reviews)
                 </span>
               </div>
-              <span className="flex w-fit items-center gap-1.5 rounded-full border border-shop-border bg-shop-bg py-1 pl-1 pr-3 text-[12px] font-medium text-shop-heading">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-shop-accent-1-light">
-                  <Store className="h-3 w-3 text-shop-accent-1" strokeWidth={1.75} />
-                </span>
-                Sold by {product.vendor}
-                <ChevronRight className="h-3 w-3 text-shop-text/50" />
-              </span>
+              {(() => {
+                const seller = product.seller ?? {
+                  name: product.vendor,
+                  href: null,
+                  logoUrl: null,
+                };
+                const Pill = (
+                  <>
+                    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-shop-accent-1-light">
+                      {seller.logoUrl ? (
+                        <Image
+                          src={seller.logoUrl}
+                          alt={seller.name}
+                          fill
+                          className="object-cover"
+                          sizes="20px"
+                        />
+                      ) : (
+                        <Store className="h-3 w-3 text-shop-accent-1" strokeWidth={1.75} />
+                      )}
+                    </span>
+                    Sold by {seller.name}
+                    {seller.href && <ChevronRight className="h-3 w-3 text-shop-text/50" />}
+                  </>
+                );
+                return seller.href ? (
+                  <Link
+                    href={seller.href}
+                    className="flex w-fit items-center gap-1.5 rounded-full border border-shop-border bg-shop-bg py-1 pl-1 pr-3 text-[12px] font-medium text-shop-heading transition-colors hover:border-shop-accent-1 hover:bg-shop-accent-1-light"
+                  >
+                    {Pill}
+                  </Link>
+                ) : (
+                  <span className="flex w-fit items-center gap-1.5 rounded-full border border-shop-border bg-shop-bg py-1 pl-1 pr-3 text-[12px] font-medium text-shop-heading">
+                    {Pill}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-2">

@@ -108,7 +108,11 @@ export default function OtpAuthFlow({
 
       dispatch(setSession({ ...data, role }));
       if (!data.onboardingComplete) {
-        router.replace(`/onboarding/${role}`);
+        router.replace(
+          nextDest
+            ? `/onboarding/${role}?next=${encodeURIComponent(nextDest)}`
+            : `/onboarding/${role}`,
+        );
       } else {
         router.replace(nextDest || DASHBOARD_HOME[role]);
       }
