@@ -29,6 +29,7 @@ import {
   useVerifyLoginMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useChangePasswordMutation,
   useResendOtpMutation,
 } from "@/lib/api/authApi";
 
@@ -103,6 +104,7 @@ export default function OtpAuthFlow({
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [pendingData, setPendingData] = useState(null);
   const doneRef = useRef(false);
 
   const [register, registerState] = useRegisterMutation();
@@ -112,6 +114,7 @@ export default function OtpAuthFlow({
   const [verifyLogin, verifyLoginState] = useVerifyLoginMutation();
   const [forgotPassword, forgotState] = useForgotPasswordMutation();
   const [resetPassword, resetState] = useResetPasswordMutation();
+  const [changePassword, changePwState] = useChangePasswordMutation();
   const [resendOtp, resendState] = useResendOtpMutation();
 
   const busy =
@@ -239,10 +242,37 @@ export default function OtpAuthFlow({
         view === "verify"
           ? await verifyRegistration({ role, email, code: value }).unwrap()
           : await verifyLogin({ role, email, code: value }).unwrap();
+
+      // Accounts from before password sign-in existed have no password yet —
+      // catch that here (only possible on an OTP login, never after signup,
+      // which always sets one) and have them set one before continuing in.
+      if (view === "code" && data?.user && data.user.hasPassword === false) {
+        doneRef.current = true;
+        dispatch(setSession({ ...data, role })); // authenticates this session
+        setPendingData(data);
+        setPassword("");
+        go("setpw");
+        return;
+      }
       finish(data);
     } catch (err) {
       setFormError(errorMessage(err, "That code didn't work. Try again."));
       setCode("");
+    }
+  };
+
+  const submitSetPassword = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    if (!passwordOk(password)) {
+      setFormError("Please meet all the password requirements below.");
+      return;
+    }
+    try {
+      await changePassword({ newPassword: password }).unwrap();
+      finish(pendingData);
+    } catch (err) {
+      setFormError(errorMessage(err));
     }
   };
 
@@ -271,6 +301,10 @@ export default function OtpAuthFlow({
       s: "We'll email you a code to set a new one.",
     },
     reset: { t: "Set a new password", s: notice },
+    setpw: {
+      t: "Set a password",
+      s: "This account doesn't have one yet — set one so you can sign in faster next time.",
+    },
   };
   const h = headings[view];
 
@@ -439,6 +473,41 @@ export default function OtpAuthFlow({
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── set a password (legacy code-only accounts, on their way in) ── */}
+      {view === "setpw" && (
+        <form className="flex flex-col gap-4" onSubmit={submitSetPassword}>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-medium text-shop-heading">Password</span>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              placeholder="Create a password"
+            />
+            <PasswordChecklist value={password} className="mt-1" />
+          </label>
+          <Err />
+          <button
+            type="submit"
+            disabled={changePwState.isLoading || !passwordOk(password)}
+            className={primaryBtn}
+          >
+            {changePwState.isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>Set password &amp; continue <ArrowRight className="h-4 w-4" /></>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => finish(pendingData)}
+            className="text-center text-[12.5px] text-shop-text/70 hover:text-shop-heading hover:underline"
+          >
+            Skip for now
+          </button>
+        </form>
       )}
 
       {/* ── forgot ── */}
