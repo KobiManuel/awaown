@@ -12,7 +12,7 @@ function MerchantLogin() {
       role="merchant"
       mode={mode}
       eyebrow="Merchant"
-      title={mode === "signup" ? "Create your merchant account" : "Sign in to your store"}
+      title="Sign in to your store"
       subtitle="Manage products, fulfil orders and track payouts from your merchant dashboard."
     />
   );

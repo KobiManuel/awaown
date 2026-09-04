@@ -2,11 +2,8 @@
 
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { UserCog, Plus, Trash2 } from "lucide-react";
+import { UserCog, Plus, Trash2, Mail } from "lucide-react";
 import { TEAM_ROLES } from "@/lib/admin-data";
-
-const SUPER_ALIASES = ["super_admin", "Super Admin", "SUPER_ADMIN", "superadmin"];
-const isSuperRole = (r) => SUPER_ALIASES.includes((r ?? "").trim());
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -16,8 +13,12 @@ import {
   useSetTeamRoleMutation,
   useInviteTeamMemberMutation,
   useRemoveTeamMemberMutation,
+  useResendTeamInviteMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+
+const SUPER_ALIASES = ["super_admin", "Super Admin", "SUPER_ADMIN", "superadmin"];
+const isSuperRole = (r) => SUPER_ALIASES.includes((r ?? "").trim());
 
 function roleLabel(id) {
   return TEAM_ROLES.find((r) => r.id === id)?.label || id;
@@ -33,6 +34,7 @@ export default function AdminTeamPage() {
   const [setRole] = useSetTeamRoleMutation();
   const [invite, inviteState] = useInviteTeamMemberMutation();
   const [remove] = useRemoveTeamMemberMutation();
+  const [resendInvite, resendState] = useResendTeamInviteMutation();
 
   const members = data ?? [];
   const amSuper = isSuperRole(useSelector((s) => s.auth.profile?.teamRole));
@@ -49,7 +51,7 @@ export default function AdminTeamPage() {
     if (!name.trim() || !email.trim()) return;
     try {
       await invite({ fullName: name.trim(), email: email.trim(), teamRole: role }).unwrap();
-      showToast(`${name.trim()} invited to the team`);
+      showToast(`${name.trim()} invited — they'll get an email to set their password`);
       setName("");
       setEmail("");
       setRole_("administrator");
@@ -178,6 +180,23 @@ export default function AdminTeamPage() {
                     </option>
                   )}
                 </select>
+                <button
+                  type="button"
+                  aria-label="Resend the set-password email"
+                  title="Resend the set-password email"
+                  disabled={resendState.isLoading}
+                  onClick={async () => {
+                    try {
+                      await resendInvite(member.id).unwrap();
+                      showToast(`Set-password email resent to ${member.user.fullName}`);
+                    } catch (err) {
+                      showToast(errorMessage(err));
+                    }
+                  }}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-shop-text/50 hover:bg-shop-bg hover:text-shop-accent-1 disabled:opacity-50"
+                >
+                  <Mail className="h-4 w-4" />
+                </button>
                 {amSuper && (
                   <button
                     type="button"

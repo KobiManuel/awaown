@@ -22,6 +22,7 @@ import { formatPrice } from "@/lib/partner-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import LoginSecurityCard from "@/app/Components/Auth/LoginSecurityCard";
 import {
   useGetPartnerOverviewQuery,
   useSavePartnerCustomizationMutation,
@@ -168,6 +169,8 @@ export default function PartnerAccountPage() {
           Withdraw
         </Link>
       </div>
+
+      <LoginSecurityCard />
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
         {[

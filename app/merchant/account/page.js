@@ -22,6 +22,7 @@ import {
 import { NIGERIAN_STATES, SERVICE_AREA_NOTE } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import LoginSecurityCard from "@/app/Components/Auth/LoginSecurityCard";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -299,6 +300,8 @@ export default function MerchantAccountPage() {
           </button>
         </>
       )}
+
+      <LoginSecurityCard />
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
         {links.map(({ href, label, icon: Icon }) => (

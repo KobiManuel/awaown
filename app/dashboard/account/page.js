@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
+import LoginSecurityCard from "@/app/Components/Auth/LoginSecurityCard";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetWalletQuery } from "@/lib/api/walletApi";
@@ -132,6 +133,8 @@ export default function AccountPage() {
           ))}
         </div>
       )}
+
+      <LoginSecurityCard />
 
       <div className="flex flex-col gap-1 px-4 lg:px-0">
         {links.map(({ href, label, icon: Icon }) => (
