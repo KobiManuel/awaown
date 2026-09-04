@@ -5,7 +5,11 @@ import { MapPin, Trash2, Plus, Check, Loader2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import { NIGERIAN_STATES, SERVICE_AREA_NOTE } from "@/lib/merchant-data";
+import {
+  NIGERIAN_STATES,
+  CITIES_BY_STATE,
+  SERVICE_AREA_NOTE,
+} from "@/lib/merchant-data";
 import {
   useGetAddressesQuery,
   useAddAddressMutation,
@@ -38,6 +42,16 @@ export default function AddressesPage() {
   const [error, setError] = useState("");
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setState = (e) => {
+    const state = e.target.value;
+    // city options depend on state — drop a city that no longer applies
+    setForm((f) => ({
+      ...f,
+      state,
+      city: CITIES_BY_STATE[state]?.includes(f.city) ? f.city : "",
+    }));
+  };
+  const cityOptions = CITIES_BY_STATE[form.state] ?? [];
 
   const submit = async (e) => {
     e.preventDefault();
@@ -151,23 +165,30 @@ export default function AddressesPage() {
               onChange={set("line1")}
             />
             <div className="grid grid-cols-2 gap-2.5">
-              <input
-                className={inputCls}
-                required
-                placeholder="City"
-                value={form.city}
-                onChange={set("city")}
-              />
               <select
                 className={inputCls}
                 required
                 value={form.state}
-                onChange={set("state")}
+                onChange={setState}
               >
                 <option value="">State</option>
                 {NIGERIAN_STATES.map((s) => (
                   <option key={s} value={s}>
                     {s}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={`${inputCls} disabled:cursor-not-allowed disabled:opacity-50`}
+                required
+                disabled={!form.state}
+                value={form.city}
+                onChange={set("city")}
+              >
+                <option value="">{form.state ? "City" : "Select state first"}</option>
+                {cityOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
                   </option>
                 ))}
               </select>
