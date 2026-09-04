@@ -8,23 +8,27 @@ import {
   useSaveAdminCategoryMutation,
   useSetCategoryDefaultImageMutation,
 } from "@/lib/api/adminApi";
-import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 function CircleImagePicker({ src, label, uploading, onPick, onClear }) {
   const inputRef = useRef(null);
-  const { upload, uploading: busy } = useMediaUpload("categories");
+  const { pickAndCrop, uploading: busy, modal } = useImageCropUpload("categories");
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const url = await upload(file);
+    const url = await pickAndCrop(file, {
+      aspect: 1,
+      title: `Position the ${label} image`,
+    });
     if (url) onPick(url);
   };
 
   return (
     <div className="flex flex-col items-center gap-2">
+      {modal}
       <div className="relative h-20 w-20">
         <button
           type="button"

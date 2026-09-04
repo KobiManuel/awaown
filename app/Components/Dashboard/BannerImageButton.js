@@ -2,7 +2,7 @@
 
 import React, { useRef } from "react";
 import { ImagePlus, Loader2 } from "lucide-react";
-import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 /**
@@ -20,17 +20,17 @@ export default function BannerImageButton({
 }) {
   const inputRef = useRef(null);
   const showToast = useToast();
-  const { upload, uploading } = useMediaUpload(folder);
+  const { pickAndCrop, uploading, modal } = useImageCropUpload(folder);
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const url = await upload(file);
-    if (!url) {
-      showToast("Banner upload failed");
-      return;
-    }
+    const url = await pickAndCrop(file, {
+      aspect: 16 / 6,
+      title: "Position your banner",
+    });
+    if (!url) return;
     try {
       await onUploaded(url);
       showToast("Banner updated");
@@ -41,6 +41,7 @@ export default function BannerImageButton({
 
   return (
     <>
+      {modal}
       <input
         ref={inputRef}
         type="file"

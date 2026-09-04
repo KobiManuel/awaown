@@ -14,7 +14,7 @@ import {
   useSaveHomepageCmsMutation,
   useGetAdminMerchantsQuery,
 } from "@/lib/api/adminApi";
-import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const LABEL = "text-[10.5px] font-semibold uppercase tracking-wide text-shop-text/60";
@@ -91,26 +91,25 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
   );
 }
 
-function ImageEditButton({ onPick, label = "Change image" }) {
+function ImageEditButton({ onPick, label = "Change image", aspect = 16 / 9 }) {
   const showToast = useToast();
   const inputRef = useRef(null);
-  const { upload, uploading } = useMediaUpload("banners");
+  const { pickAndCrop, uploading, modal } = useImageCropUpload("banners");
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await upload(file);
+    const url = await pickAndCrop(file, { aspect, title: "Position the image" });
     if (url) {
       onPick(url);
       showToast("Image updated");
-    } else {
-      showToast("Image upload failed");
     }
   };
 
   return (
     <>
+      {modal}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
       <button
         type="button"

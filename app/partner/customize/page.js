@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ImagePlus, User, Eye, RotateCcw, Check, Loader2 } from "lucide-react";
-import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   STORE_THEMES,
   STORE_ACCENTS,
@@ -42,8 +42,11 @@ export default function PartnerCustomizePage() {
   const { data: overview } = useGetPartnerOverviewQuery();
   const [saveCustomization, { isLoading: saving }] =
     useSavePartnerCustomizationMutation();
-  const { upload: uploadStoreImage, uploading: imageUploading } =
-    useMediaUpload("stores");
+  const {
+    pickAndCrop: cropStoreImage,
+    uploading: imageUploading,
+    modal: cropModal,
+  } = useImageCropUpload("stores");
 
   const saved = fromProfile(overview?.profile);
   const [draft, setDraft] = useState(null);
@@ -80,18 +83,22 @@ export default function PartnerCustomizePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadStoreImage(file);
+    const url = await cropStoreImage(file, {
+      aspect: 1,
+      title: "Position your store picture",
+    });
     if (url) update({ storeProfileImage: url });
-    else showToast("Image upload failed");
   };
 
   const handleBannerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadStoreImage(file);
+    const url = await cropStoreImage(file, {
+      aspect: 16 / 6,
+      title: "Position your banner",
+    });
     if (url) update({ storeBanner: url });
-    else showToast("Image upload failed");
   };
 
   const handleReset = () => {
@@ -125,6 +132,7 @@ export default function PartnerCustomizePage() {
 
   return (
     <div className="flex flex-col gap-6 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
+      {cropModal}
       <AppHeader
         title="Customize My Store"
         backHref="/partner/account"

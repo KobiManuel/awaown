@@ -2,8 +2,7 @@
 
 import React from "react";
 import { ImagePlus, Loader2, X, Trash2 } from "lucide-react";
-import { useMediaUpload } from "@/lib/api/mediaApi";
-import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 
 let seq = 0;
 export const newVariety = () => ({
@@ -20,20 +19,22 @@ export const newVariety = () => ({
  * the numeric fields).
  */
 export default function VarietyRow({ value, onChange, onRemove, canRemove }) {
-  const showToast = useToast();
-  const { upload, uploading } = useMediaUpload("products");
+  const { pickAndCrop, uploading, modal } = useImageCropUpload("products");
 
   const pickImage = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const url = await upload(file);
+    const url = await pickAndCrop(file, {
+      aspect: 1,
+      title: "Position the variety photo",
+    });
     if (url) onChange({ image: url });
-    else showToast("Image upload failed");
   };
 
   return (
     <div className="flex items-start gap-3 rounded-[12px] border border-shop-border p-3">
+      {modal}
       <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
         {value.image ? (
           // eslint-disable-next-line @next/next/no-img-element

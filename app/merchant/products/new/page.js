@@ -22,6 +22,7 @@ import {
   PARTNER_PROGRAM_MIN_PROFIT,
 } from "@/lib/merchant-data";
 import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useCreateMerchantProductMutation } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -55,8 +56,11 @@ export default function NewMerchantProductPage() {
   const showToast = useToast();
   const [createProduct, { isLoading: submitting }] =
     useCreateMerchantProductMutation();
-  const { upload: uploadProductImage, uploading: imageUploading } =
-    useMediaUpload("products");
+  const {
+    pickAndCrop: cropProductImage,
+    uploading: imageUploading,
+    modal: cropModal,
+  } = useImageCropUpload("products");
   const { upload: uploadProductFile, uploading: fileUploading } =
     useMediaUpload("products");
 
@@ -97,11 +101,11 @@ export default function NewMerchantProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadProductImage(file);
-    if (!url) {
-      showToast("Image upload failed");
-      return;
-    }
+    const url = await cropProductImage(file, {
+      aspect: 1,
+      title: "Position the product photo",
+    });
+    if (!url) return;
     setImages((prev) => {
       const next = [...prev];
       next[index] = url;
@@ -131,9 +135,11 @@ export default function NewMerchantProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadProductImage(file);
+    const url = await cropProductImage(file, {
+      aspect: 1,
+      title: "Position the item photo",
+    });
     if (url) setBundleItemImage(url);
-    else showToast("Image upload failed");
   };
 
   const addBundleItem = () => {
@@ -227,6 +233,7 @@ export default function NewMerchantProductPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
+      {cropModal}
       <AppHeader title="Add Product" backHref="/merchant/products" showBackOnDesktop />
 
       <form onSubmit={handleSubmit} className="product-form flex flex-col gap-6 px-4 lg:px-0">

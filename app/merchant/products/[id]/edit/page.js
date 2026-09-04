@@ -14,11 +14,11 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   useGetMerchantProductsQuery,
   useUpdateMerchantProductMutation,
 } from "@/lib/api/merchantApi";
-import { useMediaUpload } from "@/lib/api/mediaApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
 const FIELD =
@@ -38,7 +38,7 @@ export default function EditMerchantProductPage() {
   );
 
   const [update, { isLoading: saving }] = useUpdateMerchantProductMutation();
-  const { upload, uploading } = useMediaUpload("products");
+  const { pickAndCrop, uploading, modal: cropModal } = useImageCropUpload("products");
 
   const [form, setForm] = useState(null);
 
@@ -115,9 +115,11 @@ export default function EditMerchantProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await upload(file);
+    const url = await pickAndCrop(file, {
+      aspect: 1,
+      title: "Position the product photo",
+    });
     if (url) set({ images: [...form.images, url].slice(0, MAX_IMAGES) });
-    else showToast("Image upload failed");
   };
 
   const profit = Number(form.partnerProfitAmount) || 0;
@@ -174,6 +176,7 @@ export default function EditMerchantProductPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[640px]">
+      {cropModal}
       <AppHeader title="Edit Product" backHref="/merchant/products" showBackOnDesktop />
 
       {product.approvalStatus === "REJECTED" && product.rejectionReason && (

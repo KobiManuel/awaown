@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { NIGERIAN_STATES, SERVICE_AREA_NOTE } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
-import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -52,8 +52,11 @@ export default function MerchantAccountPage() {
   const { data: overview } = useGetMerchantOverviewQuery();
   const { data: store, isLoading } = useGetMerchantStoreQuery();
   const [updateStore, { isLoading: saving }] = useUpdateMerchantStoreMutation();
-  const { upload: uploadStoreImage, uploading: imageUploading } =
-    useMediaUpload("stores");
+  const {
+    pickAndCrop: cropStoreImage,
+    uploading: imageUploading,
+    modal: cropModal,
+  } = useImageCropUpload("stores");
 
   const bannerRef = useRef(null);
   const logoRef = useRef(null);
@@ -91,9 +94,11 @@ export default function MerchantAccountPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadStoreImage(file);
+    const url = await cropStoreImage(file, {
+      aspect: key === "logoUrl" ? 1 : 16 / 6,
+      title: key === "logoUrl" ? "Position your logo" : "Position your banner",
+    });
     if (url) set({ [key]: url });
-    else showToast("Image upload failed");
   };
 
   const save = async () => {
@@ -107,6 +112,7 @@ export default function MerchantAccountPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[640px] lg:pb-10">
+      {cropModal}
       <div className="flex items-center gap-4 px-4 pt-5 lg:px-0 lg:pt-10">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-shop-accent-1 text-[22px] font-semibold text-white">
           {(overview?.profile?.storeName || "S").charAt(0)}
