@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { Mail, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
 import OtpInput from "@/app/Components/Auth/OtpInput";
 import { setSession } from "@/lib/store/authSlice";
+import { markSignedIn } from "@/lib/session-cookie";
 import { errorMessage } from "@/lib/api/errorMessage";
 import {
   useAdminRequestLoginMutation,
@@ -15,8 +15,8 @@ import {
 } from "@/lib/api/authApi";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const dispatch = useDispatch();
+  const doneRef = useRef(false);
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -46,12 +46,17 @@ export default function AdminLoginPage() {
 
   const verify = async (submitted) => {
     const value = submitted || code;
-    if (value.length !== 6 || verifyState.isLoading) return;
+    if (value.length !== 6 || verifyState.isLoading || doneRef.current) return;
     setFormError("");
     try {
       const data = await verifyLogin({ email, code: value }).unwrap();
+      doneRef.current = true;
       dispatch(setSession({ ...data, role: "admin" }));
-      router.replace("/admin");
+      // Let proxy.ts know this browser is signed into the admin dashboard
+      // (the API session cookie is on another domain), then do a full
+      // navigation so that cookie is sent with the request the guard sees.
+      markSignedIn("admin");
+      window.location.assign("/admin");
     } catch (err) {
       setFormError(errorMessage(err, "That code didn't work."));
       setCode("");

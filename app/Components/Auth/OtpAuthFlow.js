@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { Mail, User, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
@@ -41,7 +41,6 @@ export default function OtpAuthFlow({
   subtitle,
   allowSignupToggle = true,
 }) {
-  const router = useRouter();
   const dispatch = useDispatch();
   const search = useSearchParams();
   // Where to land after a successful login — a partner/product link that hit the
@@ -105,9 +104,14 @@ export default function OtpAuthFlow({
     }
   };
 
+  // Once a code verifies we start leaving the page. Block any further submits
+  // (a second click, the OtpInput's onComplete firing again) so we never send
+  // the now-consumed code a second time and flash "invalid or expired code".
+  const doneRef = useRef(false);
+
   const handleVerify = async (submitted) => {
     const value = submitted || code;
-    if (value.length !== 6 || verifying) return;
+    if (value.length !== 6 || verifying || doneRef.current) return;
     setFormError("");
     try {
       const data =
@@ -115,20 +119,23 @@ export default function OtpAuthFlow({
           ? await verifyRegistration({ role, email, code: value }).unwrap()
           : await verifyLogin({ role, email, code: value }).unwrap();
 
+      doneRef.current = true;
       dispatch(setSession({ ...data, role }));
       // Tell the route guard (proxy.ts) this browser is signed into `role`
       // before navigating into a guarded shell — the API's own session cookie
       // is on a different domain and invisible to the middleware.
       markSignedIn(role);
-      if (!data.onboardingComplete) {
-        router.replace(
-          nextDest
-            ? `/onboarding/${role}?next=${encodeURIComponent(nextDest)}`
-            : `/onboarding/${role}`,
-        );
-      } else {
-        router.replace(nextDest || DASHBOARD_HOME[role]);
-      }
+
+      const dest = !data.onboardingComplete
+        ? nextDest
+          ? `/onboarding/${role}?next=${encodeURIComponent(nextDest)}`
+          : `/onboarding/${role}`
+        : nextDest || DASHBOARD_HOME[role];
+
+      // A full navigation (not router.replace): it guarantees the freshly
+      // written session cookie is sent with the request the middleware sees,
+      // so we never land back on this page in a "verified but stuck" state.
+      window.location.assign(dest);
     } catch (err) {
       setFormError(errorMessage(err, "That code didn't work. Try again."));
       setCode("");
