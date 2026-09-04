@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  BellRing,
 } from "lucide-react";
 import {
   resolveVariant,
@@ -33,6 +34,10 @@ import {
   useGetProductQuery,
   useGetRelatedProductsQuery,
   useCreateReviewMutation,
+} from "@/lib/api/catalogApi";
+import {
+  useGetStockAlertQuery,
+  useSubscribeStockAlertMutation,
 } from "@/lib/api/catalogApi";
 import {
   useGetWishlistQuery,
@@ -61,7 +66,7 @@ function ProductDetail() {
   const { data: related } = useGetRelatedProductsQuery(id, { skip: !product });
   const { data: wishlist } = useGetWishlistQuery(undefined, { skip: !authed });
 
-  const [selected, setSelected] = useState({});
+  const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -69,7 +74,7 @@ function ProductDetail() {
   const [toggleWishlist, wishState] = useToggleWishlistMutation();
 
   useEffect(() => {
-    if (product && Object.keys(selected).length === 0 && product.variants?.length) {
+    if (product?.hasVariants && selected == null) {
       setSelected(defaultVariantSelection(product));
     }
   }, [product]); // eslint-disable-line
@@ -78,6 +83,20 @@ function ProductDetail() {
     () => (product ? resolveVariant(product, selected) : null),
     [product, selected],
   );
+
+  // keep quantity within the selected variety's stock
+  useEffect(() => {
+    if (resolved?.maxQty != null && qty > resolved.maxQty) {
+      setQty(Math.max(1, resolved.maxQty));
+    }
+  }, [resolved?.maxQty]); // eslint-disable-line
+
+  const { data: alertStatus } = useGetStockAlertQuery(id, {
+    skip: !authed || !product,
+  });
+  const [subscribeAlert, alertState] = useSubscribeStockAlertMutation();
+  const [alerted, setAlerted] = useState(false);
+  const isSubscribed = alerted || !!alertStatus?.subscribed;
 
   const isWishlisted = !!(
     product && (wishlist?.items ?? []).some((i) => i.id === product.id || i.productId === product.productId)
@@ -125,7 +144,21 @@ function ProductDetail() {
   const discount = product.compareAt
     ? Math.round((1 - product.price / product.compareAt) * 100)
     : null;
-  const stockLeft = product.stock;
+  // per-variety when a variety is chosen, otherwise the product roll-up
+  const stockLeft = resolved.maxQty;
+  const outOfStock = resolved.inStock === false;
+  const canAlert = outOfStock && product.backInStockAlerts;
+
+  const handleAlert = async () => {
+    if (!authed) return requireLogin();
+    try {
+      await subscribeAlert(id).unwrap();
+      setAlerted(true);
+      showToast("We'll email you when it's back in stock");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   const handleWishlist = async () => {
     if (wishState.isLoading) return;
@@ -265,69 +298,104 @@ function ProductDetail() {
               )}
             </div>
 
-            {(product.variants ?? []).map((group) => (
-              <div key={group.key} className="flex flex-col gap-2">
+            {product.hasVariants && product.variants?.length > 0 && (
+              <div className="flex flex-col gap-2">
                 <p className="text-[13px] font-semibold text-shop-heading">
-                  {group.name}:{" "}
+                  {product.optionName || "Option"}:{" "}
                   <span className="font-normal text-shop-text">
-                    {group.options.find((o) => o.value === selected[group.key])?.label}
+                    {product.variants.find((v) => v.id === selected)?.label}
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {group.options.map((option) => {
-                    const active = selected[group.key] === option.value;
+                  {product.variants.map((v) => {
+                    const active = selected === v.id;
+                    const soldOut = v.inStock === false;
                     return (
                       <button
-                        key={option.value}
+                        key={v.id}
                         type="button"
-                        onClick={() =>
-                          setSelected((s) => ({ ...s, [group.key]: option.value }))
-                        }
-                        className={`rounded-[8px] border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
+                        disabled={soldOut}
+                        onClick={() => setSelected(v.id)}
+                        className={`flex items-center gap-2 rounded-[10px] border p-1.5 pr-3 text-left transition-colors disabled:opacity-45 ${
                           active
-                            ? "border-shop-accent-1 bg-shop-accent-1-light text-shop-accent-1"
-                            : "border-shop-border text-shop-heading"
+                            ? "border-shop-accent-1 bg-shop-accent-1-light"
+                            : "border-shop-border hover:border-shop-accent-1/50"
                         }`}
                       >
-                        {option.label}
+                        {v.image && (
+                          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[7px] bg-shop-bg">
+                            <Image
+                              src={v.image}
+                              alt={v.label}
+                              fill
+                              className="object-cover"
+                              sizes="36px"
+                            />
+                          </span>
+                        )}
+                        <span className="flex flex-col">
+                          <span className="text-[12.5px] font-medium text-shop-heading">
+                            {v.label}
+                            {soldOut && (
+                              <span className="ml-1 text-[10px] font-normal text-shop-text/60">
+                                (sold out)
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[11px] text-shop-text/70">
+                            {formatPrice(v.price)}
+                          </span>
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-            ))}
+            )}
 
             <div className="flex items-center justify-between">
               <p className="text-[13px] font-semibold text-shop-heading">Quantity</p>
-              <p className="text-[12px] text-shop-text/70">
-                {stockLeft == null || stockLeft > 10
-                  ? "In stock"
-                  : stockLeft > 0
-                    ? `Only ${stockLeft} left`
-                    : "Out of stock"}
+              <p
+                className={`text-[12px] ${
+                  outOfStock ? "font-semibold text-shop-accent-3" : "text-shop-text/70"
+                }`}
+              >
+                {product.hideStock
+                  ? outOfStock
+                    ? "Out of stock"
+                    : "In stock"
+                  : stockLeft == null || stockLeft > 10
+                    ? "In stock"
+                    : stockLeft > 0
+                      ? `Only ${stockLeft} left`
+                      : "Out of stock"}
               </p>
             </div>
-            <div className="flex items-center gap-3 self-start rounded-full border border-shop-border px-1.5 py-1.5">
-              <button
-                type="button"
-                aria-label="Decrease quantity"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
-              >
-                <Minus className="h-3.5 w-3.5 text-shop-heading" />
-              </button>
-              <span className="w-5 text-center text-[14px] font-semibold text-shop-heading">
-                {qty}
-              </span>
-              <button
-                type="button"
-                aria-label="Increase quantity"
-                onClick={() => setQty((q) => q + 1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
-              >
-                <Plus className="h-3.5 w-3.5 text-shop-heading" />
-              </button>
-            </div>
+
+            {!outOfStock && (
+              <div className="flex items-center gap-3 self-start rounded-full border border-shop-border px-1.5 py-1.5">
+                <button
+                  type="button"
+                  aria-label="Decrease quantity"
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
+                >
+                  <Minus className="h-3.5 w-3.5 text-shop-heading" />
+                </button>
+                <span className="w-5 text-center text-[14px] font-semibold text-shop-heading">
+                  {qty}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Increase quantity"
+                  disabled={stockLeft != null && qty >= stockLeft}
+                  onClick={() => setQty((q) => q + 1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg disabled:opacity-40"
+                >
+                  <Plus className="h-3.5 w-3.5 text-shop-heading" />
+                </button>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -349,37 +417,60 @@ function ProductDetail() {
                   strokeWidth={1.75}
                 />
               </button>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={addState.isLoading || product.inStock === false}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] py-3.5 text-[14px] font-semibold text-white transition-colors disabled:opacity-60 ${
-                  justAdded ? "bg-emerald-600" : "bg-shop-accent-1 hover:bg-shop-accent-1-dark"
-                }`}
-              >
-                {addState.isLoading ? (
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                ) : justAdded ? (
-                  <>
-                    <Check className="h-4.5 w-4.5" /> Added to Cart
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="h-4.5 w-4.5" /> Add to Cart
-                  </>
-                )}
-              </button>
+
+              {outOfStock ? (
+                <button
+                  type="button"
+                  onClick={handleAlert}
+                  disabled={!canAlert || isSubscribed || alertState.isLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-shop-accent-1 py-3.5 text-[14px] font-semibold text-shop-accent-1 transition-colors disabled:opacity-60"
+                >
+                  {alertState.isLoading ? (
+                    <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                  ) : (
+                    <BellRing className="h-4.5 w-4.5" />
+                  )}
+                  {isSubscribed
+                    ? "We'll email you when it's back"
+                    : canAlert
+                      ? "Notify me when it's back"
+                      : "Out of stock"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={addState.isLoading}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] py-3.5 text-[14px] font-semibold text-white transition-colors disabled:opacity-60 ${
+                    justAdded ? "bg-emerald-600" : "bg-shop-accent-1 hover:bg-shop-accent-1-dark"
+                  }`}
+                >
+                  {addState.isLoading ? (
+                    <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                  ) : justAdded ? (
+                    <>
+                      <Check className="h-4.5 w-4.5" /> Added to Cart
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4.5 w-4.5" /> Add to Cart
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={async () => {
-                if (await handleAddToCart()) router.push("/dashboard/checkout");
-              }}
-              className="w-full rounded-[10px] border border-shop-accent-1 py-3 text-[13.5px] font-semibold text-shop-accent-1"
-            >
-              Buy Now
-            </button>
+            {!outOfStock && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (await handleAddToCart()) router.push("/dashboard/checkout");
+                }}
+                className="w-full rounded-[10px] border border-shop-accent-1 py-3 text-[13.5px] font-semibold text-shop-accent-1"
+              >
+                Buy Now
+              </button>
+            )}
 
             <div className="flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
               <Store className="mt-0.5 h-4 w-4 shrink-0 text-shop-accent-1" strokeWidth={1.75} />

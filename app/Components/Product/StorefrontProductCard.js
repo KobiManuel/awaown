@@ -27,6 +27,7 @@ const COLOR_NAME_HEX = {
 
 function extractColorSwatches(product) {
   if (!product.hasVariants || !product.variants?.length) return [];
+  if (!/colou?r/i.test(product.optionName || "")) return [];
   const found = new Map();
   for (const v of product.variants) {
     const tokens = (v.label || "").split("/").map((t) => t.trim().toLowerCase());
@@ -162,7 +163,9 @@ const StorefrontProductCard = ({ product, accentColor }) => {
           ))}
         </div>
         <span className="text-[15px] font-semibold" style={{ color: accentColor }}>
-          {formatPrice(product.price)}
+          {product.hasVariants
+            ? `From ${formatPrice(product.price)}`
+            : formatPrice(product.price)}
         </span>
       </div>
     </div>

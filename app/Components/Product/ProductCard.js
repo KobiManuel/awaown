@@ -25,14 +25,15 @@ const COLOR_HEX = {
   beige: "#e7dcc7", cream: "#f5f0e1", khaki: "#bda55d", burgundy: "#6b1f2a",
 };
 
-function swatchesFromVariants(variants) {
-  if (!Array.isArray(variants)) return [];
-  const group = variants.find((g) => /colou?r/i.test(g?.name || g?.key || ""));
-  if (!group?.options?.length) return [];
-  return group.options
-    .map((o) => {
-      const label = String(o.label || o.value || "").trim().toLowerCase();
-      return o.swatch || COLOR_HEX[label] || null;
+function swatchesFromVariants(product) {
+  const list = product?.variants;
+  if (!Array.isArray(list) || !list.length) return [];
+  // only a colour dimension renders as dots
+  if (!/colou?r/i.test(product?.optionName || "")) return [];
+  return list
+    .map((v) => {
+      const label = String(v.label || v.value || "").trim().toLowerCase();
+      return v.swatch || COLOR_HEX[label] || null;
     })
     .filter(Boolean)
     .slice(0, 5);
@@ -58,6 +59,7 @@ function normalise(product) {
     title: product.title,
     vendor: product.vendor,
     price: product.price,
+    priceFrom: !!product.hasVariants,
     compareAt,
     image,
     hoverImage,
@@ -65,7 +67,7 @@ function normalise(product) {
     swatches:
       product.swatches?.length
         ? product.swatches
-        : swatchesFromVariants(product.variants),
+        : swatchesFromVariants(product),
     rating: Math.round(product.rating || 0),
   };
 }
@@ -231,7 +233,7 @@ const ProductCard = ({ product, bordered = false }) => {
         </div>
         <div className="flex items-center gap-[8px]">
           <span className="text-[15px] font-semibold text-shop-heading">
-            {formatPrice(p.price)}
+            {p.priceFrom ? `From ${formatPrice(p.price)}` : formatPrice(p.price)}
           </span>
           {p.compareAt && (
             <span className="text-[13px] text-shop-text/60 line-through">

@@ -1,9 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Package, Eye, EyeOff, Trash2, Pencil, Users2 } from "lucide-react";
+import {
+  Plus,
+  Package,
+  Eye,
+  EyeOff,
+  Trash2,
+  Pencil,
+  Users2,
+  ChevronDown,
+  Loader2,
+  Ban,
+} from "lucide-react";
 import {
   formatPrice,
   PRODUCT_CATEGORIES,
@@ -35,13 +46,126 @@ const APPROVAL_LABEL = {
   REJECTED: "Rejected",
 };
 
+/** Inline stock editor shown when a merchant taps a product card. */
+function StockEditor({ product, onSave, saving }) {
+  const isVariable = !!product.hasVariants && (product.variants?.length ?? 0) > 0;
+  const [simpleStock, setSimpleStock] = useState(String(product.stock ?? 0));
+  const [rows, setRows] = useState(
+    (product.variants ?? []).map((v) => ({ ...v, stock: String(v.stock ?? 0) })),
+  );
+
+  const saveSimple = () =>
+    onSave({ id: product.productId, stock: Math.max(0, Number(simpleStock) || 0) });
+
+  const saveVariants = (allZero = false) =>
+    onSave({
+      id: product.productId,
+      optionName: product.optionName || "Option",
+      variants: rows.map((v) => ({
+        label: v.label,
+        price: v.price,
+        image: v.image ?? null,
+        stock: allZero ? 0 : Math.max(0, Number(v.stock) || 0),
+      })),
+    });
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-shop-border pt-3">
+      {isVariable ? (
+        <>
+          <div className="flex flex-col gap-2">
+            {rows.map((v, i) => (
+              <div key={v.id} className="flex items-center gap-2">
+                <span className="flex-1 truncate text-[12px] text-shop-heading">{v.label}</span>
+                <input
+                  value={v.stock}
+                  inputMode="numeric"
+                  onChange={(e) =>
+                    setRows((r) =>
+                      r.map((row, idx) =>
+                        idx === i
+                          ? { ...row, stock: e.target.value.replace(/[^0-9]/g, "") }
+                          : row,
+                      ),
+                    )
+                  }
+                  className="w-20 rounded-[6px] border border-shop-border px-2 py-1 text-[12.5px] outline-none focus:border-shop-accent-1"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => saveVariants(false)}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-[8px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-60"
+            >
+              {saving && <Loader2 className="h-3 w-3 animate-spin" />}
+              Save stock
+            </button>
+            <button
+              type="button"
+              onClick={() => saveVariants(true)}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-[8px] border border-shop-accent-3 px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-3 disabled:opacity-60"
+            >
+              <Ban className="h-3 w-3" />
+              Mark all out of stock
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center gap-2">
+          <label className="text-[12px] text-shop-text">Stock</label>
+          <input
+            value={simpleStock}
+            inputMode="numeric"
+            onChange={(e) => setSimpleStock(e.target.value.replace(/[^0-9]/g, ""))}
+            className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+          />
+          <button
+            type="button"
+            onClick={saveSimple}
+            disabled={saving}
+            className="flex items-center gap-1.5 rounded-[8px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-60"
+          >
+            {saving && <Loader2 className="h-3 w-3 animate-spin" />}
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave({ id: product.productId, stock: 0 })}
+            disabled={saving}
+            className="flex items-center gap-1.5 rounded-[8px] border border-shop-accent-3 px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-3 disabled:opacity-60"
+          >
+            <Ban className="h-3 w-3" />
+            Out of stock
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MerchantProductsPage() {
   const showToast = useToast();
   const { data, isLoading, isError } = useGetMerchantProductsQuery();
-  const [updateProduct] = useUpdateMerchantProductMutation();
+  const [updateProduct, { isLoading: updating }] = useUpdateMerchantProductMutation();
   const [deleteProduct, deleteState] = useDeleteMerchantProductMutation();
 
   const products = data?.items ?? [];
+  const [openStockId, setOpenStockId] = useState(null);
+
+  const saveStock = async (body) => {
+    try {
+      await updateProduct(body).unwrap();
+      showToast("Stock updated");
+      setOpenStockId(null);
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   const toggleHideStock = async (p) => {
     try {
@@ -129,13 +253,28 @@ export default function MerchantProductsPage() {
                     {product.title}
                   </p>
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    {formatPrice(product.price)}
+                    {product.hasVariants
+                      ? `From ${formatPrice(product.price)}`
+                      : formatPrice(product.price)}
                   </p>
-                  <p className="text-[11.5px] text-shop-text/70">
-                    {product.hideStock
-                      ? "Stock hidden"
-                      : `${product.stock} in stock`}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenStockId((cur) =>
+                        cur === product.productId ? null : product.productId,
+                      )
+                    }
+                    className="flex items-center gap-1 text-[11.5px] text-shop-accent-1"
+                  >
+                    {product.stock <= 0
+                      ? "Out of stock"
+                      : `${product.stock} in stock${product.hideStock ? " (hidden)" : ""}`}
+                    <ChevronDown
+                      className={`h-3 w-3 transition-transform ${
+                        openStockId === product.productId ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
                   {product.category && (
                     <p className="text-[11px] text-shop-text/60">
                       {categoryLabel(product.category)}
@@ -215,6 +354,14 @@ export default function MerchantProductsPage() {
                   {product.hideStock ? "Stock hidden" : "Stock visible"}
                 </button>
               </div>
+
+              {openStockId === product.productId && (
+                <StockEditor
+                  product={product}
+                  onSave={saveStock}
+                  saving={updating}
+                />
+              )}
             </div>
           ))}
         </div>

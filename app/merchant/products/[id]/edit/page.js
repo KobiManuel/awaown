@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, X, Loader2, Users2 } from "lucide-react";
+import { Camera, X, Loader2, Users2, Plus } from "lucide-react";
 import {
   formatPrice,
   PRODUCT_CATEGORIES,
@@ -13,6 +13,7 @@ import {
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
 import {
   useGetMerchantProductsQuery,
   useUpdateMerchantProductMutation,
@@ -43,6 +44,7 @@ export default function EditMerchantProductPage() {
 
   // seed the form once the product is in cache
   if (form === null && product) {
+    const hasVariants = !!product.hasVariants && (product.variants?.length ?? 0) > 0;
     setForm({
       title: product.title ?? "",
       description: product.description ?? "",
@@ -53,10 +55,22 @@ export default function EditMerchantProductPage() {
       images: product.images ?? [],
       status: product.status === "DRAFT" ? "DRAFT" : "ACTIVE",
       hideStock: !!product.hideStock,
+      backInStockAlerts: product.backInStockAlerts ?? true,
       offerCommission: !!product.offerCommission,
       partnerProfitAmount: product.partnerProfitAmount
         ? String(product.partnerProfitAmount)
         : "",
+      hasVariants,
+      optionName: product.optionName ?? "",
+      varieties: hasVariants
+        ? product.variants.map((v) => ({
+            key: `v-${v.id}`,
+            label: v.label ?? "",
+            price: String(v.price ?? ""),
+            stock: String(v.stock ?? ""),
+            image: v.image ?? null,
+          }))
+        : [newVariety(), newVariety()],
     });
   }
 
@@ -83,6 +97,19 @@ export default function EditMerchantProductPage() {
   }
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const setVariety = (key, patch) =>
+    setForm((f) => ({
+      ...f,
+      varieties: f.varieties.map((v) => (v.key === key ? { ...v, ...patch } : v)),
+    }));
+  const addVariety = () =>
+    setForm((f) => ({ ...f, varieties: [...f.varieties, newVariety()] }));
+  const removeVariety = (key) =>
+    setForm((f) => ({
+      ...f,
+      varieties:
+        f.varieties.length > 1 ? f.varieties.filter((v) => v.key !== key) : f.varieties,
+    }));
 
   const addImage = async (e) => {
     const file = e.target.files?.[0];
@@ -94,31 +121,50 @@ export default function EditMerchantProductPage() {
   };
 
   const profit = Number(form.partnerProfitAmount) || 0;
-  const profitTooLow =
-    form.offerCommission && profit < PARTNER_PROGRAM_MIN_PROFIT;
+  const profitTooLow = form.offerCommission && profit < PARTNER_PROGRAM_MIN_PROFIT;
+
+  const cleanVarieties = form.varieties.filter((v) => v.label.trim());
+  const varietiesValid =
+    !form.hasVariants ||
+    (form.optionName.trim() &&
+      cleanVarieties.length >= 1 &&
+      cleanVarieties.every((v) => Number(v.price) > 0 && v.stock !== ""));
 
   const valid =
     form.title.trim() &&
-    Number(form.price) > 0 &&
+    (form.hasVariants || Number(form.price) > 0) &&
+    varietiesValid &&
     !profitTooLow;
 
   const save = async () => {
     if (!valid || saving) return;
+    const body = {
+      id: product.productId,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category: form.category,
+      processingTime: form.processingTime,
+      images: form.images,
+      status: form.status,
+      hideStock: form.hideStock,
+      backInStockAlerts: form.backInStockAlerts,
+      offerCommission: form.offerCommission,
+      partnerProfitAmount: form.offerCommission ? profit : 0,
+    };
+    if (form.hasVariants) {
+      body.optionName = form.optionName.trim();
+      body.variants = cleanVarieties.map((v) => ({
+        label: v.label.trim(),
+        price: Number(v.price),
+        stock: Number(v.stock || 0),
+        image: v.image || null,
+      }));
+    } else {
+      body.price = Number(form.price);
+      body.stock = Number(form.stock) || 0;
+    }
     try {
-      await update({
-        id: product.productId,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        price: Number(form.price),
-        stock: Number(form.stock) || 0,
-        category: form.category,
-        processingTime: form.processingTime,
-        images: form.images,
-        status: form.status,
-        hideStock: form.hideStock,
-        offerCommission: form.offerCommission,
-        partnerProfitAmount: form.offerCommission ? profit : 0,
-      }).unwrap();
+      await update(body).unwrap();
       showToast("Product updated");
       router.push("/merchant/products");
     } catch (err) {
@@ -156,28 +202,62 @@ export default function EditMerchantProductPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Price (₦)</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={form.price}
-              onChange={(e) => set({ price: e.target.value })}
-              className={FIELD}
-            />
+        {form.hasVariants ? (
+          <div className="flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
+            <div className="flex flex-col gap-1.5">
+              <label className={LABEL}>What do the varieties differ by?</label>
+              <input
+                value={form.optionName}
+                onChange={(e) => set({ optionName: e.target.value })}
+                placeholder="e.g. Colour, Size"
+                className={FIELD}
+              />
+            </div>
+            <p className="text-[11px] text-shop-text/60">
+              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"} — each has its own price, stock and photo.
+            </p>
+            {form.varieties.map((v) => (
+              <VarietyRow
+                key={v.key}
+                value={v}
+                onChange={(patch) => setVariety(v.key, patch)}
+                onRemove={() => removeVariety(v.key)}
+                canRemove={form.varieties.length > 1}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={addVariety}
+              className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add another variety
+            </button>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Stock</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={form.stock}
-              onChange={(e) => set({ stock: e.target.value })}
-              className={FIELD}
-            />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className={LABEL}>Price (₦)</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={form.price}
+                onChange={(e) => set({ price: e.target.value })}
+                className={FIELD}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={LABEL}>Stock</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={form.stock}
+                onChange={(e) => set({ stock: e.target.value })}
+                className={FIELD}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
@@ -251,8 +331,8 @@ export default function EditMerchantProductPage() {
           </div>
         </div>
 
-        {/* Status + hide stock */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Status + stock options */}
+        <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className={LABEL}>Listing status</label>
             <select
@@ -264,14 +344,28 @@ export default function EditMerchantProductPage() {
               <option value="DRAFT">Draft (hidden from shoppers)</option>
             </select>
           </div>
-          <label className="flex items-end gap-2 pb-2.5 text-[12.5px] text-shop-heading">
+          <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3">
+            <span className="text-[12.5px] text-shop-heading">Hide stock count from shoppers</span>
             <input
               type="checkbox"
               checked={form.hideStock}
               onChange={(e) => set({ hideStock: e.target.checked })}
               className="h-4 w-4 accent-shop-accent-1"
             />
-            Hide stock count
+          </label>
+          <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3">
+            <span className="flex flex-col">
+              <span className="text-[12.5px] text-shop-heading">Back-in-stock email alerts</span>
+              <span className="text-[11px] text-shop-text/60">
+                Shoppers can opt in when it sells out.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={form.backInStockAlerts}
+              onChange={(e) => set({ backInStockAlerts: e.target.checked })}
+              className="h-4 w-4 accent-shop-accent-1"
+            />
           </label>
         </div>
 

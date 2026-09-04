@@ -100,6 +100,11 @@ export default function CartPage() {
                         {item.variantLabel}
                       </p>
                     )}
+                    {item.inStock === false && (
+                      <p className="text-[11px] font-semibold text-shop-accent-3">
+                        Out of stock — remove to check out
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 rounded-full border border-shop-border px-1 py-1">
@@ -166,12 +171,18 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Link
-              href="/dashboard/checkout"
-              className="flex w-full items-center justify-center rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
-            >
-              Proceed to Checkout
-            </Link>
+            {items.some((i) => i.inStock === false) ? (
+              <p className="rounded-[10px] bg-red-50 px-3 py-3 text-center text-[12.5px] font-medium text-shop-accent-3">
+                Remove the out-of-stock item to continue.
+              </p>
+            ) : (
+              <Link
+                href="/dashboard/checkout"
+                className="flex w-full items-center justify-center rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
+              >
+                Proceed to Checkout
+              </Link>
+            )}
           </div>
         </div>
       )}

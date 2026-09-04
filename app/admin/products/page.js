@@ -96,12 +96,19 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           </div>
           {product.variants?.length ? (
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
-              <p className="mb-1.5 text-shop-text/60">Variants ({product.variants.length})</p>
-              <div className="flex flex-col gap-1">
+              <p className="mb-1.5 text-shop-text/60">Varieties ({product.variants.length})</p>
+              <div className="flex flex-col gap-1.5">
                 {product.variants.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between text-[12px]">
-                    <span className="text-shop-heading">{v.label}</span>
-                    <span className="text-shop-text">{formatPrice(v.price)} · {v.stock} in stock</span>
+                  <div key={v.id} className="flex items-center gap-2 text-[12px]">
+                    <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-[5px] bg-white">
+                      {v.imageUrl ? (
+                        <Image src={v.imageUrl} alt={v.label} fill className="object-cover" sizes="24px" />
+                      ) : null}
+                    </span>
+                    <span className="flex-1 text-shop-heading">{v.label}</span>
+                    <span className="text-shop-text">
+                      {formatPrice(v.price)} · {v.stock <= 0 ? "out of stock" : `${v.stock} in stock`}
+                    </span>
                   </div>
                 ))}
               </div>
