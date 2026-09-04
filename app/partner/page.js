@@ -11,12 +11,15 @@ import {
   Check,
   Share2,
   ShieldAlert,
-  ImagePlus,
 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetPartnerOverviewQuery } from "@/lib/api/partnerApi";
+import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
+import {
+  useGetPartnerOverviewQuery,
+  useSavePartnerCustomizationMutation,
+} from "@/lib/api/partnerApi";
 
 const StatCard = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -37,6 +40,7 @@ const StatCard = ({ icon: Icon, label, value, href }) => {
 export default function PartnerHome() {
   const showToast = useToast();
   const { data, isLoading } = useGetPartnerOverviewQuery();
+  const [saveCustomization] = useSavePartnerCustomizationMutation();
   const [copied, setCopied] = useState(false);
 
   const p = data?.profile;
@@ -73,13 +77,10 @@ export default function PartnerHome() {
             {p?.storeName ?? "…"}
           </p>
           <div className="flex gap-2">
-            <Link
-              href="/partner/customize"
-              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-            >
-              <ImagePlus className="h-3.5 w-3.5" />
-              {p?.bannerUrl ? "Edit Banner" : "Add Banner"}
-            </Link>
+            <BannerImageButton
+              hasBanner={!!p?.bannerUrl}
+              onUploaded={(url) => saveCustomization({ bannerUrl: url }).unwrap()}
+            />
             {p?.referralLink && (
               <Link
                 href={p.referralLink}

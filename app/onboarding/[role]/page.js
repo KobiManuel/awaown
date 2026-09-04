@@ -9,12 +9,20 @@ import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
 import { markSignedIn } from "@/lib/session-cookie";
 import { useCompleteOnboardingMutation } from "@/lib/api/authApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { NIGERIAN_STATES, PRODUCT_CATEGORIES } from "@/lib/merchant-data";
+import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 
 const DASHBOARD_HOME = {
   customer: "/dashboard",
   merchant: "/merchant",
   partner: "/partner",
+};
+
+// Where each role lands the first time, right after finishing onboarding. A new
+// partner's first job is to customise their storefront, not stare at an empty
+// dashboard (profile + payout details live in partner Account settings).
+const FIRST_RUN_DEST = {
+  ...DASHBOARD_HOME,
+  partner: "/partner/customize",
 };
 
 const COPY = {
@@ -52,7 +60,7 @@ function OnboardingForm() {
   const dest =
     nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
       ? nextParam
-      : DASHBOARD_HOME[role] || "/";
+      : FIRST_RUN_DEST[role] || "/";
   const { resolving, authed, unauth, onboardingComplete } =
     useAuthBootstrap(role);
   const userName = useSelector((s) => s.auth.user?.name);
@@ -94,14 +102,8 @@ function OnboardingForm() {
         storeName: form.storeName?.trim(),
         phone: form.phone?.trim(),
         category: form.category || undefined,
-        state: form.state || undefined,
-        address: form.address?.trim() || undefined,
       };
-    else
-      body = {
-        displayName: form.displayName?.trim(),
-        payoutPref: form.payoutPref?.trim() || undefined,
-      };
+    else body = { displayName: form.displayName?.trim() };
 
     try {
       await complete(body).unwrap();
@@ -182,29 +184,10 @@ function OnboardingForm() {
                 ))}
               </select>
             </Field>
-            <Field label="State">
-              <select
-                value={form.state || ""}
-                onChange={set("state")}
-                className={inputCls}
-              >
-                <option value="">Select a state</option>
-                {NIGERIAN_STATES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Pickup address" hint="Where couriers collect orders.">
-              <textarea
-                rows={2}
-                value={form.address || ""}
-                onChange={set("address")}
-                placeholder="12 Adeola Odeku St, Victoria Island"
-                className={inputCls}
-              />
-            </Field>
+            <p className="text-[12px] text-shop-text/70">
+              You can add your pickup address and location later in Account
+              settings.
+            </p>
           </>
         )}
 
@@ -223,15 +206,10 @@ function OnboardingForm() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Payout preference (optional)">
-              <input
-                type="text"
-                value={form.payoutPref || ""}
-                onChange={set("payoutPref")}
-                placeholder="Bank transfer"
-                className={inputCls}
-              />
-            </Field>
+            <p className="text-[12px] text-shop-text/70">
+              Next you&apos;ll customise your storefront. You can add payout
+              details any time from Account settings.
+            </p>
           </>
         )}
 

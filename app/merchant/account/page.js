@@ -19,7 +19,7 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { NIGERIAN_STATES } from "@/lib/merchant-data";
+import { NIGERIAN_STATES, SERVICE_AREA_NOTE } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { useMediaUpload } from "@/lib/api/mediaApi";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -177,21 +177,31 @@ export default function MerchantAccountPage() {
                 className="hidden"
                 onChange={(e) => pickImage(e, "logoUrl")}
               />
-              <button
-                type="button"
-                onClick={() => logoRef.current?.click()}
-                className="absolute bottom-3 left-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow"
-              >
-                {draft.logoUrl ? (
-                  <img
-                    src={draft.logoUrl}
-                    alt="Store logo"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-shop-text/50" />
-                )}
-              </button>
+              <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => logoRef.current?.click()}
+                  aria-label="Upload store logo"
+                  className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow"
+                >
+                  {draft.logoUrl ? (
+                    <img
+                      src={draft.logoUrl}
+                      alt="Store logo"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImagePlus className="h-5 w-5 text-shop-accent-1" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => logoRef.current?.click()}
+                  className="rounded-full bg-white/90 px-2.5 py-1 text-[10.5px] font-semibold text-shop-heading"
+                >
+                  {draft.logoUrl ? "Change logo" : "Upload logo"}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => bannerRef.current?.click()}
@@ -206,6 +216,10 @@ export default function MerchantAccountPage() {
                 {draft.bannerUrl ? "Change Banner" : "Add Banner"}
               </button>
             </div>
+            <p className="text-[10.5px] text-shop-text/60">
+              The logo is your store&apos;s profile picture — use a square image
+              of your brand mark, not a product photo.
+            </p>
             <textarea
               value={draft.bio}
               onChange={(e) => set({ bio: e.target.value })}
@@ -213,19 +227,6 @@ export default function MerchantAccountPage() {
               rows={3}
               className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 focus:border-shop-accent-1 focus:outline-none"
             />
-            <button
-              type="button"
-              onClick={save}
-              disabled={!dirty || saving}
-              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
-            >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="h-3.5 w-3.5" />
-              )}
-              Save Changes
-            </button>
           </div>
 
           <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4 lg:mx-0">
@@ -244,12 +245,15 @@ export default function MerchantAccountPage() {
                 {detailsComplete ? "Complete" : "Missing"}
               </span>
             </div>
+            <p className="rounded-[8px] bg-shop-accent-1-light px-3 py-2 text-[11px] leading-[15px] text-shop-accent-1">
+              {SERVICE_AREA_NOTE}
+            </p>
             <select
               value={draft.state}
               onChange={(e) => set({ state: e.target.value })}
               className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
             >
-              <option value="">Select state</option>
+              <option value="">Select location</option>
               {NIGERIAN_STATES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -271,16 +275,22 @@ export default function MerchantAccountPage() {
               inputMode="tel"
               className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
             />
-            <button
-              type="button"
-              onClick={save}
-              disabled={!dirty || saving}
-              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60"
-            >
-              <Check className="h-3.5 w-3.5" />
-              Save Changes
-            </button>
           </div>
+
+          {/* One save for both Store Settings and Store Details */}
+          <button
+            type="button"
+            onClick={save}
+            disabled={!dirty || saving}
+            className="mx-4 flex items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60 lg:mx-0"
+          >
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            {dirty ? "Save Changes" : "Saved"}
+          </button>
         </>
       )}
 

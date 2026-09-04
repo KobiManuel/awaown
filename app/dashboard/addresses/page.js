@@ -5,7 +5,7 @@ import { MapPin, Trash2, Plus, Check, Loader2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import { NIGERIAN_STATES } from "@/lib/merchant-data";
+import { NIGERIAN_STATES, SERVICE_AREA_NOTE } from "@/lib/merchant-data";
 import {
   useGetAddressesQuery,
   useAddAddressMutation,
@@ -118,6 +118,9 @@ export default function AddressesPage() {
             onSubmit={submit}
             className="flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-4"
           >
+            <p className="rounded-[8px] bg-shop-accent-1-light px-3 py-2 text-[11.5px] leading-[16px] text-shop-accent-1">
+              {SERVICE_AREA_NOTE}
+            </p>
             <div className="grid grid-cols-2 gap-2.5">
               <input
                 className={inputCls}

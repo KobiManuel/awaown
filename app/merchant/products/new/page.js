@@ -768,6 +768,11 @@ export default function NewMerchantProductPage() {
                 Partners can promote this product and earn a profit you choose. Customers still
                 see your normal price.
               </p>
+              <p className="rounded-[8px] bg-emerald-50 px-3 py-2 text-[11.5px] leading-[16px] text-emerald-800">
+                💡 The more profit you offer, the more partners will pick up your
+                product — a higher rate is the fastest way to attract top
+                partners and move stock.
+              </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <TypeCard
                   selected={!offerCommission}

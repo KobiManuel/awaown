@@ -36,7 +36,13 @@ export default function AdminLoginPage() {
     e?.preventDefault();
     setFormError("");
     try {
-      await requestLogin({ email }).unwrap();
+      const res = await requestLogin({ email }).unwrap();
+      if (res && res.exists === false) {
+        setFormError(
+          "That email isn't authorised for the admin panel. Ask a Super Admin to add you to the team.",
+        );
+        return;
+      }
       setStep("code");
       setCooldown(60);
     } catch (err) {

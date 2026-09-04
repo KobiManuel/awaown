@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Mail, Loader2, Send, Eye, Check } from "lucide-react";
+import { Mail, Loader2, Send, Check } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
@@ -21,7 +21,7 @@ function Editor({ tplKey }) {
   const showToast = useToast();
   const { data, isLoading } = useGetEmailTemplateQuery(tplKey);
   const [save, saveState] = useSaveEmailTemplateMutation();
-  const [preview, previewState] = usePreviewEmailTemplateMutation();
+  const [preview] = usePreviewEmailTemplateMutation();
   const [sendTest, testState] = useTestEmailTemplateMutation();
 
   const [subject, setSubject] = useState("");
@@ -43,14 +43,20 @@ function Editor({ tplKey }) {
     data &&
     (subject !== data.subject || body !== data.body || enabled !== data.enabled);
 
-  const runPreview = async () => {
-    try {
-      const res = await preview({ key: tplKey, subject, body }).unwrap();
-      setHtml(res.html);
-    } catch (e) {
-      showToast(errorMessage(e));
-    }
-  };
+  // Live preview: re-render the sample email a beat after the admin stops
+  // typing, so the panel below always reflects the current draft (no button).
+  useEffect(() => {
+    if (!data) return;
+    const t = setTimeout(async () => {
+      try {
+        const res = await preview({ key: tplKey, subject, body }).unwrap();
+        setHtml(res.html);
+      } catch {
+        /* keep the last good preview */
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [subject, body, tplKey, data, preview]);
 
   const doSave = async () => {
     try {
@@ -100,7 +106,10 @@ function Editor({ tplKey }) {
             {data.group} · key <code>{tplKey}</code>
           </p>
         </div>
-        <label className="flex items-center gap-2 text-[12px] font-medium text-shop-heading">
+        <label
+          className="flex items-center gap-2 text-[12px] font-medium text-shop-heading"
+          title="When off, AwaOwn stops sending this email entirely (save to apply)."
+        >
           <input
             type="checkbox"
             checked={enabled}
@@ -110,6 +119,11 @@ function Editor({ tplKey }) {
           {enabled ? "Sending" : "Paused"}
         </label>
       </div>
+      <p className="-mt-2 text-[10.5px] text-shop-text/50">
+        &ldquo;Sending&rdquo; is this email&apos;s on/off switch — turn it off to
+        stop AwaOwn sending it (e.g. pause review-request nudges). The preview
+        below updates as you edit.
+      </p>
 
       <div className="flex flex-col gap-1">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
@@ -160,14 +174,6 @@ function Editor({ tplKey }) {
             <Check className="h-3.5 w-3.5" />
           )}
           Save
-        </button>
-        <button
-          type="button"
-          onClick={runPreview}
-          disabled={previewState.isLoading}
-          className="flex items-center gap-1.5 rounded-[8px] border border-shop-border px-4 py-2 text-[12px] font-semibold text-shop-heading disabled:opacity-50"
-        >
-          <Eye className="h-3.5 w-3.5" /> Preview draft
         </button>
         <button
           type="button"

@@ -11,7 +11,6 @@ import {
   Star,
   ChevronRight,
   Plus,
-  ImagePlus,
   ShieldAlert,
 } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
@@ -20,7 +19,9 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetMerchantOverviewQuery,
   useGetMerchantOrdersQuery,
+  useUpdateMerchantStoreMutation,
 } from "@/lib/api/merchantApi";
+import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
@@ -35,6 +36,7 @@ const StatCard = ({ icon: Icon, label, value }) => (
 export default function MerchantHome() {
   const { data, isLoading } = useGetMerchantOverviewQuery();
   const { data: orders, isLoading: ordersLoading } = useGetMerchantOrdersQuery();
+  const [updateStore] = useUpdateMerchantStoreMutation();
 
   const verified = data?.verification?.status === "VERIFIED";
   const pendingVerif = data?.verification?.status === "PENDING";
@@ -59,13 +61,10 @@ export default function MerchantHome() {
             {data?.profile?.storeName ?? "…"}
           </p>
           <div className="flex gap-2">
-            <Link
-              href="/merchant/account"
-              className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-            >
-              <ImagePlus className="h-3.5 w-3.5" />
-              {data?.profile?.bannerUrl ? "Edit Banner" : "Add Banner"}
-            </Link>
+            <BannerImageButton
+              hasBanner={!!data?.profile?.bannerUrl}
+              onUploaded={(url) => updateStore({ bannerUrl: url }).unwrap()}
+            />
             {data?.profile?.storeSlug && (
               <Link
                 href={`/shop/${data.profile.storeSlug}`}

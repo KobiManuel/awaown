@@ -69,10 +69,10 @@ export default function MerchantProductsPage() {
         right={
           <Link
             href="/merchant/products/new"
-            aria-label="Add product"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-shop-accent-1-light text-shop-accent-1 hover:bg-shop-accent-1 hover:text-white"
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-shop-accent-1-dark"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
+            Add Product
           </Link>
         }
       />
