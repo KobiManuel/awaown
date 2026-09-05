@@ -172,7 +172,7 @@ export default function NewMerchantProductPage() {
       Number(partnerProfitAmount) >= PARTNER_PROGRAM_MIN_PROFIT);
 
   const previewPrice = hasVariants
-    ? Math.min(...(cleanVarieties.map((v) => Number(v.price) || Infinity), Infinity))
+    ? Math.min(...cleanVarieties.map((v) => Number(v.price) || Infinity), Infinity)
     : Number(price) || 0;
 
   const isValid = isGroup
