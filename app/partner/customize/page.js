@@ -2,7 +2,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ImagePlus, User, Eye, RotateCcw, Check, Loader2 } from "lucide-react";
+import {
+  ImagePlus,
+  User,
+  Eye,
+  RotateCcw,
+  Check,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   STORE_THEMES,
@@ -20,6 +29,8 @@ import {
   useSavePartnerCustomizationMutation,
 } from "@/lib/api/partnerApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+
+const FONT_PREVIEW_COUNT = 3;
 
 function fromProfile(p) {
   return {
@@ -50,6 +61,7 @@ export default function PartnerCustomizePage() {
 
   const saved = fromProfile(overview?.profile);
   const [draft, setDraft] = useState(null);
+  const [showAllFonts, setShowAllFonts] = useState(false);
   const refCode = overview?.profile?.referralCode;
 
   useEffect(() => {
@@ -290,7 +302,10 @@ export default function PartnerCustomizePage() {
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Fonts</p>
           <div className="flex flex-col gap-2">
-            {STORE_FONTS.map((pair) => {
+            {STORE_FONTS.filter(
+              (pair, i) =>
+                showAllFonts || i < FONT_PREVIEW_COUNT || pair.id === storeFont,
+            ).map((pair) => {
               const active = storeFont === pair.id;
               const headingFont = STORE_FONT_FAMILIES[pair.heading];
               const bodyFont = STORE_FONT_FAMILIES[pair.body];
@@ -322,6 +337,19 @@ export default function PartnerCustomizePage() {
               );
             })}
           </div>
+          {STORE_FONTS.length > FONT_PREVIEW_COUNT && (
+            <button
+              type="button"
+              onClick={() => setShowAllFonts((s) => !s)}
+              className="flex items-center justify-center gap-1 text-[12.5px] font-semibold text-shop-accent-1"
+            >
+              {showAllFonts ? (
+                <>Show less <ChevronUp className="h-3.5 w-3.5" /></>
+              ) : (
+                <>View more fonts <ChevronDown className="h-3.5 w-3.5" /></>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3">

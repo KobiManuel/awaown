@@ -162,13 +162,6 @@ export default function PublicPartnerStorePage() {
           <p className="text-[12.5px]" style={{ color: theme.subtleText }}>
             Every purchase is protected by AwaOwn&apos;s payment protection policy.
           </p>
-          <Link
-            href="/"
-            className="mt-1 rounded-full px-5 py-2.5 text-[13px] font-semibold text-white"
-            style={{ backgroundColor: accent.value }}
-          >
-            Shop the Full AwaOwn Marketplace
-          </Link>
         </div>
       </div>
     </div>

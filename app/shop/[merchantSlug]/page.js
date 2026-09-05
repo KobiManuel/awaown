@@ -138,12 +138,6 @@ export default function PublicMerchantStorePage() {
           <p className="text-[12.5px] text-shop-text/70">
             Every purchase is protected by AwaOwn&apos;s payment protection policy.
           </p>
-          <Link
-            href="/"
-            className="mt-1 rounded-full bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
-          >
-            Shop the Full AwaOwn Marketplace
-          </Link>
         </div>
       </div>
     </div>

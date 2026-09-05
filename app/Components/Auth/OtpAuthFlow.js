@@ -138,6 +138,14 @@ export default function OtpAuthFlow({
     setCode("");
   };
 
+  // Password fields keep a server-side error (e.g. "found in a data breach")
+  // visible until the user acts on it — clear it as soon as they start typing
+  // a new value, same as any other form validation error would.
+  const updatePassword = (v) => {
+    setPassword(v);
+    setFormError("");
+  };
+
   // Navigate into the app after any successful auth.
   const finish = (data) => {
     doneRef.current = true;
@@ -353,7 +361,7 @@ export default function OtpAuthFlow({
             </div>
             <PasswordInput
               value={password}
-              onChange={setPassword}
+              onChange={updatePassword}
               autoComplete="current-password"
               placeholder="Your password"
             />
@@ -414,7 +422,7 @@ export default function OtpAuthFlow({
             <span className="text-[13px] font-medium text-shop-heading">Password</span>
             <PasswordInput
               value={password}
-              onChange={setPassword}
+              onChange={updatePassword}
               autoComplete="new-password"
               placeholder="Create a password"
             />
@@ -482,7 +490,7 @@ export default function OtpAuthFlow({
             <span className="text-[13px] font-medium text-shop-heading">Password</span>
             <PasswordInput
               value={password}
-              onChange={setPassword}
+              onChange={updatePassword}
               autoComplete="new-password"
               placeholder="Create a password"
             />
@@ -558,7 +566,7 @@ export default function OtpAuthFlow({
             <span className="text-[13px] font-medium text-shop-heading">New password</span>
             <PasswordInput
               value={password}
-              onChange={setPassword}
+              onChange={updatePassword}
               autoComplete="new-password"
               placeholder="Create a new password"
             />

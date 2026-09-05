@@ -54,6 +54,14 @@ export default function AdminLoginPage() {
     window.location.assign("/admin");
   };
 
+  // Clear a lingering server-side error (e.g. "found in a data breach") as
+  // soon as the admin starts typing a new password, instead of leaving it
+  // stuck on screen until the next submit.
+  const updatePassword = (e) => {
+    setPassword(e.target.value);
+    setFormError("");
+  };
+
   const signin = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -124,7 +132,7 @@ export default function AdminLoginPage() {
                 type={showPw ? "text" : "password"}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={updatePassword}
                 autoComplete="current-password"
                 placeholder="Your password"
                 className={inputCls}
@@ -204,7 +212,7 @@ export default function AdminLoginPage() {
                 type={showPw ? "text" : "password"}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={updatePassword}
                 autoComplete="new-password"
                 placeholder="Create a password"
                 className={inputCls}
