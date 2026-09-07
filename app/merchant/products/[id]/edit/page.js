@@ -217,7 +217,7 @@ export default function EditMerchantProductPage() {
               />
             </div>
             <p className="text-[11px] text-shop-text/60">
-              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"}, each with its own price, stock and photo.
+              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"}, each with its own price, inventory quantity and photo.
             </p>
             {form.varieties.map((v) => (
               <VarietyRow
@@ -250,7 +250,7 @@ export default function EditMerchantProductPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Stock</label>
+              <label className={LABEL}>Inventory quantity</label>
               <input
                 type="number"
                 inputMode="numeric"
@@ -348,7 +348,7 @@ export default function EditMerchantProductPage() {
             </select>
           </div>
           <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3">
-            <span className="text-[12.5px] text-shop-heading">Hide stock count from shoppers</span>
+            <span className="text-[12.5px] text-shop-heading">Hide inventory quantity from shoppers</span>
             <input
               type="checkbox"
               checked={form.hideStock}

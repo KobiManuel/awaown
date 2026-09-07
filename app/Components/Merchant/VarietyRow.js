@@ -82,7 +82,7 @@ export default function VarietyRow({ value, onChange, onRemove, canRemove }) {
           </label>
           <label className="flex flex-1 flex-col gap-1">
             <span className="text-[10px] font-medium uppercase tracking-wide text-shop-text/50">
-              Stock
+              Inventory qty
             </span>
             <input
               value={value.stock}

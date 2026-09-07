@@ -418,7 +418,7 @@ export default function NewMerchantProductPage() {
                 onClick={() => setProductType("simple")}
                 icon={Package}
                 title="Simple product"
-                description="Sold as-is, with one price and one stock number."
+                description="Sold as-is, with one price and one inventory quantity."
               />
               <TypeCard
                 selected={productType === "variable"}
@@ -442,7 +442,7 @@ export default function NewMerchantProductPage() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5 rounded-[10px] bg-shop-bg p-3.5 text-[11.5px] leading-[17px] text-shop-text">
               <p><span className="font-semibold text-shop-heading">Step 1.</span> Add each item that&apos;s included in this bundle below.</p>
-              <p><span className="font-semibold text-shop-heading">Step 2.</span> Set one price and one stock count for the whole bundle.</p>
+              <p><span className="font-semibold text-shop-heading">Step 2.</span> Set one price and one inventory quantity for the whole bundle.</p>
               <p><span className="font-semibold text-shop-heading">Step 3.</span> Publish. Shoppers buy the bundle as a single listing, not the items separately.</p>
             </div>
 
@@ -518,7 +518,7 @@ export default function NewMerchantProductPage() {
                 />
               </label>
               <label className="flex flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">Bundle Stock</span>
+                <span className="text-[13px] font-semibold text-shop-heading">Bundle inventory quantity</span>
                 <input
                   value={stock}
                   onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
@@ -548,7 +548,7 @@ export default function NewMerchantProductPage() {
                 Varieties ({cleanVarieties.length})
               </p>
               <p className="text-[11px] text-shop-text/60">
-                Each variety has its own price, stock count and (optionally) photo. Shoppers pick one before adding to cart.
+                Each variety has its own price, inventory quantity and (optionally) photo. Shoppers pick one before adding to cart.
               </p>
               {varieties.map((v) => (
                 <VarietyRow
@@ -583,7 +583,7 @@ export default function NewMerchantProductPage() {
             </label>
             {deliveryType !== "digital" && (
               <label className="flex flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">Stock</span>
+                <span className="text-[13px] font-semibold text-shop-heading">Inventory quantity</span>
                 <input
                   value={stock}
                   onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
@@ -670,7 +670,7 @@ export default function NewMerchantProductPage() {
               <div className="flex flex-col gap-2.5">
                 <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
                   <span className="text-[13px] font-medium text-shop-heading">
-                    Hide stock count from shoppers
+                    Hide inventory quantity from shoppers
                   </span>
                   <input
                     type="checkbox"

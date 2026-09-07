@@ -165,8 +165,8 @@ export default function PartnerStorePage() {
               <div className="flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium text-shop-text">
                   <Tag className="h-3.5 w-3.5" />
-                  Extra discount from your own{" "}
-                  {formatPrice(product.maxDiscount)} cut
+                  Give buyers a discount from your{" "}
+                  {formatPrice(product.maxDiscount)} margin
                 </span>
                 <div className="flex items-center gap-2">
                   <input

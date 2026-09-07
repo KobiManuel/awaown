@@ -54,9 +54,9 @@ export default function PartnerMarketplacePage() {
           strokeWidth={1.75}
         />
         <p className="text-[12px] leading-[18px] text-shop-text">
-          Only products merchants have enrolled in the Partner Program show up
-          here. Add one and you earn the set profit on every sale through your
-          link.
+          Only products merchants have enrolled in the Partner Program appear
+          here. Add one to your store and you earn its set margin on every sale
+          made through your link.
         </p>
       </div>
 

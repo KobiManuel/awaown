@@ -102,7 +102,7 @@ function StockEditor({ product, onSave, saving }) {
               className="flex items-center gap-1.5 rounded-[8px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-60"
             >
               {saving && <Loader2 className="h-3 w-3 animate-spin" />}
-              Save stock
+              Save inventory
             </button>
             <button
               type="button"
@@ -117,7 +117,7 @@ function StockEditor({ product, onSave, saving }) {
         </>
       ) : (
         <div className="flex items-center gap-2">
-          <label className="text-[12px] text-shop-text">Stock</label>
+          <label className="text-[12px] text-shop-text">Inventory quantity</label>
           <input
             value={simpleStock}
             inputMode="numeric"
@@ -160,7 +160,7 @@ export default function MerchantProductsPage() {
   const saveStock = async (body) => {
     try {
       await updateProduct(body).unwrap();
-      showToast("Stock updated");
+      showToast("Inventory updated");
       setOpenStockId(null);
     } catch (err) {
       showToast(errorMessage(err));
@@ -268,7 +268,7 @@ export default function MerchantProductsPage() {
                   >
                     {product.stock <= 0
                       ? "Out of stock"
-                      : `${product.stock} in stock${product.hideStock ? " (hidden)" : ""}`}
+                      : `${product.stock} in inventory${product.hideStock ? " (hidden)" : ""}`}
                     <ChevronDown
                       className={`h-3 w-3 transition-transform ${
                         openStockId === product.productId ? "rotate-180" : ""
@@ -351,7 +351,7 @@ export default function MerchantProductsPage() {
                   ) : (
                     <Eye className="h-3.5 w-3.5" />
                   )}
-                  {product.hideStock ? "Stock hidden" : "Stock visible"}
+                  {product.hideStock ? "Inventory hidden" : "Inventory visible"}
                 </button>
               </div>
 

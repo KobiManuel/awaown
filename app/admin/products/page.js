@@ -107,7 +107,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
                     </span>
                     <span className="flex-1 text-shop-heading">{v.label}</span>
                     <span className="text-shop-text">
-                      {formatPrice(v.price)} · {v.stock <= 0 ? "out of stock" : `${v.stock} in stock`}
+                      {formatPrice(v.price)} · {v.stock <= 0 ? "out of stock" : `${v.stock} in inventory`}
                     </span>
                   </div>
                 ))}
@@ -115,7 +115,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             </div>
           ) : (
             <div className="rounded-[10px] bg-shop-bg p-3">
-              <p className="text-shop-text/60">Stock</p>
+              <p className="text-shop-text/60">Inventory quantity</p>
               <p className="font-semibold text-shop-heading">{product.stock}</p>
             </div>
           )}
