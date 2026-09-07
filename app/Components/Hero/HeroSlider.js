@@ -58,30 +58,30 @@ const HeroSlider = () => {
                 className="h-full w-full object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.1]"
               />
             </div>
-            <div className="pointer-events-none absolute inset-0 flex flex-col justify-center gap-3 px-6 text-white sm:px-10 md:px-16">
-              <p className="text-[13px] font-medium uppercase tracking-wide sm:text-[15px]">
+            <div className="pointer-events-none absolute inset-0 flex flex-col justify-center gap-3 px-6 text-white max-[500px]:gap-1 max-[500px]:px-4 sm:px-10 md:px-16">
+              <p className="text-[13px] font-medium uppercase tracking-wide max-[500px]:text-[9.5px] max-[500px]:tracking-normal sm:text-[15px]">
                 {slide.discount}
               </p>
-              <h1 className="max-w-[420px] text-[26px] font-semibold leading-[32px] sm:text-[38px] sm:leading-[44px] md:text-[46px] md:leading-[52px]">
+              <h1 className="max-w-[420px] text-[26px] font-semibold leading-[32px] max-[500px]:max-w-[240px] max-[500px]:text-[15px] max-[500px]:leading-[18px] sm:text-[38px] sm:leading-[44px] md:text-[46px] md:leading-[52px]">
                 {slide.title}
               </h1>
               {slide.price && (
-                <p className="text-[14px] font-medium sm:text-[16px]">
+                <p className="text-[14px] font-medium max-[500px]:text-[10px] sm:text-[16px]">
                   {slide.price.includes(":") ? (
                     <>
                       {slide.price.split(":")[0]}:{" "}
-                      <strong className="text-[18px] sm:text-[22px]">
+                      <strong className="text-[18px] max-[500px]:text-[12px] sm:text-[22px]">
                         {slide.price.split(":").slice(1).join(":")}
                       </strong>
                     </>
                   ) : (
-                    <strong className="text-[18px] sm:text-[22px]">{slide.price}</strong>
+                    <strong className="text-[18px] max-[500px]:text-[12px] sm:text-[22px]">{slide.price}</strong>
                   )}
                 </p>
               )}
               <Link
                 href="/shop"
-                className="pointer-events-auto mt-2 w-fit bg-white px-6 py-3 text-[13px] font-semibold uppercase tracking-wide text-shop-heading transition-colors hover:bg-shop-accent-1 hover:text-white"
+                className="pointer-events-auto mt-2 w-fit bg-white px-6 py-3 text-[13px] font-semibold uppercase tracking-wide text-shop-heading transition-colors hover:bg-shop-accent-1 hover:text-white max-[500px]:mt-1 max-[500px]:px-3 max-[500px]:py-1.5 max-[500px]:text-[9.5px]"
               >
                 Shop Now
               </Link>

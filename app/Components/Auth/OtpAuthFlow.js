@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  Check,
 } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
 import OtpInput from "@/app/Components/Auth/OtpInput";
@@ -28,6 +29,7 @@ import {
   useRequestLoginMutation,
   useVerifyLoginMutation,
   useForgotPasswordMutation,
+  useCheckResetCodeMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
   useResendOtpMutation,
@@ -101,6 +103,7 @@ export default function OtpAuthFlow({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [codeVerified, setCodeVerified] = useState(false); // reset flow: code checked
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -113,6 +116,7 @@ export default function OtpAuthFlow({
   const [requestLogin, requestLoginState] = useRequestLoginMutation();
   const [verifyLogin, verifyLoginState] = useVerifyLoginMutation();
   const [forgotPassword, forgotState] = useForgotPasswordMutation();
+  const [checkResetCode, checkCodeState] = useCheckResetCodeMutation();
   const [resetPassword, resetState] = useResetPasswordMutation();
   const [changePassword, changePwState] = useChangePasswordMutation();
   const [resendOtp, resendState] = useResendOtpMutation();
@@ -136,6 +140,29 @@ export default function OtpAuthFlow({
     setFormError("");
     setNotice("");
     setCode("");
+    setCodeVerified(false);
+  };
+
+  // Reset flow is two-step: the code is checked on its own first, and only then
+  // are the new-password fields unlocked. Editing the code after it's been
+  // verified re-locks them until it's checked again.
+  const updateResetCode = (v) => {
+    setCode(v);
+    if (codeVerified) setCodeVerified(false);
+    setFormError("");
+  };
+
+  const verifyResetCode = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    if (code.length !== 6) return setFormError("Enter the 6-digit code.");
+    try {
+      await checkResetCode({ role, email, code }).unwrap();
+      setCodeVerified(true);
+      setNotice("Code confirmed — now choose a new password.");
+    } catch (err) {
+      setFormError(errorMessage(err, "That code didn't work. Try again."));
+    }
   };
 
   // Password fields keep a server-side error (e.g. "found in a data breach")
@@ -222,7 +249,9 @@ export default function OtpAuthFlow({
   const submitReset = async (e) => {
     e.preventDefault();
     setFormError("");
-    if (code.length !== 6) return setFormError("Enter the 6-digit code.");
+    if (!codeVerified || code.length !== 6) {
+      return setFormError("Confirm your reset code first.");
+    }
     if (!passwordOk(password)) {
       setFormError("Please meet all the password requirements below.");
       return;
@@ -550,9 +579,12 @@ export default function OtpAuthFlow({
         </form>
       )}
 
-      {/* ── reset ── */}
+      {/* ── reset (two-step: confirm code, then set password) ── */}
       {view === "reset" && (
-        <form className="flex flex-col gap-4" onSubmit={submitReset}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={codeVerified ? submitReset : verifyResetCode}
+        >
           {notice && (
             <p className="rounded-[8px] bg-shop-accent-1-light px-3 py-2 text-[12.5px] text-shop-accent-1">
               {notice}
@@ -560,26 +592,52 @@ export default function OtpAuthFlow({
           )}
           <label className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-shop-heading">6-digit code</span>
-            <OtpInput value={code} onChange={setCode} disabled={busy} />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium text-shop-heading">New password</span>
-            <PasswordInput
-              value={password}
-              onChange={updatePassword}
-              autoComplete="new-password"
-              placeholder="Create a new password"
+            <OtpInput
+              value={code}
+              onChange={updateResetCode}
+              disabled={busy || checkCodeState.isLoading}
             />
-            <PasswordChecklist value={password} className="mt-1" />
           </label>
+
+          {!codeVerified ? (
+            <button
+              type="submit"
+              disabled={checkCodeState.isLoading || code.length !== 6}
+              className={primaryBtn}
+            >
+              {checkCodeState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>Confirm code <ArrowRight className="h-4 w-4" /></>
+              )}
+            </button>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-shop-heading">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <Check className="h-3 w-3" />
+                  </span>
+                  New password
+                </span>
+                <PasswordInput
+                  value={password}
+                  onChange={updatePassword}
+                  autoComplete="new-password"
+                  placeholder="Create a new password"
+                />
+                <PasswordChecklist value={password} className="mt-1" />
+              </label>
+              <button
+                type="submit"
+                disabled={busy || !passwordOk(password)}
+                className={primaryBtn}
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Set password &amp; sign in</>}
+              </button>
+            </>
+          )}
           <Err />
-          <button
-            type="submit"
-            disabled={busy || code.length !== 6 || !passwordOk(password)}
-            className={primaryBtn}
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Set password &amp; sign in</>}
-          </button>
           <div className="flex items-center justify-between text-[13px]">
             <button
               type="button"

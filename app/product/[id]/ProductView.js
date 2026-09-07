@@ -69,6 +69,7 @@ function ProductDetail() {
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [activeImg, setActiveImg] = useState(null); // thumbnail the buyer tapped
 
   const [addToCart, addState] = useAddToCartMutation();
   const [toggleWishlist, wishState] = useToggleWishlistMutation();
@@ -83,6 +84,22 @@ function ProductDetail() {
     () => (product ? resolveVariant(product, selected) : null),
     [product, selected],
   );
+
+  // Full image set for the gallery: the selected variety's photo first (if it
+  // has its own), then every product photo, de-duplicated.
+  const gallery = useMemo(() => {
+    const all = [resolved?.image, ...(product?.images ?? [])].filter(Boolean);
+    return [...new Set(all)];
+  }, [resolved?.image, product?.images]);
+
+  // Picking a different variety resets the manual thumbnail choice so the main
+  // image follows the variety again.
+  useEffect(() => {
+    setActiveImg(null); // eslint-disable-line react-hooks/set-state-in-effect
+  }, [resolved?.variantId]);
+
+  const shownImg =
+    activeImg && gallery.includes(activeImg) ? activeImg : resolved?.image ?? null;
 
   // keep quantity within the selected variety's stock
   useEffect(() => {
@@ -205,21 +222,51 @@ function ProductDetail() {
         </Link>
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-10">
-          <div className="relative aspect-square overflow-hidden rounded-[16px] bg-shop-bg lg:sticky lg:top-28 lg:self-start">
-            {discount && (
-              <span className="absolute left-3 top-3 z-10 rounded-[4px] bg-shop-accent-3 px-2 py-1 text-[11px] font-semibold text-white">
-                -{discount}%
-              </span>
+          <div className="flex flex-col gap-3 lg:sticky lg:top-28 lg:self-start">
+            <div className="relative aspect-square overflow-hidden rounded-[16px] bg-shop-bg">
+              {discount && (
+                <span className="absolute left-3 top-3 z-10 rounded-[4px] bg-shop-accent-3 px-2 py-1 text-[11px] font-semibold text-white">
+                  -{discount}%
+                </span>
+              )}
+              {shownImg && (
+                <Image
+                  key={shownImg}
+                  src={shownImg}
+                  alt={product.title}
+                  fill
+                  className="object-contain p-8"
+                  sizes="(max-width: 1024px) 480px, 540px"
+                  priority
+                />
+              )}
+            </div>
+
+            {gallery.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {gallery.map((img) => (
+                  <button
+                    key={img}
+                    type="button"
+                    onClick={() => setActiveImg(img)}
+                    aria-label="View photo"
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border-2 bg-shop-bg transition-colors ${
+                      img === shownImg
+                        ? "border-shop-accent-1"
+                        : "border-transparent hover:border-shop-border"
+                    }`}
+                  >
+                    <Image
+                      src={img}
+                      alt=""
+                      fill
+                      className="object-contain p-1.5"
+                      sizes="64px"
+                    />
+                  </button>
+                ))}
+              </div>
             )}
-            <Image
-              key={resolved.image}
-              src={resolved.image}
-              alt={product.title}
-              fill
-              className="object-contain p-8"
-              sizes="(max-width: 1024px) 480px, 540px"
-              priority
-            />
           </div>
 
           <div className="mt-5 flex flex-col gap-4 lg:mt-0">

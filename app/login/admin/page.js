@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDispatch } from "react-redux";
-import { Mail, Lock, ArrowRight, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, ArrowLeft, Eye, EyeOff, Check } from "lucide-react";
 import AuthLayout from "@/app/Components/Auth/AuthLayout";
 import OtpInput from "@/app/Components/Auth/OtpInput";
 import PasswordChecklist from "@/app/Components/Auth/PasswordChecklist";
@@ -14,6 +14,7 @@ import { errorMessage } from "@/lib/api/errorMessage";
 import {
   useAdminLoginPasswordMutation,
   useAdminForgotPasswordMutation,
+  useAdminCheckResetCodeMutation,
   useAdminResetPasswordMutation,
 } from "@/lib/api/authApi";
 
@@ -31,6 +32,7 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [codeVerified, setCodeVerified] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
@@ -38,6 +40,7 @@ export default function AdminLoginPage() {
 
   const [login, loginState] = useAdminLoginPasswordMutation();
   const [forgot, forgotState] = useAdminForgotPasswordMutation();
+  const [checkCode, checkCodeState] = useAdminCheckResetCodeMutation();
   const [reset, resetState] = useAdminResetPasswordMutation();
   const busy = loginState.isLoading || forgotState.isLoading || resetState.isLoading;
 
@@ -78,6 +81,7 @@ export default function AdminLoginPage() {
     try {
       await forgot({ email }).unwrap();
       setCooldown(60);
+      setCodeVerified(false);
       setNotice(`If ${email} is an admin account, a code is on its way.`);
       setView("reset");
     } catch (err) {
@@ -85,10 +89,30 @@ export default function AdminLoginPage() {
     }
   };
 
-  const doReset = async (e) => {
+  const updateResetCode = (v) => {
+    setCode(v);
+    if (codeVerified) setCodeVerified(false);
+    setFormError("");
+  };
+
+  const verifyCode = async (e) => {
     e.preventDefault();
     setFormError("");
     if (code.length !== 6) return setFormError("Enter the 6-digit code.");
+    try {
+      await checkCode({ email, code }).unwrap();
+      setCodeVerified(true);
+      setNotice("Code confirmed — now set your password.");
+    } catch (err) {
+      setFormError(errorMessage(err, "That code didn't work."));
+    }
+  };
+
+  const doReset = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    if (!codeVerified || code.length !== 6)
+      return setFormError("Confirm your code first.");
     if (!passwordOk(password))
       return setFormError("Meet all the password requirements below.");
     try {
@@ -196,46 +220,75 @@ export default function AdminLoginPage() {
       )}
 
       {view === "reset" && (
-        <form className="flex flex-col gap-4" onSubmit={doReset}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={codeVerified ? doReset : verifyCode}
+        >
           <p className="rounded-[8px] bg-shop-accent-1-light px-3 py-2 text-[12.5px] text-shop-accent-1">
             {notice}
           </p>
           <label className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-shop-heading">6-digit code</span>
-            <OtpInput value={code} onChange={setCode} disabled={busy} />
+            <OtpInput
+              value={code}
+              onChange={updateResetCode}
+              disabled={busy || checkCodeState.isLoading}
+            />
           </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium text-shop-heading">New password</span>
-            <div className={wrap}>
-              <Lock className="h-4 w-4 shrink-0 text-shop-text/50" />
-              <input
-                type={showPw ? "text" : "password"}
-                required
-                value={password}
-                onChange={updatePassword}
-                autoComplete="new-password"
-                placeholder="Create a password"
-                className={inputCls}
-              />
+
+          {!codeVerified ? (
+            <button
+              type="submit"
+              disabled={checkCodeState.isLoading || code.length !== 6}
+              className={btn}
+            >
+              {checkCodeState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>Confirm code <ArrowRight className="h-4 w-4" /></>
+              )}
+            </button>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-shop-heading">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <Check className="h-3 w-3" />
+                  </span>
+                  New password
+                </span>
+                <div className={wrap}>
+                  <Lock className="h-4 w-4 shrink-0 text-shop-text/50" />
+                  <input
+                    type={showPw ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={updatePassword}
+                    autoComplete="new-password"
+                    placeholder="Create a password"
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((s) => !s)}
+                    className="shrink-0 text-shop-text/50 hover:text-shop-heading"
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                  >
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <PasswordChecklist value={password} className="mt-1" />
+              </label>
               <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                className="shrink-0 text-shop-text/50 hover:text-shop-heading"
-                aria-label={showPw ? "Hide password" : "Show password"}
+                type="submit"
+                disabled={busy || !passwordOk(password)}
+                className={btn}
               >
-                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Set password & sign in"}
               </button>
-            </div>
-            <PasswordChecklist value={password} className="mt-1" />
-          </label>
+            </>
+          )}
           {formError && <p className="text-[13px] font-medium text-red-600">{formError}</p>}
-          <button
-            type="submit"
-            disabled={busy || code.length !== 6 || !passwordOk(password)}
-            className={btn}
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Set password & sign in"}
-          </button>
           <div className="flex items-center justify-between text-[13px]">
             <button
               type="button"
