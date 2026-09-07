@@ -59,22 +59,17 @@ export default function PublicPartnerStorePage() {
     >
       <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">
         <div
-          className="relative w-full overflow-hidden rounded-[20px]"
-          style={{ backgroundColor: accent.value }}
+          className="relative h-40 w-full overflow-hidden rounded-[20px] sm:h-56"
+          style={{
+            backgroundColor: accent.value,
+            backgroundImage: store.bannerUrl
+              ? `url(${store.bannerUrl})`
+              : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          {store.bannerUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={store.bannerUrl}
-                alt=""
-                className="block h-auto w-full"
-              />
-              <div className="absolute inset-0 bg-black/25" />
-            </>
-          ) : (
-            <div className="h-40 w-full sm:h-56" />
-          )}
+          {store.bannerUrl && <div className="absolute inset-0 bg-black/25" />}
         </div>
 
         <div

@@ -91,8 +91,8 @@ function InlineText({ value, onChange, className = "", placeholder = "", multili
   );
 }
 
-// `aspect` is optional — omit it for a free crop (the container adapts to
-// whatever shape the admin frames); pass a number to lock the ratio.
+// `aspect` MUST match the frame this image renders into, so the crop the admin
+// makes fills that frame exactly with no letterboxing.
 function ImageEditButton({ onPick, label = "Change image", aspect }) {
   const showToast = useToast();
   const inputRef = useRef(null);
@@ -126,12 +126,15 @@ function ImageEditButton({ onPick, label = "Change image", aspect }) {
   );
 }
 
-// Fixed image-size hints are intentionally disabled: the crop tool now lets
-// admins frame any image freely and the banners adapt to whatever shape they
-// choose, so a "recommended size" is misleading. Kept as a no-op so the call
-// sites (and the copy) stay in place if we ever want size guidance back.
-function DimensionHint(/* { text } */) {
-  return null;
+function DimensionHint({ text }) {
+  return (
+    <p className="text-[10.5px] leading-[15px] text-shop-text/50">
+      Design at <span className="font-medium text-shop-text/70">{text}</span>. The
+      image fills this frame edge-to-edge — hold these exact proportions and it
+      scales cleanly on every screen (the width flexes with the device, the
+      shape does not).
+    </p>
+  );
 }
 
 function VisibilityToggle({ on, onClick }) {
@@ -183,14 +186,9 @@ function HeroEditor({ data, onChange, visible, onToggleVisible }) {
     <SectionShell title="Hero Banner" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="grid grid-cols-2 gap-4">
         {data.slides.map((slide, i) => (
-          <div key={i} className="group relative w-full overflow-hidden rounded-[10px] bg-shop-bg">
-            {slide.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={slide.image} alt="" className="block h-auto w-full" />
-            ) : (
-              <div className="aspect-[1100/495] w-full" />
-            )}
-            <ImageEditButton onPick={(url) => updateSlide(i, { image: url })} />
+          <div key={i} className="group relative aspect-[1100/495] w-full overflow-hidden rounded-[10px] bg-shop-bg">
+            <Image src={slide.image} alt="" fill className="object-cover" />
+            <ImageEditButton onPick={(url) => updateSlide(i, { image: url })} aspect={1100 / 495} />
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-center gap-2 px-6 text-white">
               <div className="pointer-events-auto">
                 <InlineText
@@ -221,7 +219,7 @@ function HeroEditor({ data, onChange, visible, onToggleVisible }) {
           </div>
         ))}
       </div>
-      <DimensionHint text="1100 × 495px per slide" />
+      <DimensionHint text="1100 × 495 px (ratio 20:9)" />
     </SectionShell>
   );
 }
@@ -235,14 +233,9 @@ function ThreeBannerEditor({ data, onChange, visible, onToggleVisible }) {
     <SectionShell title="3-Card Row (right after Hero)" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="grid grid-cols-3 gap-4">
         {data.banners.map((b, i) => (
-          <div key={i} className="group relative w-full overflow-hidden rounded-[12px] bg-shop-bg">
-            {b.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.image} alt="" className="block h-auto w-full" />
-            ) : (
-              <div className="aspect-[446/180] w-full" />
-            )}
-            <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} />
+          <div key={i} className="group relative aspect-[446/180] w-full overflow-hidden rounded-[12px] bg-shop-bg">
+            <Image src={b.image} alt="" fill className="object-cover" />
+            <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} aspect={446 / 180} />
             <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1 px-4 text-right text-shop-heading">
               <div className="pointer-events-auto">
                 <InlineText
@@ -265,7 +258,7 @@ function ThreeBannerEditor({ data, onChange, visible, onToggleVisible }) {
           </div>
         ))}
       </div>
-      <DimensionHint text="446 × 180px per card" />
+      <DimensionHint text="446 × 180 px (ratio ≈ 2.5:1)" />
     </SectionShell>
   );
 }
@@ -276,13 +269,10 @@ function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange, visi
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex w-full flex-col gap-3 rounded-[10px] bg-shop-bg p-4 lg:w-[280px] lg:shrink-0">
           <div className="group relative aspect-square w-full overflow-hidden rounded-[8px] bg-white">
-            <Image src={deal.image} alt="" fill className="object-contain p-6" />
-            <ImageEditButton
-              onPick={(url) => onDealChange({ image: url })}
-              aspect={1}
-            />
+            <Image src={deal.image} alt="" fill className="object-cover" />
+            <ImageEditButton onPick={(url) => onDealChange({ image: url })} aspect={1} />
           </div>
-          <DimensionHint text="800 × 800px (square)" />
+          <DimensionHint text="800 × 800 px (square, 1:1)" />
           <InlineText
             value={deal.vendor}
             onChange={(v) => onDealChange({ vendor: v })}
@@ -367,14 +357,9 @@ function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
     >
       <div className="grid grid-cols-2 gap-4">
         {data.banners.map((b, i) => (
-          <div key={i} className="group relative w-full overflow-hidden rounded-[12px] bg-shop-bg">
-            {b.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.image} alt="" className="block h-auto w-full" />
-            ) : (
-              <div className="aspect-[685/240] w-full" />
-            )}
-            <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} />
+          <div key={i} className="group relative aspect-[685/240] w-full overflow-hidden rounded-[12px] bg-shop-bg">
+            <Image src={b.image} alt="" fill className="object-cover" />
+            <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} aspect={685 / 240} />
             <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1.5 px-6 text-right text-white">
               <div className="pointer-events-auto">
                 <InlineText
@@ -405,7 +390,7 @@ function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
           </div>
         ))}
       </div>
-      <DimensionHint text="685 × 240px per banner" />
+      <DimensionHint text="685 × 240 px (ratio ≈ 2.85:1)" />
     </SectionShell>
   );
 }
@@ -413,14 +398,9 @@ function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
 function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
   return (
     <SectionShell title="Banner (right before Reviews)" visible={visible} onToggleVisible={onToggleVisible}>
-      <div className="group relative w-full overflow-hidden rounded-[16px] bg-shop-bg">
-        {data.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.image} alt="" className="block h-auto w-full" />
-        ) : (
-          <div className="aspect-[1400/220] w-full" />
-        )}
-        <ImageEditButton onPick={(url) => onChange({ image: url })} />
+      <div className="group relative aspect-[1400/220] w-full overflow-hidden rounded-[16px] bg-shop-bg">
+        <Image src={data.image} alt="" fill className="object-cover" />
+        <ImageEditButton onPick={(url) => onChange({ image: url })} aspect={1400 / 220} />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1.5 px-8 text-right text-white">
           <div className="pointer-events-auto">
             <InlineText
@@ -449,7 +429,7 @@ function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
           </div>
         </div>
       </div>
-      <DimensionHint text="1400 × 220px" />
+      <DimensionHint text="1400 × 220 px (ratio ≈ 6.4:1, a wide strip)" />
     </SectionShell>
   );
 }
@@ -597,7 +577,7 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
           {vs.image && (
             <Image src={vs.image} alt="" fill className="object-cover opacity-70" sizes="60vw" />
           )}
-          <ImageEditButton onPick={(url) => setCard("vendorSpotlight", { image: url })} />
+          <ImageEditButton onPick={(url) => setCard("vendorSpotlight", { image: url })} aspect={3 / 2} />
           <div className="relative flex flex-col gap-2">
             <span className="w-fit rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
               Vendor of the Week
@@ -628,7 +608,7 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
               className="text-[11px] text-white/70"
             />
           </div>
-          <DimensionHint text="1200×800px" />
+          <DimensionHint text="1200 × 800 px (ratio 3:2) — it sits behind the text, so keep the focal point on the left" />
         </div>
 
         {/* Webinar */}

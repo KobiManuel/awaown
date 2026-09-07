@@ -44,20 +44,19 @@ export default function PublicMerchantStorePage() {
   return (
     <div className="min-h-screen w-full bg-shop-bg font-shop">
       <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">
-        <div className="relative w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2">
-          {store.bannerUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={store.bannerUrl}
-                alt=""
-                className="block h-auto w-full"
-              />
-              <div className="absolute inset-0 bg-black/25" />
-            </>
-          ) : (
-            <div className="h-40 w-full sm:h-56" />
-          )}
+        <div
+          className="relative h-40 w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 sm:h-56"
+          style={
+            store.bannerUrl
+              ? {
+                  backgroundImage: `url(${store.bannerUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
+        >
+          {store.bannerUrl && <div className="absolute inset-0 bg-black/25" />}
         </div>
 
         <div className="-mt-16 flex flex-col gap-5 rounded-[16px] border border-shop-border bg-white p-5 sm:-mt-20 sm:flex-row sm:items-end sm:gap-5">

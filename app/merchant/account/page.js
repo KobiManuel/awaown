@@ -96,9 +96,8 @@ export default function MerchantAccountPage() {
     if (!file) return;
     e.target.value = "";
     const url = await cropStoreImage(file, {
-      // logo sits in a square slot; the banner is free-form and its slot adapts
-      aspect: key === "logoUrl" ? 1 : undefined,
-      title: key === "logoUrl" ? "Crop your logo" : "Crop your banner",
+      aspect: key === "logoUrl" ? 1 : 16 / 6,
+      title: key === "logoUrl" ? "Position your logo" : "Position your banner",
     });
     if (url) set({ [key]: url });
   };
@@ -162,16 +161,14 @@ export default function MerchantAccountPage() {
             <p className="text-[13.5px] font-semibold text-shop-heading">
               Store Settings
             </p>
-            <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2">
-              {draft.bannerUrl ? (
-                <img
-                  src={draft.bannerUrl}
-                  alt="Store banner"
-                  className="block h-auto w-full"
-                />
-              ) : (
-                <div className="h-28" />
-              )}
+            <div
+              className="relative flex h-28 items-end overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 bg-cover bg-center"
+              style={
+                draft.bannerUrl
+                  ? { backgroundImage: `url(${draft.bannerUrl})` }
+                  : undefined
+              }
+            >
               <div className="absolute inset-0 bg-black/10" />
               <input
                 ref={bannerRef}
@@ -216,7 +213,7 @@ export default function MerchantAccountPage() {
                 type="button"
                 onClick={() => bannerRef.current?.click()}
                 disabled={imageUploading}
-                className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
+                className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
               >
                 {imageUploading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

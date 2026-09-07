@@ -36,7 +36,7 @@ const DealOfWeek = () => {
                   src={p.image}
                   alt={p.title}
                   fill
-                  className="object-contain p-8"
+                  className="object-cover"
                   sizes="340px"
                 />
               </div>

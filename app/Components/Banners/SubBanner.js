@@ -1,15 +1,12 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 /**
  * The "sub-banner" hover behaviour: the photo lives in
  * its own overflow-hidden layer and scales up on hover; the text overlay is
  * a separate absolutely-positioned sibling so it never scales or shifts.
- *
- * The banner has no fixed aspect ratio — the container adapts to whatever
- * shape the uploaded/cropped image is. The text overlay stays vertically
- * centred over it at any height.
  *
  * On mobile the text block still sits toward its aligned edge, but the text
  * itself reads left-aligned (more legible on narrow banners); desktop
@@ -24,6 +21,7 @@ const SubBanner = ({
   href = "#",
   align = "left", // left | right | center
   textColor = "text-shop-heading",
+  aspect = "aspect-[3/2]",
   rounded = "rounded-[12px]",
   headingMaxWidth = "max-w-[240px] sm:max-w-[280px] md:max-w-[340px]",
 }) => {
@@ -35,13 +33,14 @@ const SubBanner = ({
       : "left-[7%] right-auto text-left items-start";
 
   return (
-    <div className={`group relative w-full overflow-hidden ${rounded} bg-shop-bg`}>
-      <a href={href} className="relative block overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+    <div className={`group relative w-full ${aspect} overflow-hidden ${rounded} bg-shop-bg`}>
+      <a href={href} className="absolute inset-0 block overflow-hidden">
+        <Image
           src={image}
           alt={heading || ""}
-          className="block h-auto w-full object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.15]"
+          fill
+          className="object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.15]"
+          sizes="(max-width: 768px) 100vw, 33vw"
         />
       </a>
       <div

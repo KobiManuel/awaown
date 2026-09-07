@@ -97,7 +97,7 @@ export default function PartnerCustomizePage() {
     e.target.value = "";
     const url = await cropStoreImage(file, {
       aspect: 1,
-      title: "Crop your store picture",
+      title: "Position your store picture",
     });
     if (url) update({ storeProfileImage: url });
   };
@@ -107,8 +107,8 @@ export default function PartnerCustomizePage() {
     if (!file) return;
     e.target.value = "";
     const url = await cropStoreImage(file, {
-      // free crop — the banner adapts to whatever shape they pick
-      title: "Crop your banner",
+      aspect: 16 / 6,
+      title: "Position your banner",
     });
     if (url) update({ storeBanner: url });
   };
@@ -179,13 +179,10 @@ export default function PartnerCustomizePage() {
         {/* Banner + profile image */}
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Banner Image</p>
-          <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2">
-            {storeBanner ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={storeBanner} alt="Store banner" className="block h-auto w-full" />
-            ) : (
-              <div className="h-28" />
-            )}
+          <div
+            className="relative flex h-28 items-end overflow-hidden rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 bg-cover bg-center"
+            style={storeBanner ? { backgroundImage: `url(${storeBanner})` } : undefined}
+          >
             <div className="absolute inset-0 bg-black/10" />
             <button
               type="button"
@@ -202,7 +199,7 @@ export default function PartnerCustomizePage() {
               type="button"
               onClick={() => bannerInputRef.current?.click()}
               disabled={imageUploading}
-              className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
+              className="relative m-3 ml-auto flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-shop-heading disabled:opacity-60"
             >
               {imageUploading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
