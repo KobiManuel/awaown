@@ -264,7 +264,7 @@ function ProductDetail() {
             </div>
 
             {gallery.length > 1 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="hide-scrollbar flex max-h-[164px] flex-wrap gap-2 overflow-y-auto">
                 {gallery.map((img) => (
                   <button
                     key={img}

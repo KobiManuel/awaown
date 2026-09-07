@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, X, Loader2, Users2, Plus } from "lucide-react";
+import { X, Loader2, Users2, Plus } from "lucide-react";
 import {
   formatPrice,
   PRODUCT_CATEGORIES,
@@ -25,7 +25,6 @@ import { errorMessage } from "@/lib/api/errorMessage";
 const FIELD =
   "w-full rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1";
 const LABEL = "text-[12px] font-semibold text-shop-heading";
-const MAX_IMAGES = 4;
 
 export default function EditMerchantProductPage() {
   const { id } = useParams();
@@ -121,7 +120,7 @@ export default function EditMerchantProductPage() {
       aspect: 1,
       title: "Crop the product photo",
     });
-    if (url) set({ images: [...form.images, url].slice(0, MAX_IMAGES) });
+    if (url) set({ images: [...form.images, url] });
   };
 
   const profit = Number(form.partnerProfitAmount) || 0;
@@ -320,9 +319,15 @@ export default function EditMerchantProductPage() {
           </div>
         </div>
 
-        {/* Images */}
+        {/* Images — first one is the cover */}
         <div className="flex flex-col gap-1.5">
-          <label className={LABEL}>Photos</label>
+          <label className={LABEL}>
+            Photos{" "}
+            <span className="font-normal text-shop-text/60">
+              (the first is the cover — drag isn&apos;t supported yet, remove and
+              re-add to reorder)
+            </span>
+          </label>
           <div className="flex flex-wrap gap-2.5">
             {form.images.map((src, i) => (
               <div
@@ -330,6 +335,11 @@ export default function EditMerchantProductPage() {
                 className="relative h-20 w-20 overflow-hidden rounded-[10px] border border-shop-border bg-shop-bg"
               >
                 <Image src={src} alt="" fill className="object-cover" sizes="80px" />
+                {i === 0 && (
+                  <span className="absolute bottom-0 inset-x-0 bg-black/55 py-0.5 text-center text-[8.5px] font-semibold text-white">
+                    COVER
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() =>
@@ -342,27 +352,25 @@ export default function EditMerchantProductPage() {
                 </button>
               </div>
             ))}
-            {form.images.length < MAX_IMAGES && (
-              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-shop-border text-shop-text/50">
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
-                    <span className="text-[9.5px] font-medium">Uploading…</span>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4" />
-                    <span className="text-[10px]">Add</span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={addImage}
-                />
-              </label>
-            )}
+            <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-2 border-dashed border-shop-border text-shop-text/50 hover:border-shop-accent-1 hover:text-shop-accent-1">
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                  <span className="text-[9.5px] font-medium">Uploading…</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="text-[10px]">Add photo</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={addImage}
+              />
+            </label>
           </div>
         </div>
 

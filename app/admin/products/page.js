@@ -37,17 +37,36 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           </button>
         </div>
 
-        <div className="relative aspect-square w-full overflow-hidden rounded-[12px] bg-shop-bg">
+        <div className="flex min-h-[180px] w-full items-center justify-center overflow-hidden rounded-[12px] bg-shop-bg p-2">
           {images[activeImage] ? (
-            <Image src={images[activeImage]} alt={product.title} fill className="object-contain p-6" sizes="560px" />
+            <a
+              href={images[activeImage]}
+              target="_blank"
+              rel="noreferrer"
+              title="Open full size in a new tab"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={images[activeImage]}
+                alt={`${product.title} — photo ${activeImage + 1}`}
+                className="mx-auto max-h-[62vh] w-auto max-w-full rounded-[8px] object-contain"
+              />
+            </a>
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Package className="h-10 w-10 text-shop-text/40" strokeWidth={1.5} />
-            </div>
+            <Package className="h-10 w-10 text-shop-text/40" strokeWidth={1.5} />
           )}
         </div>
+        {images.length > 0 && (
+          <div className="flex items-center justify-between text-[11px] text-shop-text/60">
+            <span>
+              Photo {activeImage + 1} of {images.length}
+              {activeImage === 0 ? " · cover" : ""} — shown at its uploaded
+              proportions. Tap to open full size.
+            </span>
+          </div>
+        )}
         {images.length > 1 && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {images.map((img, i) => (
               <button
                 key={i}
@@ -57,7 +76,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
                   i === activeImage ? "border-shop-accent-1" : "border-transparent"
                 }`}
               >
-                <Image src={img} alt="" fill className="object-contain p-1.5" sizes="56px" />
+                <Image src={img} alt="" fill className="object-cover" sizes="56px" />
               </button>
             ))}
           </div>

@@ -32,7 +32,6 @@ import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 
-const MAX_IMAGES = 4;
 
 const TypeCard = ({ selected, onClick, icon: Icon, title, description }) => (
   <button
@@ -102,26 +101,48 @@ export default function NewMerchantProductPage() {
     if (deliveryType === "digital") setProductType("simple");
   }, [deliveryType]);
 
-  const handleImageChange = async (e, index) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    setUploadingSlot(index);
+  // images[0] is the cover (may be null); images[1..] are contiguous extras.
+  const cover = images[0] ?? null;
+  const extras = images.slice(1);
+
+  const cropOne = async (file, slotKey) => {
+    setUploadingSlot(slotKey);
     try {
-      const url = await cropProductImage(file, {
+      return await cropProductImage(file, {
         aspect: 1,
         title: "Crop the product photo",
-      });
-      if (!url) return;
-      setImages((prev) => {
-        const next = [...prev];
-        next[index] = url;
-        return next;
       });
     } finally {
       setUploadingSlot(null);
     }
   };
+
+  const handleCover = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const url = await cropOne(file, "cover");
+    if (url) setImages((prev) => [url, ...prev.slice(1)]);
+  };
+
+  const handleExtra = async (e, k) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const url = await cropOne(file, k == null ? "new" : k);
+    if (!url) return;
+    setImages((prev) => {
+      const next = prev.length ? [...prev] : [null];
+      if (k == null) next.push(url);
+      else next[k + 1] = url;
+      return next;
+    });
+  };
+
+  const removeCover = () =>
+    setImages((prev) => [null, ...prev.slice(1)]);
+  const removeExtra = (k) =>
+    setImages((prev) => prev.filter((_, i) => i !== k + 1));
 
   const handleVideoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -374,15 +395,15 @@ export default function NewMerchantProductPage() {
                 Main cover image
               </span>
               <label className="relative flex aspect-square w-full max-w-[180px] items-center justify-center overflow-hidden rounded-[12px] border border-dashed border-shop-border bg-white">
-                {images[0] ? (
+                {cover ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={images[0]} alt="Cover" className="h-full w-full object-cover" />
+                    <img src={cover} alt="Cover" className="h-full w-full object-cover" />
                     <button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        setImages((prev) => prev.map((img, idx) => (idx === 0 ? null : img)));
+                        removeCover();
                       }}
                       className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
                     >
@@ -395,7 +416,7 @@ export default function NewMerchantProductPage() {
                     <span className="text-[10.5px]">White background</span>
                   </span>
                 )}
-                {uploadingSlot === 0 && (
+                {uploadingSlot === "cover" && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-white/80 text-[10.5px] font-medium text-shop-text">
                     <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
                     Uploading…
@@ -405,7 +426,7 @@ export default function NewMerchantProductPage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => handleImageChange(e, 0)}
+                  onChange={handleCover}
                 />
               </label>
             </div>
@@ -414,36 +435,29 @@ export default function NewMerchantProductPage() {
               <span className="text-[12px] font-semibold text-shop-heading">
                 More photos{" "}
                 <span className="font-normal text-shop-text/70">
-                  (optional, any background)
+                  (optional, any background — add as many as you need)
                 </span>
               </span>
               <div className="grid grid-cols-4 gap-2.5">
-                {Array.from({ length: MAX_IMAGES - 1 }).map((_, k) => {
-                  const i = k + 1;
-                  return (
+                {extras.map((src, k) =>
+                  src ? (
                     <label
-                      key={i}
+                      key={k}
                       className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg"
                     >
-                      {images[i] ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={images[i]} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setImages((prev) => prev.map((img, idx) => (idx === i ? null : img)));
-                            }}
-                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </>
-                      ) : (
-                        <Camera className="h-5 w-5 text-shop-text/40" />
-                      )}
-                      {uploadingSlot === i && (
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Photo ${k + 2}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          removeExtra(k);
+                        }}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      {uploadingSlot === k && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                           <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
                         </div>
@@ -452,11 +466,29 @@ export default function NewMerchantProductPage() {
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => handleImageChange(e, i)}
+                        onChange={(e) => handleExtra(e, k)}
                       />
                     </label>
-                  );
-                })}
+                  ) : null,
+                )}
+
+                {/* Add-another slot */}
+                <label className="relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-2 border-dashed border-shop-border text-shop-text/50 hover:border-shop-accent-1 hover:text-shop-accent-1">
+                  {uploadingSlot === "new" ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                  ) : (
+                    <>
+                      <Plus className="h-5 w-5" />
+                      <span className="text-[9.5px] font-medium">Add photo</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleExtra(e, null)}
+                  />
+                </label>
               </div>
             </div>
 
