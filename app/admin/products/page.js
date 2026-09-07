@@ -22,7 +22,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 lg:items-center" onClick={onClose}>
       <div
-        className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[20px] bg-white p-5 lg:rounded-[16px]"
+        className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[20px] bg-white p-5 lg:max-w-[840px] lg:rounded-[16px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -37,32 +37,25 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           </button>
         </div>
 
-        <div className="flex min-h-[180px] w-full items-center justify-center overflow-hidden rounded-[12px] bg-shop-bg p-2">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+        <div className="flex flex-col gap-3 lg:w-[46%] lg:shrink-0">
+        <div className="flex min-h-[180px] w-full items-center justify-center rounded-[12px] bg-shop-bg p-2">
           {images[activeImage] ? (
-            <a
-              href={images[activeImage]}
-              target="_blank"
-              rel="noreferrer"
-              title="Open full size in a new tab"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[activeImage]}
-                alt={`${product.title} — photo ${activeImage + 1}`}
-                className="mx-auto max-h-[62vh] w-auto max-w-full rounded-[8px] object-contain"
-              />
-            </a>
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={images[activeImage]}
+              alt={`${product.title} — photo ${activeImage + 1}`}
+              className="h-auto w-full rounded-[8px] object-contain"
+            />
           ) : (
             <Package className="h-10 w-10 text-shop-text/40" strokeWidth={1.5} />
           )}
         </div>
         {images.length > 0 && (
-          <div className="flex items-center justify-between text-[11px] text-shop-text/60">
-            <span>
-              Photo {activeImage + 1} of {images.length}
-              {activeImage === 0 ? " · cover" : ""} — shown at its uploaded
-              proportions. Tap to open full size.
-            </span>
+          <div className="text-[11px] text-shop-text/60">
+            Photo {activeImage + 1} of {images.length}
+            {activeImage === 0 ? " · cover" : ""} — shown at its uploaded
+            proportions.
           </div>
         )}
         {images.length > 1 && (
@@ -81,7 +74,9 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             ))}
           </div>
         )}
+        </div>
 
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-[16px] font-semibold text-shop-heading">{product.title}</p>
           <p className="text-[13px] text-shop-text">{product.description || "No description provided."}</p>
@@ -183,6 +178,8 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
+        </div>
+        </div>
         </div>
       </div>
     </div>
