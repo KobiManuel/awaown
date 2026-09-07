@@ -22,6 +22,7 @@ import {
   defaultVariantSelection,
   formatPrice,
 } from "@/lib/dashboard-data";
+import { isColorAxis, colorHex } from "@/lib/variant-options";
 import { rememberRef, readRef } from "@/lib/partner-ref";
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
@@ -79,6 +80,25 @@ function ProductDetail() {
     () => (product ? resolveVariant(product, selected) : null),
     [product, selected],
   );
+
+  const pickAxis = (key, value) =>
+    setSelected((s) => ({ ...(s || {}), [key]: value }));
+
+  // A value on `axisKey` is offered only if some in-stock combination carries
+  // it *and* is consistent with the choices already made on the other axes.
+  const axisValueAvailable = (axisKey, value) => {
+    const list = product?.variants ?? [];
+    return list.some((v) => {
+      const ov = v.options ?? v.optionValues ?? {};
+      if (ov[axisKey] !== value) return false;
+      for (const [k, val] of Object.entries(selected || {})) {
+        if (k !== axisKey && ov[k] !== val) return false;
+      }
+      return v.inStock !== false;
+    });
+  };
+
+  const needsSelection = !!product?.hasVariants && !resolved?.complete;
 
   // Full image set for the gallery: the selected variety's photo first (if it
   // has its own), then every product photo, de-duplicated.
@@ -162,9 +182,9 @@ function ProductDetail() {
   const discount = product.compareAt
     ? Math.round((1 - product.price / product.compareAt) * 100)
     : null;
-  // per-variety when a variety is chosen, otherwise the product roll-up
-  const stockLeft = resolved.maxQty;
-  const outOfStock = resolved.inStock === false;
+  // per-combination once the shopper has picked every axis, otherwise the roll-up
+  const stockLeft = needsSelection ? null : resolved.maxQty;
+  const outOfStock = !needsSelection && resolved.inStock === false;
   const canAlert = outOfStock && product.backInStockAlerts;
 
   const handleAlert = async () => {
@@ -357,7 +377,9 @@ function ProductDetail() {
 
             <div className="flex items-center gap-2">
               <span className="text-[24px] font-bold text-shop-heading">
-                {formatPrice(resolved.price)}
+                {needsSelection
+                  ? `From ${formatPrice(product.price)}`
+                  : formatPrice(resolved.price)}
               </span>
               {product.compareAt && (
                 <span className="text-[14px] text-shop-text/50 line-through">
@@ -366,58 +388,87 @@ function ProductDetail() {
               )}
             </div>
 
-            {product.hasVariants && product.variants?.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-[13px] font-semibold text-shop-heading">
-                  {product.optionName || "Option"}:{" "}
-                  <span className="font-normal text-shop-text">
-                    {product.variants.find((v) => v.id === selected)?.label}
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {product.variants.map((v) => {
-                    const active = selected === v.id;
-                    const soldOut = v.inStock === false;
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        disabled={soldOut}
-                        onClick={() => setSelected(v.id)}
-                        className={`flex items-center gap-2 rounded-[10px] border p-1.5 pr-3 text-left transition-colors disabled:opacity-45 ${
-                          active
-                            ? "border-shop-accent-1 bg-shop-accent-1-light"
-                            : "border-shop-border hover:border-shop-accent-1/50"
-                        }`}
-                      >
-                        {v.image && (
-                          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[7px] bg-shop-bg">
-                            <Image
-                              src={v.image}
-                              alt={v.label}
-                              fill
-                              className="object-cover"
-                              sizes="36px"
-                            />
-                          </span>
-                        )}
-                        <span className="flex flex-col">
-                          <span className="text-[12.5px] font-medium text-shop-heading">
-                            {v.label}
-                            {soldOut && (
-                              <span className="ml-1 text-[10px] font-normal text-shop-text/60">
-                                (sold out)
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-[11px] text-shop-text/70">
-                            {formatPrice(v.price)}
-                          </span>
+            {product.hasVariants && product.variantAxes?.length > 0 && (
+              <div className="flex flex-col gap-4">
+                {product.variantAxes.map((axis) => {
+                  const isColor = isColorAxis(axis);
+                  const chosen = selected?.[axis.key];
+                  const chosenLabel = axis.options.find(
+                    (o) => o.value === chosen,
+                  )?.label;
+                  return (
+                    <div key={axis.key} className="flex flex-col gap-2">
+                      <p className="text-[13px] font-semibold text-shop-heading">
+                        {axis.name}:{" "}
+                        <span className="font-normal text-shop-text">
+                          {chosenLabel ?? "Select"}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {axis.options.map((o) => {
+                          const active = chosen === o.value;
+                          const available = axisValueAvailable(axis.key, o.value);
+                          if (isColor) {
+                            return (
+                              <button
+                                key={o.value}
+                                type="button"
+                                disabled={!available}
+                                onClick={() => pickAxis(axis.key, o.value)}
+                                title={o.label}
+                                aria-label={o.label}
+                                className={`relative h-9 w-9 rounded-full border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-25 ${
+                                  active
+                                    ? "border-shop-accent-1"
+                                    : "border-shop-border hover:border-shop-accent-1/50"
+                                }`}
+                                style={{
+                                  backgroundColor:
+                                    o.swatch || colorHex(o.label) || "#d4d4d4",
+                                }}
+                              >
+                                {active && (
+                                  <Check className="absolute inset-0 m-auto h-4 w-4 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]" />
+                                )}
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              disabled={!available}
+                              onClick={() => pickAxis(axis.key, o.value)}
+                              className={`flex items-center gap-2 rounded-[10px] border p-1.5 pr-3 text-left text-[12.5px] font-medium text-shop-heading transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                                active
+                                  ? "border-shop-accent-1 bg-shop-accent-1-light"
+                                  : "border-shop-border hover:border-shop-accent-1/50"
+                              }`}
+                            >
+                              {axis.useImages && o.image && (
+                                <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-[7px] bg-shop-bg">
+                                  <Image
+                                    src={o.image}
+                                    alt={o.label}
+                                    fill
+                                    className="object-cover"
+                                    sizes="32px"
+                                  />
+                                </span>
+                              )}
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                {needsSelection && (
+                  <p className="text-[12px] font-medium text-shop-accent-3">
+                    Pick an option for each of the above to continue.
+                  </p>
+                )}
               </div>
             )}
 
@@ -508,7 +559,7 @@ function ProductDetail() {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={adding}
+                  disabled={adding || needsSelection}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] py-3.5 text-[14px] font-semibold text-white transition-colors disabled:opacity-60 ${
                     justAdded ? "bg-emerald-600" : "bg-shop-accent-1 hover:bg-shop-accent-1-dark"
                   }`}
@@ -519,6 +570,8 @@ function ProductDetail() {
                     <>
                       <Check className="h-4.5 w-4.5" /> Added to Cart
                     </>
+                  ) : needsSelection ? (
+                    "Select options"
                   ) : (
                     <>
                       <ShoppingBag className="h-4.5 w-4.5" /> Add to Cart
@@ -528,7 +581,7 @@ function ProductDetail() {
               )}
             </div>
 
-            {!outOfStock && (
+            {!outOfStock && !needsSelection && (
               <button
                 type="button"
                 onClick={buyNow}

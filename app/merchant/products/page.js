@@ -57,12 +57,13 @@ function StockEditor({ product, onSave, saving }) {
   const saveSimple = () =>
     onSave({ id: product.productId, stock: Math.max(0, Number(simpleStock) || 0) });
 
+  // Quick stock edit only — send the combinations back with their option map
+  // untouched so the backend keeps this an inventory-only (stays-live) change.
   const saveVariants = (allZero = false) =>
     onSave({
       id: product.productId,
-      optionName: product.optionName || "Option",
       variants: rows.map((v) => ({
-        label: v.label,
+        options: v.options ?? {},
         price: v.price,
         image: v.image ?? null,
         stock: allZero ? 0 : Math.max(0, Number(v.stock) || 0),

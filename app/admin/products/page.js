@@ -110,7 +110,11 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           </div>
           {product.variants?.length ? (
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
-              <p className="mb-1.5 text-shop-text/60">Varieties ({product.variants.length})</p>
+              <p className="mb-1.5 text-shop-text/60">
+                {product.variantAxes?.length
+                  ? `${product.variantAxes.map((a) => a.name).join(" × ")} — ${product.variants.length} combination${product.variants.length === 1 ? "" : "s"}`
+                  : `Varieties (${product.variants.length})`}
+              </p>
               <div className="flex flex-col gap-1.5">
                 {product.variants.map((v) => (
                   <div key={v.id} className="flex items-center gap-2 text-[12px]">

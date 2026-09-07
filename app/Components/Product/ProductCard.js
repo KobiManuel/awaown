@@ -21,9 +21,23 @@ const COLOR_HEX = {
 };
 
 function swatchesFromVariants(product) {
+  const axes = product?.variantAxes;
+  if (Array.isArray(axes) && axes.length) {
+    const colourAxis = axes.find(
+      (a) => a.type === "color" || /colou?r|shade|hue/i.test(a.name || ""),
+    );
+    if (!colourAxis) return [];
+    return (colourAxis.options ?? [])
+      .map((o) => {
+        const label = String(o.label || o.value || "").trim().toLowerCase();
+        return o.swatch || COLOR_HEX[label] || null;
+      })
+      .filter(Boolean)
+      .slice(0, 5);
+  }
+  // legacy single-axis shape
   const list = product?.variants;
   if (!Array.isArray(list) || !list.length) return [];
-  // only a colour dimension renders as dots
   if (!/colou?r/i.test(product?.optionName || "")) return [];
   return list
     .map((v) => {

@@ -26,9 +26,54 @@ import { useMediaUpload } from "@/lib/api/mediaApi";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
+import VariantAxisEditor, {
+  newAxis,
+} from "@/app/Components/Merchant/VariantAxisEditor";
+import VariantMatrix from "@/app/Components/Merchant/VariantMatrix";
 import ImagePickerSlot from "@/app/Components/Merchant/ImagePickerSlot";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
+import {
+  VARIANT_TYPE_PRESETS,
+  isColorAxis,
+  slugValue,
+} from "@/lib/variant-options";
+
+const MAX_AXES = 3;
+
+function axisFromApi(ax) {
+  const isPreset =
+    VARIANT_TYPE_PRESETS.some((t) => t.id === ax.type) && ax.type !== "text";
+  return {
+    id: `ax-${ax.key || ax.name || Math.random()}`,
+    type: isPreset ? ax.type : isColorAxis(ax) ? "color" : "custom",
+    name: ax.name || "",
+    useImages: !!ax.useImages,
+    values: (ax.options || []).map((o) => ({
+      label: o.label,
+      swatch: o.swatch || null,
+      image: o.image || null,
+    })),
+  };
+}
+
+function combosFromApi(variants) {
+  const out = {};
+  for (const v of variants || []) {
+    const ov = v.options || v.optionValues || {};
+    if (!Object.keys(ov).length) continue;
+    const sig = Object.keys(ov)
+      .sort()
+      .map((k) => `${k}=${ov[k]}`)
+      .join("|");
+    out[sig] = {
+      price: v.price != null ? String(v.price) : "",
+      stock: v.stock != null ? String(v.stock) : "",
+      image: v.image || null,
+      excluded: false,
+    };
+  }
+  return out;
+}
 
 const FIELD =
   "rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1";
@@ -70,8 +115,8 @@ function seed(product) {
       price: "",
       stock: "",
       weight: "",
-      optionName: "",
-      varieties: [newVariety(), newVariety()],
+      axes: [newAxis()],
+      combos: {},
       bundleItems: [],
       offerCommission: false,
       partnerProfitAmount: "",
@@ -93,16 +138,10 @@ function seed(product) {
     price: product.price ? String(product.price) : "",
     stock: product.stock != null ? String(product.stock) : "",
     weight: product.weightKg != null ? String(product.weightKg) : "",
-    optionName: product.optionName ?? "",
-    varieties: product.variants?.length
-      ? product.variants.map((v) => ({
-          key: `v-${v.id}`,
-          label: v.label ?? "",
-          price: String(v.price ?? ""),
-          stock: String(v.stock ?? ""),
-          image: v.image ?? null,
-        }))
-      : [newVariety(), newVariety()],
+    axes: product.variantAxes?.length
+      ? product.variantAxes.map(axisFromApi)
+      : [newAxis()],
+    combos: combosFromApi(product.variants),
     bundleItems: (product.groupItems ?? []).map((g, i) => ({
       id: `bi-${i}-${Date.now()}`,
       title: g.title,
@@ -151,8 +190,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const [weight, setWeight] = useState(init.weight);
   const [uploadingSlot, setUploadingSlot] = useState(null);
 
-  const [optionName, setOptionName] = useState(init.optionName);
-  const [varieties, setVarieties] = useState(init.varieties);
+  const [axes, setAxes] = useState(init.axes);
+  const [combos, setCombos] = useState(init.combos);
 
   const [bundleItems, setBundleItems] = useState(init.bundleItems);
   const [bundleItemTitle, setBundleItemTitle] = useState("");
@@ -240,16 +279,43 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const removeBundleItem = (id) =>
     setBundleItems((prev) => prev.filter((b) => b.id !== id));
 
-  const updateVariety = (key, patch) =>
-    setVarieties((v) =>
-      v.map((row) => (row.key === key ? { ...row, ...patch } : row)),
+  const updateAxis = (id, patch) =>
+    setAxes((list) =>
+      list.map((a) => (a.id === id ? { ...a, ...patch } : a)),
     );
-  const addVariety = () => setVarieties((v) => [...v, newVariety()]);
-  const removeVariety = (key) =>
-    setVarieties((v) => (v.length > 1 ? v.filter((r) => r.key !== key) : v));
+  const addAxis = () =>
+    setAxes((list) => (list.length < MAX_AXES ? [...list, newAxis()] : list));
+  const removeAxis = (id) =>
+    setAxes((list) => (list.length > 1 ? list.filter((a) => a.id !== id) : list));
 
-  const cleanVarieties = varieties.filter((v) => v.label.trim());
   const productImages = images.filter(Boolean);
+
+  // The axes that actually carry values, and the full combination list they
+  // generate — shared by the validation checklist and the submit payload.
+  const activeAxes = axes.filter(
+    (a) => a.name.trim() && a.values.some((v) => v.label.trim()),
+  );
+  const comboRows = useMemo(() => {
+    if (!activeAxes.length) return [];
+    let acc = [{}];
+    for (const a of activeAxes) {
+      const key = slugValue(a.name) || "option";
+      const opts = a.values
+        .filter((v) => v.label.trim())
+        .map((v) => slugValue(v.label) || v.label.trim().toLowerCase());
+      const next = [];
+      for (const partial of acc)
+        for (const val of opts) next.push({ ...partial, [key]: val });
+      acc = next;
+    }
+    return acc.map((ov) => ({
+      sig: Object.keys(ov)
+        .sort()
+        .map((k) => `${k}=${ov[k]}`)
+        .join("|"),
+      optionValues: ov,
+    }));
+  }, [axes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const partnerRateValid =
     !offerCommission ||
@@ -279,17 +345,25 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   if (isGroup && bundleItems.length < 2)
     problems.push("A bundle needs at least 2 items.");
   if (hasVariants) {
-    if (!optionName.trim())
-      problems.push("Name what the varieties differ by (e.g. Colour).");
-    if (cleanVarieties.length < 1)
-      problems.push("Add at least one variety with a name.");
-    cleanVarieties.forEach((v) => {
-      const name = v.label.trim();
-      if (!(Number(v.price) > 0))
-        problems.push(`Variety “${name}” needs a price above ₦0.`);
-      if (v.stock === "")
-        problems.push(`Variety “${name}” needs an inventory quantity.`);
+    if (!activeAxes.length)
+      problems.push(
+        "Add at least one variant type with values (e.g. Colour → Red, Blue).",
+      );
+    axes.forEach((a) => {
+      if (a.values.some((v) => v.label.trim()) && !a.name.trim())
+        problems.push("Give your custom variant type a name.");
     });
+    const activeCombos = comboRows.filter((r) => !combos[r.sig]?.excluded);
+    if (activeAxes.length && !activeCombos.length)
+      problems.push("Keep at least one combination to sell.");
+    if (
+      activeCombos.some(
+        (r) => !((Number(combos[r.sig]?.price) || basePrice) > 0),
+      )
+    )
+      problems.push(
+        "Every combination needs a price — set the default price above, or fill each row.",
+      );
   }
   if (offerCommission && !partnerRateValid)
     problems.push(
@@ -337,13 +411,29 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       status: asDraft ? "DRAFT" : isDraft ? "ACTIVE" : undefined,
     };
     if (hasVariants) {
-      body.optionName = optionName.trim();
-      body.variants = cleanVarieties.map((v) => ({
-        label: v.label.trim(),
-        price: Number(v.price) || 0,
-        stock: Number(v.stock || 0),
-        image: v.image || null,
+      body.variantAxes = activeAxes.map((a) => ({
+        name: a.name.trim(),
+        type: a.type,
+        useImages: !!a.useImages,
+        options: a.values
+          .filter((v) => v.label.trim())
+          .map((v) => ({
+            label: v.label.trim(),
+            swatch: a.type === "color" ? v.swatch || undefined : undefined,
+            image: a.useImages ? v.image || undefined : undefined,
+          })),
       }));
+      body.variants = comboRows
+        .filter((r) => !combos[r.sig]?.excluded)
+        .map((r) => ({
+          options: r.optionValues,
+          price: Number(combos[r.sig]?.price) || basePrice,
+          stock:
+            combos[r.sig]?.stock != null && combos[r.sig]?.stock !== ""
+              ? Number(combos[r.sig].stock)
+              : Number(stock) || 0,
+          image: combos[r.sig]?.image || undefined,
+        }));
     }
     if (isGroup) {
       body.groupItems = bundleItems.map((b) => ({
@@ -511,7 +601,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 onClick={() => setProductType("variable")}
                 icon={Layers}
                 title={'Variable Product ("has options")'}
-                description="A base price/quantity, plus varieties priced and stocked on their own."
+                description="Options like colour or size — each combination priced and stocked on its own."
               />
               <TypeCard
                 selected={isGroup}
@@ -821,7 +911,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             <div className="flex gap-3">
               <label className="flex flex-1 flex-col gap-1.5">
                 <span className="text-[13px] font-semibold text-shop-heading">
-                  {hasVariants ? "Base price (₦)" : "Price (₦)"}
+                  {hasVariants ? "Default price (₦)" : "Price (₦)"}
                 </span>
                 <MoneyInput
                   value={price}
@@ -834,7 +924,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 <label className="flex flex-1 flex-col gap-1.5">
                   <span className="text-[13px] font-semibold text-shop-heading">
                     {hasVariants
-                      ? "Base inventory quantity"
+                      ? "Default inventory quantity"
                       : "Inventory quantity"}
                   </span>
                   <input
@@ -853,48 +943,49 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             {hasVariants && (
               <>
                 <p className="-mt-2 text-[11px] text-shop-text/60">
-                  The base price and quantity are this product&apos;s headline
-                  numbers. Each variety below can carry its own price and stock.
+                  The default price and quantity are this product&apos;s headline
+                  numbers — used for the Partner Program and as the starting
+                  value for each combination below.
                 </p>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[13px] font-semibold text-shop-heading">
-                    What do the varieties differ by?
-                  </span>
-                  <input
-                    value={optionName}
-                    onChange={(e) => setOptionName(e.target.value)}
-                    placeholder="e.g. Colour, Size, Length, Flavour"
-                    className={FIELD}
-                  />
-                </label>
 
                 <div className="flex flex-col gap-2.5">
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    Varieties ({cleanVarieties.length})
+                    Variant types
                   </p>
                   <p className="text-[11px] text-shop-text/60">
-                    Each variety has its own price, inventory quantity and
-                    (optionally) photo. Shoppers pick one before adding to cart.
+                    Add what this product varies by — Colour, Size, Material and
+                    so on. Every combination of the values you enter becomes a
+                    row you can price and stock separately.
                   </p>
-                  {varieties.map((v) => (
-                    <VarietyRow
-                      key={v.key}
-                      value={v}
-                      onChange={(patch) => updateVariety(v.key, patch)}
-                      onRemove={() => removeVariety(v.key)}
-                      canRemove={varieties.length > 1}
+                  {axes.map((a) => (
+                    <VariantAxisEditor
+                      key={a.id}
+                      axis={a}
+                      onChange={(patch) => updateAxis(a.id, patch)}
+                      onRemove={() => removeAxis(a.id)}
+                      canRemove={axes.length > 1}
                       productImages={productImages}
                     />
                   ))}
-                  <button
-                    type="button"
-                    onClick={addVariety}
-                    className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add another variety
-                  </button>
+                  {axes.length < MAX_AXES && (
+                    <button
+                      type="button"
+                      onClick={addAxis}
+                      className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add another variant type
+                    </button>
+                  )}
                 </div>
+
+                <VariantMatrix
+                  axes={axes}
+                  combos={combos}
+                  onChange={setCombos}
+                  basePrice={price}
+                  productImages={productImages}
+                />
               </>
             )}
           </div>

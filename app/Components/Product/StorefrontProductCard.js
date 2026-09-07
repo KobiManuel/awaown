@@ -24,6 +24,20 @@ const COLOR_NAME_HEX = {
 };
 
 function extractColorSwatches(product) {
+  const axes = product.variantAxes;
+  if (Array.isArray(axes) && axes.length) {
+    const colourAxis = axes.find(
+      (a) => a.type === "color" || /colou?r|shade|hue/i.test(a.name || ""),
+    );
+    if (!colourAxis) return [];
+    return (colourAxis.options ?? [])
+      .map(
+        (o) =>
+          o.swatch || COLOR_NAME_HEX[String(o.label || "").trim().toLowerCase()],
+      )
+      .filter(Boolean)
+      .slice(0, 6);
+  }
   if (!product.hasVariants || !product.variants?.length) return [];
   if (!/colou?r/i.test(product.optionName || "")) return [];
   const found = new Map();
