@@ -398,9 +398,9 @@ function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
 function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
   return (
     <SectionShell title="Banner (right before Reviews)" visible={visible} onToggleVisible={onToggleVisible}>
-      <div className="group relative aspect-[7/2] w-full overflow-hidden rounded-[16px] bg-shop-bg">
+      <div className="group relative aspect-[1400/220] w-full overflow-hidden rounded-[16px] bg-shop-bg">
         <Image src={data.image} alt="" fill className="object-cover" />
-        <ImageEditButton onPick={(url) => onChange({ image: url })} aspect={7 / 2} />
+        <ImageEditButton onPick={(url) => onChange({ image: url })} aspect={1400 / 220} />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1.5 px-8 text-right text-white">
           <div className="pointer-events-auto">
             <InlineText
@@ -429,7 +429,7 @@ function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
           </div>
         </div>
       </div>
-      <DimensionHint text="1400 × 400 px (ratio 7:2)" />
+      <DimensionHint text="1400 × 220 px (ratio ≈ 6.4:1). On phones it shows a little taller and centre-cropped, so keep key content in the middle" />
     </SectionShell>
   );
 }

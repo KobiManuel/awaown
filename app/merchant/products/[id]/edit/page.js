@@ -53,6 +53,7 @@ export default function EditMerchantProductPage() {
       category: product.category ?? PRODUCT_CATEGORIES[0].slug,
       processingTime: product.processingTime ?? PROCESSING_TIME_OPTIONS[1].id,
       images: product.images ?? [],
+      weight: product.weightKg != null ? String(product.weightKg) : "",
       status: product.status === "DRAFT" ? "DRAFT" : "ACTIVE",
       hideStock: !!product.hideStock,
       backInStockAlerts: product.backInStockAlerts ?? true,
@@ -152,6 +153,7 @@ export default function EditMerchantProductPage() {
       backInStockAlerts: form.backInStockAlerts,
       offerCommission: form.offerCommission,
       partnerProfitAmount: form.offerCommission ? profit : 0,
+      weightKg: form.weight ? Number(form.weight) : 0,
     };
     if (form.hasVariants) {
       body.optionName = form.optionName.trim();
@@ -226,6 +228,7 @@ export default function EditMerchantProductPage() {
                 onChange={(patch) => setVariety(v.key, patch)}
                 onRemove={() => removeVariety(v.key)}
                 canRemove={form.varieties.length > 1}
+                productImages={(form.images ?? []).filter(Boolean)}
               />
             ))}
             <button
@@ -261,6 +264,19 @@ export default function EditMerchantProductPage() {
             </div>
           </div>
         )}
+
+        <div className="flex flex-col gap-1.5">
+          <label className={LABEL}>
+            Weight <span className="font-normal text-shop-text/60">(kg, optional)</span>
+          </label>
+          <input
+            inputMode="decimal"
+            value={form.weight}
+            onChange={(e) => set({ weight: e.target.value.replace(/[^0-9.]/g, "") })}
+            placeholder="e.g. 0.5"
+            className={FIELD}
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">

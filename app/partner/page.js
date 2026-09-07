@@ -11,11 +11,15 @@ import {
   Check,
   Share2,
   ShieldAlert,
+  User,
+  Loader2,
+  Camera,
 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   useGetPartnerOverviewQuery,
   useSavePartnerCustomizationMutation,
@@ -42,6 +46,28 @@ export default function PartnerHome() {
   const { data, isLoading } = useGetPartnerOverviewQuery();
   const [saveCustomization] = useSavePartnerCustomizationMutation();
   const [copied, setCopied] = useState(false);
+  const {
+    pickAndCrop,
+    uploading: pfpUploading,
+    modal: pfpModal,
+  } = useImageCropUpload("stores");
+
+  const changeProfilePicture = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const url = await pickAndCrop(file, {
+      aspect: 1,
+      title: "Crop your profile picture",
+    });
+    if (!url) return;
+    try {
+      await saveCustomization({ profileImageUrl: url }).unwrap();
+      showToast("Profile picture updated");
+    } catch {
+      showToast("Couldn't save the picture");
+    }
+  };
 
   const p = data?.profile;
   const stats = data?.stats;
@@ -61,7 +87,9 @@ export default function PartnerHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
+      {pfpModal}
+      <div className="mx-4 mt-4 flex flex-col gap-2.5 lg:mx-8 lg:mt-8">
+      <div className="relative flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:h-40">
         {p?.bannerUrl && (
           <Image
             src={p.bannerUrl}
@@ -73,25 +101,55 @@ export default function PartnerHome() {
         )}
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative flex w-full items-end justify-between p-4">
-          <p className="text-[16px] font-bold text-white lg:text-[20px]">
-            {p?.storeName ?? "…"}
-          </p>
-          <div className="flex gap-2">
-            <BannerImageButton
-              hasBanner={!!p?.bannerUrl}
-              onUploaded={(url) => saveCustomization({ bannerUrl: url }).unwrap()}
-            />
-            {p?.referralLink && (
-              <Link
-                href={p.referralLink}
-                target="_blank"
-                className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-              >
-                Preview Store
-              </Link>
-            )}
+          <div className="flex items-center gap-2.5">
+            <label className="group relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow lg:h-14 lg:w-14">
+              {p?.profileImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.profileImageUrl}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-5 w-5 text-shop-text/50" />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+                {pfpUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <Camera className="h-4 w-4 text-white" />
+                )}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={changeProfilePicture}
+              />
+            </label>
+            <p className="text-[16px] font-bold text-white lg:text-[20px]">
+              {p?.storeName ?? "…"}
+            </p>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <BannerImageButton
+          hasBanner={!!p?.bannerUrl}
+          onUploaded={(url) => saveCustomization({ bannerUrl: url }).unwrap()}
+          className="whitespace-nowrap border border-shop-border"
+        />
+        {p?.referralLink && (
+          <Link
+            href={p.referralLink}
+            target="_blank"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-shop-border bg-white px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+          >
+            Preview Store
+          </Link>
+        )}
+      </div>
       </div>
 
       <div className="px-4 lg:px-8">

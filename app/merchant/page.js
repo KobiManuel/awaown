@@ -45,36 +45,40 @@ export default function MerchantHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
-        {data?.profile?.bannerUrl && (
-          <Image
-            src={data.profile.bannerUrl}
-            alt="Store banner"
-            fill
-            className="object-cover"
-            priority
-          />
-        )}
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative flex w-full items-end justify-between p-4">
-          <p className="text-[16px] font-bold text-white lg:text-[20px]">
-            {data?.profile?.storeName ?? "…"}
-          </p>
-          <div className="flex gap-2">
-            <BannerImageButton
-              hasBanner={!!data?.profile?.bannerUrl}
-              onUploaded={(url) => updateStore({ bannerUrl: url }).unwrap()}
+      <div className="mx-4 mt-4 flex flex-col gap-2.5 lg:mx-8 lg:mt-8">
+        <div className="relative flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:h-40">
+          {data?.profile?.bannerUrl && (
+            <Image
+              src={data.profile.bannerUrl}
+              alt="Store banner"
+              fill
+              className="object-cover"
+              priority
             />
-            {data?.profile?.storeSlug && (
-              <Link
-                href={`/shop/${data.profile.storeSlug}`}
-                target="_blank"
-                className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
-              >
-                Preview Store
-              </Link>
-            )}
+          )}
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative flex w-full items-end justify-between p-4">
+            <p className="text-[16px] font-bold text-white lg:text-[20px]">
+              {data?.profile?.storeName ?? "…"}
+            </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <BannerImageButton
+            hasBanner={!!data?.profile?.bannerUrl}
+            onUploaded={(url) => updateStore({ bannerUrl: url }).unwrap()}
+            className="whitespace-nowrap border border-shop-border"
+          />
+          {data?.profile?.storeSlug && (
+            <Link
+              href={`/shop/${data.profile.storeSlug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-shop-border bg-white px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading"
+            >
+              Preview Store
+            </Link>
+          )}
         </div>
       </div>
 

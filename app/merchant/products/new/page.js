@@ -14,6 +14,7 @@ import {
   Users2,
   FileDown,
   Truck,
+  Info,
 } from "lucide-react";
 import {
   formatPrice,
@@ -78,6 +79,7 @@ export default function NewMerchantProductPage() {
   const isGroup = productType === "group";
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
+  const [weight, setWeight] = useState(""); // shipping weight in kg (optional)
 
   // variable products: one option dimension + its varieties
   const [optionName, setOptionName] = useState("");
@@ -207,6 +209,8 @@ export default function NewMerchantProductPage() {
       offerCommission: isGroup ? false : offerCommission,
       partnerProfitAmount:
         !isGroup && offerCommission ? Number(partnerProfitAmount) : undefined,
+      weightKg:
+        deliveryType === "digital" || !weight ? undefined : Number(weight),
     };
 
     if (hasVariants) {
@@ -337,42 +341,94 @@ export default function NewMerchantProductPage() {
         {deliveryType !== "digital" && (
           <div className="flex flex-col gap-2.5">
             <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
-            <p className="text-[11.5px] text-shop-text">
-              Add a few angles. Shoppers convert better when they can see the product clearly.
-              {hasVariants && " Each variety can also carry its own photo below."}
-            </p>
-            <div className="grid grid-cols-4 gap-2.5">
-              {Array.from({ length: MAX_IMAGES }).map((_, i) => (
-                <label
-                  key={i}
-                  className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg"
-                >
-                  {images[i] ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={images[i]} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setImages((prev) => prev.map((img, idx) => (idx === i ? null : img)));
-                        }}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </>
-                  ) : (
-                    <Camera className="h-5 w-5 text-shop-text/40" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageChange(e, i)}
-                  />
-                </label>
-              ))}
+
+            <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+              <span>
+                The <span className="font-semibold">main cover image</span> must have a
+                plain white background, for a clean, uniform look across the site. Buyers
+                can still see your other background shots on the product page.
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-semibold text-shop-heading">
+                Main cover image
+              </span>
+              <label className="relative flex aspect-square w-full max-w-[180px] items-center justify-center overflow-hidden rounded-[12px] border border-dashed border-shop-border bg-white">
+                {images[0] ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={images[0]} alt="Cover" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setImages((prev) => prev.map((img, idx) => (idx === 0 ? null : img)));
+                      }}
+                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="flex flex-col items-center gap-1 text-shop-text/50">
+                    <Camera className="h-6 w-6" />
+                    <span className="text-[10.5px]">White background</span>
+                  </span>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageChange(e, 0)}
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-semibold text-shop-heading">
+                More photos{" "}
+                <span className="font-normal text-shop-text/70">
+                  (optional, any background)
+                </span>
+              </span>
+              <div className="grid grid-cols-4 gap-2.5">
+                {Array.from({ length: MAX_IMAGES - 1 }).map((_, k) => {
+                  const i = k + 1;
+                  return (
+                    <label
+                      key={i}
+                      className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg"
+                    >
+                      {images[i] ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={images[i]} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setImages((prev) => prev.map((img, idx) => (idx === i ? null : img)));
+                            }}
+                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <Camera className="h-5 w-5 text-shop-text/40" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageChange(e, i)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <p className="mt-1 text-[13px] font-semibold text-shop-heading">
@@ -400,6 +456,24 @@ export default function NewMerchantProductPage() {
                 </span>
               )}
               <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
+            </label>
+
+            <label className="mt-1 flex flex-col gap-1.5">
+              <span className="text-[13px] font-semibold text-shop-heading">
+                Weight{" "}
+                <span className="font-normal text-shop-text/70">
+                  (kg, optional — helps with shipping estimates)
+                </span>
+              </span>
+              <input
+                value={weight}
+                onChange={(e) =>
+                  setWeight(e.target.value.replace(/[^0-9.]/g, ""))
+                }
+                inputMode="decimal"
+                placeholder="e.g. 0.5"
+                className="w-full max-w-[180px] rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
             </label>
           </div>
         )}
@@ -557,6 +631,7 @@ export default function NewMerchantProductPage() {
                   onChange={(patch) => updateVariety(v.key, patch)}
                   onRemove={() => removeVariety(v.key)}
                   canRemove={varieties.length > 1}
+                  productImages={images.filter(Boolean)}
                 />
               ))}
               <button

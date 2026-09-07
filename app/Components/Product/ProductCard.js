@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Heart, Layers, Check, ShoppingCart, Star } from "lucide-react";
+import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { getProductId } from "@/lib/product-id";
 import {
@@ -139,14 +139,6 @@ const ProductCard = ({ product, bordered = false }) => {
             className={`h-4 w-4 ${isWishlisted ? "fill-white text-white" : "text-shop-accent-2"}`}
             strokeWidth={1.75}
           />
-        </button>
-        <button
-          type="button"
-          aria-label="Add to compare"
-          data-tooltip="Compare"
-          className="shop-tooltip mb-[5px] flex h-[35px] w-[35px] items-center justify-center rounded-[5px] border border-shop-border bg-white transition-colors hover:bg-shop-accent-1 hover:[&>svg]:text-white"
-        >
-          <Layers className="h-4 w-4 text-shop-accent-2" strokeWidth={1.75} />
         </button>
         <button
           type="button"
