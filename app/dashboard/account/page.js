@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  Package,
   Heart,
   MapPin,
   Wallet,
@@ -26,7 +25,6 @@ import {
 } from "@/lib/api/notificationsApi";
 
 const links = [
-  { href: "/dashboard/orders", label: "My Orders", icon: Package },
   { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart },
   { href: "/dashboard/addresses", label: "Saved Addresses", icon: MapPin },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },

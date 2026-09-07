@@ -16,7 +16,7 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
-      <AppHeader title="My Orders" backHref="/dashboard/account" showBackOnDesktop />
+      <AppHeader title="My Orders" backHref="/dashboard" />
 
       {isLoading ? (
         <div className="px-4 lg:px-8">

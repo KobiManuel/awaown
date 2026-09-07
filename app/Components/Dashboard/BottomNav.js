@@ -11,7 +11,9 @@ const BottomNav = ({ items }) => {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[480px] items-stretch border-t border-shop-border bg-white pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 font-shop shadow-[0_-2px_12px_rgba(0,0,0,0.05)] lg:hidden">
-      {items.map(({ href, label, icon: Icon, badge = 0, exact }) => {
+      {items
+        .filter((it) => !it.desktopOnly)
+        .map(({ href, label, icon: Icon, badge = 0, exact }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
         return (
           <Link
@@ -41,7 +43,7 @@ const BottomNav = ({ items }) => {
             </span>
           </Link>
         );
-      })}
+        })}
     </nav>
   );
 };

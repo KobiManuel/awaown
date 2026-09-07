@@ -18,7 +18,7 @@ const roles: {
   {
     id: "customer",
     title: "Customer",
-    description: "Shop from verified merchants and track every order.",
+    description: "Sign in to shop and track your orders.",
     icon: (
       <ShoppingBag className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
     ),
@@ -26,14 +26,13 @@ const roles: {
   {
     id: "merchant",
     title: "Merchant",
-    description: "Open a store, list products and receive secure payouts.",
+    description: "Sign in to your store dashboard.",
     icon: <Store className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
   },
   {
     id: "partner",
     title: "Partner",
-    description:
-      "Share products with your audience and make profit from every sale.",
+    description: "Sign in to your partner dashboard.",
     icon: <Users2 className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />,
   },
 ];
@@ -68,9 +67,17 @@ export default function LoginRolePage() {
             />
           </div>
 
-          <p className="text-center text-[19px] font-semibold text-shop-heading">
-            What brings you to AwaOwn?
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-center text-[19px] font-semibold text-shop-heading">
+              Which account are you signing in to?
+            </p>
+            <p className="text-center text-[12.5px] text-shop-text">
+              New here?{" "}
+              <Link href="/signup" className="font-semibold text-shop-accent-1 hover:underline">
+                Create an account
+              </Link>
+            </p>
+          </div>
 
           <div className="flex w-full flex-col gap-3">
             {roles.map((role) => (
