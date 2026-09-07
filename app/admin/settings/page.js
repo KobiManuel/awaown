@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   CreditCard,
   Truck,
@@ -53,6 +53,17 @@ export default function AdminSettingsPage() {
       showToast("Couldn't save the change");
     }
   };
+
+  const [maintKey, setMaintKey] = useState("");
+  const [maintMsg, setMaintMsg] = useState("");
+  useEffect(() => {
+    if (settings) {
+      setMaintKey(settings.maintenanceKey ?? "");
+      setMaintMsg(settings.maintenanceMessage ?? "");
+    }
+  }, [settings]);
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "https://awaown.com";
 
   const gateways = settings?.paymentGateways ?? ["paystack"];
 
@@ -161,22 +172,71 @@ export default function AdminSettingsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5">
-            <div>
-              <span className="text-[13px] font-medium text-shop-heading">Maintenance Mode</span>
-              <p className="mt-0.5 text-[11px] text-shop-text/60">
-                Blocks the public site for everyone but admins.
-              </p>
+          <div className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[13px] font-medium text-shop-heading">Maintenance Mode</span>
+                <p className="mt-0.5 text-[11px] text-shop-text/60">
+                  Shows a &ldquo;we&apos;ll be back&rdquo; page to everyone. The admin
+                  panel stays reachable, and anyone with the access link below gets
+                  through.
+                </p>
+              </div>
+              <Toggle
+                on={!!settings?.maintenanceMode}
+                onClick={() =>
+                  save(
+                    { maintenanceMode: !settings?.maintenanceMode },
+                    "Maintenance mode updated",
+                  )
+                }
+              />
             </div>
-            <Toggle
-              on={!!settings?.maintenanceMode}
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                Access key
+              </span>
+              <input
+                value={maintKey}
+                onChange={(e) => setMaintKey(e.target.value.replace(/\s/g, ""))}
+                placeholder="e.g. rheel-2026-preview"
+                className="rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+              {maintKey && (
+                <span className="break-all text-[11px] text-shop-text/60">
+                  Share this link:{" "}
+                  <span className="font-medium text-shop-accent-1">
+                    {origin}/?access={maintKey}
+                  </span>
+                </span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                Message shown to visitors
+              </span>
+              <textarea
+                rows={2}
+                value={maintMsg}
+                onChange={(e) => setMaintMsg(e.target.value)}
+                className="resize-none rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+            </label>
+
+            <button
+              type="button"
               onClick={() =>
                 save(
-                  { maintenanceMode: !settings?.maintenanceMode },
-                  "Maintenance mode updated",
+                  { maintenanceKey: maintKey, maintenanceMessage: maintMsg },
+                  "Maintenance settings saved",
                 )
               }
-            />
+              className="w-fit rounded-[8px] bg-shop-accent-1 px-4 py-1.5 text-[12px] font-semibold text-white"
+            >
+              Save key &amp; message
+            </button>
           </div>
         </div>
       )}
