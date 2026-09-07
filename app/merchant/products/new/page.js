@@ -189,9 +189,9 @@ export default function NewMerchantProductPage() {
         (deliveryType === "digital" || stock !== "") &&
         partnerRateValid;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isValid || submitting) return;
+  const submit = async (asDraft) => {
+    if (submitting) return;
+    if (asDraft ? !title.trim() : !isValid) return;
 
     const body = {
       title: title.trim(),
@@ -202,8 +202,8 @@ export default function NewMerchantProductPage() {
       processingTime: deliveryType === "digital" ? "same_day" : processingTime,
       images: images.filter(Boolean),
       productType,
-      price: hasVariants ? previewPrice : Number(price),
-      stock: deliveryType === "digital" ? undefined : hasVariants ? undefined : Number(stock),
+      price: hasVariants ? previewPrice : Number(price) || 0,
+      stock: deliveryType === "digital" ? undefined : hasVariants ? undefined : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
       offerCommission: isGroup ? false : offerCommission,
@@ -211,13 +211,14 @@ export default function NewMerchantProductPage() {
         !isGroup && offerCommission ? Number(partnerProfitAmount) : undefined,
       weightKg:
         deliveryType === "digital" || !weight ? undefined : Number(weight),
+      status: asDraft ? "DRAFT" : "ACTIVE",
     };
 
     if (hasVariants) {
       body.optionName = optionName.trim();
       body.variants = cleanVarieties.map((v) => ({
         label: v.label.trim(),
-        price: Number(v.price),
+        price: Number(v.price) || 0,
         stock: Number(v.stock || 0),
         image: v.image || null,
       }));
@@ -228,11 +229,20 @@ export default function NewMerchantProductPage() {
 
     try {
       await createProduct(body).unwrap();
-      showToast(`${title.trim()} submitted for admin review`);
+      showToast(
+        asDraft
+          ? "Draft saved — finish it any time from your products"
+          : `${title.trim()} submitted for admin review`,
+      );
       router.push("/merchant/products");
     } catch (err) {
       showToast(errorMessage(err));
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    submit(false);
   };
 
   return (
@@ -775,13 +785,23 @@ export default function NewMerchantProductPage() {
           </>
         )}
 
-        <button
-          type="submit"
-          disabled={!isValid || submitting || imageUploading || fileUploading}
-          className="rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
-        >
-          {imageUploading || fileUploading ? "Uploading…" : "Submit for Review"}
-        </button>
+        <div className="flex flex-col gap-2.5 sm:flex-row-reverse">
+          <button
+            type="submit"
+            disabled={!isValid || submitting || imageUploading || fileUploading}
+            className="flex-1 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
+          >
+            {imageUploading || fileUploading ? "Uploading…" : "Submit for Review"}
+          </button>
+          <button
+            type="button"
+            onClick={() => submit(true)}
+            disabled={!title.trim() || submitting || imageUploading || fileUploading}
+            className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
+          >
+            Save as draft
+          </button>
+        </div>
       </form>
     </div>
   );

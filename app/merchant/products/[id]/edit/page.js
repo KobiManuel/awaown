@@ -139,8 +139,13 @@ export default function EditMerchantProductPage() {
     varietiesValid &&
     !profitTooLow;
 
-  const save = async () => {
-    if (!valid || saving) return;
+  const isDraft = form.status === "DRAFT";
+
+  const save = async ({ publish = false, keepDraft = false } = {}) => {
+    if (saving) return;
+    if (!keepDraft && !valid) return;
+    if (keepDraft && !form.title.trim()) return;
+    const nextStatus = publish ? "ACTIVE" : keepDraft ? "DRAFT" : form.status;
     const body = {
       id: product.productId,
       title: form.title.trim(),
@@ -148,7 +153,7 @@ export default function EditMerchantProductPage() {
       category: form.category,
       processingTime: form.processingTime,
       images: form.images,
-      status: form.status,
+      status: nextStatus,
       hideStock: form.hideStock,
       backInStockAlerts: form.backInStockAlerts,
       offerCommission: form.offerCommission,
@@ -159,17 +164,23 @@ export default function EditMerchantProductPage() {
       body.optionName = form.optionName.trim();
       body.variants = cleanVarieties.map((v) => ({
         label: v.label.trim(),
-        price: Number(v.price),
+        price: Number(v.price) || 0,
         stock: Number(v.stock || 0),
         image: v.image || null,
       }));
     } else {
-      body.price = Number(form.price);
+      body.price = Number(form.price) || 0;
       body.stock = Number(form.stock) || 0;
     }
     try {
       await update(body).unwrap();
-      showToast("Product updated");
+      showToast(
+        publish
+          ? "Published — sent for admin review"
+          : keepDraft
+            ? "Draft saved"
+            : "Product updated",
+      );
       router.push("/merchant/products");
     } catch (err) {
       showToast(errorMessage(err));
@@ -421,15 +432,27 @@ export default function EditMerchantProductPage() {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={save}
-          disabled={!valid || saving || uploading}
-          className="mt-1 flex items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Save Changes
-        </button>
+        <div className="mt-1 flex flex-col gap-2.5 sm:flex-row-reverse">
+          <button
+            type="button"
+            onClick={() => save(isDraft ? { publish: true } : {})}
+            disabled={!valid || saving || uploading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isDraft ? "Publish" : "Save Changes"}
+          </button>
+          {isDraft && (
+            <button
+              type="button"
+              onClick={() => save({ keepDraft: true })}
+              disabled={!form.title.trim() || saving || uploading}
+              className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
+            >
+              Save draft
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

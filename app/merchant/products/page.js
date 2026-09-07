@@ -282,11 +282,13 @@ export default function MerchantProductsPage() {
                         ` · Ships in ${processingLabel(product.processingTime)}`}
                     </p>
                   )}
-                  <span
-                    className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${APPROVAL_TONE[product.approvalStatus]}`}
-                  >
-                    {APPROVAL_LABEL[product.approvalStatus]}
-                  </span>
+                  {product.status !== "DRAFT" && (
+                    <span
+                      className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${APPROVAL_TONE[product.approvalStatus]}`}
+                    >
+                      {APPROVAL_LABEL[product.approvalStatus]}
+                    </span>
+                  )}
                   {product.approvalStatus === "REJECTED" &&
                     product.rejectionReason && (
                       <p className="mt-1 text-[10.5px] text-shop-accent-3">
