@@ -64,6 +64,7 @@ function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(null); // thumbnail the buyer tapped
+  const [imgLoading, setImgLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
   const commerce = useCommerce();
@@ -94,6 +95,14 @@ function ProductDetail() {
 
   const shownImg =
     activeImg && gallery.includes(activeImg) ? activeImg : resolved?.image ?? null;
+
+  // Show the shimmer again each time the displayed image changes, with a
+  // safety timeout in case a cache-hit skips the <Image> onLoad.
+  useEffect(() => {
+    setImgLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+    const t = setTimeout(() => setImgLoading(false), 2500);
+    return () => clearTimeout(t);
+  }, [shownImg]);
 
   // keep quantity within the selected variety's stock
   useEffect(() => {
@@ -241,10 +250,16 @@ function ProductDetail() {
                   src={shownImg}
                   alt={product.title}
                   fill
-                  className="object-contain p-8"
+                  onLoad={() => setImgLoading(false)}
+                  className={`object-contain p-8 transition-opacity duration-300 ${
+                    imgLoading ? "opacity-0" : "opacity-100"
+                  }`}
                   sizes="(max-width: 1024px) 480px, 540px"
                   priority
                 />
+              )}
+              {imgLoading && shownImg && (
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-shop-bg to-shop-border/40" />
               )}
             </div>
 

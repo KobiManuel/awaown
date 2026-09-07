@@ -345,11 +345,16 @@ export default function EditMerchantProductPage() {
             {form.images.length < MAX_IMAGES && (
               <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-shop-border text-shop-text/50">
                 {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                    <span className="text-[9.5px] font-medium">Uploading…</span>
+                  </>
                 ) : (
-                  <Camera className="h-4 w-4" />
+                  <>
+                    <Camera className="h-4 w-4" />
+                    <span className="text-[10px]">Add</span>
+                  </>
                 )}
-                <span className="text-[10px]">Add</span>
                 <input
                   type="file"
                   accept="image/*"

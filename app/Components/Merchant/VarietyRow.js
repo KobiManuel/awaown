@@ -63,9 +63,14 @@ export default function VarietyRow({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value.image} alt={value.label} className="h-full w-full object-cover" />
           ) : uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-shop-text/50" />
+            <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
           ) : (
             <ImagePlus className="h-5 w-5 text-shop-text/40" />
+          )}
+          {uploading && value.image && (
+            <span className="absolute inset-0 flex items-center justify-center bg-white/80">
+              <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+            </span>
           )}
         </button>
         {value.image && (

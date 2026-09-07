@@ -15,6 +15,7 @@ import {
   FileDown,
   Truck,
   Info,
+  Loader2,
 } from "lucide-react";
 import {
   formatPrice,
@@ -81,6 +82,7 @@ export default function NewMerchantProductPage() {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [weight, setWeight] = useState(""); // shipping weight in kg (optional)
+  const [uploadingSlot, setUploadingSlot] = useState(null); // photo slot mid-upload
 
   // variable products: one option dimension + its varieties
   const [optionName, setOptionName] = useState("");
@@ -104,16 +106,21 @@ export default function NewMerchantProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await cropProductImage(file, {
-      aspect: 1,
-      title: "Crop the product photo",
-    });
-    if (!url) return;
-    setImages((prev) => {
-      const next = [...prev];
-      next[index] = url;
-      return next;
-    });
+    setUploadingSlot(index);
+    try {
+      const url = await cropProductImage(file, {
+        aspect: 1,
+        title: "Crop the product photo",
+      });
+      if (!url) return;
+      setImages((prev) => {
+        const next = [...prev];
+        next[index] = url;
+        return next;
+      });
+    } finally {
+      setUploadingSlot(null);
+    }
   };
 
   const handleVideoChange = async (e) => {
@@ -388,6 +395,12 @@ export default function NewMerchantProductPage() {
                     <span className="text-[10.5px]">White background</span>
                   </span>
                 )}
+                {uploadingSlot === 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-white/80 text-[10.5px] font-medium text-shop-text">
+                    <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
+                    Uploading…
+                  </div>
+                )}
                 <input
                   type="file"
                   accept="image/*"
@@ -429,6 +442,11 @@ export default function NewMerchantProductPage() {
                         </>
                       ) : (
                         <Camera className="h-5 w-5 text-shop-text/40" />
+                      )}
+                      {uploadingSlot === i && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                          <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                        </div>
                       )}
                       <input
                         type="file"
