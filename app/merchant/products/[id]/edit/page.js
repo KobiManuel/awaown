@@ -127,17 +127,31 @@ export default function EditMerchantProductPage() {
   const profitTooLow = form.offerCommission && profit < PARTNER_PROGRAM_MIN_PROFIT;
 
   const cleanVarieties = form.varieties.filter((v) => v.label.trim());
-  const varietiesValid =
-    !form.hasVariants ||
-    (form.optionName.trim() &&
-      cleanVarieties.length >= 1 &&
-      cleanVarieties.every((v) => Number(v.price) > 0 && v.stock !== ""));
 
-  const valid =
-    form.title.trim() &&
-    (form.hasVariants || Number(form.price) > 0) &&
-    varietiesValid &&
-    !profitTooLow;
+  // Specific reasons publishing is blocked (drafts can still be saved).
+  const problems = [];
+  if (!form.title.trim()) problems.push("Add a product title.");
+  if (form.hasVariants) {
+    if (!form.optionName.trim())
+      problems.push("Name what the varieties differ by (e.g. Colour).");
+    if (cleanVarieties.length < 1)
+      problems.push("Add at least one variety with a name.");
+    cleanVarieties.forEach((v) => {
+      const name = v.label.trim();
+      if (!(Number(v.price) > 0))
+        problems.push(`Variety “${name}” needs a price above ₦0.`);
+      if (v.stock === "")
+        problems.push(`Variety “${name}” needs an inventory quantity.`);
+    });
+  } else if (!(Number(form.price) > 0)) {
+    problems.push("Set a price above ₦0.");
+  }
+  if (profitTooLow)
+    problems.push(
+      `Partner profit must be at least ${formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.`,
+    );
+
+  const valid = problems.length === 0;
 
   const isDraft = form.status === "DRAFT";
 
@@ -443,6 +457,21 @@ export default function EditMerchantProductPage() {
             </div>
           )}
         </div>
+
+        {!valid && problems.length > 0 && (
+          <div className="mt-1 flex flex-col gap-1 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
+            <span className="font-semibold">
+              {isDraft
+                ? "To publish, fix the following (or keep it as a draft):"
+                : "Fix the following to save:"}
+            </span>
+            <ul className="list-disc pl-4">
+              {problems.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-1 flex flex-col gap-2.5 sm:flex-row-reverse">
           <button

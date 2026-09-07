@@ -32,13 +32,14 @@ import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 
-
 const TypeCard = ({ selected, onClick, icon: Icon, title, description }) => (
   <button
     type="button"
     onClick={onClick}
     className={`flex flex-1 flex-col gap-2 rounded-[14px] border p-4 text-left transition-colors ${
-      selected ? "border-shop-accent-1 bg-shop-accent-1-light" : "border-shop-border bg-white"
+      selected
+        ? "border-shop-accent-1 bg-shop-accent-1-light"
+        : "border-shop-border bg-white"
     }`}
   >
     <div
@@ -70,7 +71,9 @@ export default function NewMerchantProductPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(PRODUCT_CATEGORIES[0].slug);
   const [deliveryType, setDeliveryType] = useState("physical"); // physical | digital
-  const [processingTime, setProcessingTime] = useState(PROCESSING_TIME_OPTIONS[1].id);
+  const [processingTime, setProcessingTime] = useState(
+    PROCESSING_TIME_OPTIONS[1].id,
+  );
   const [digitalFile, setDigitalFile] = useState(null);
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
@@ -139,8 +142,7 @@ export default function NewMerchantProductPage() {
     });
   };
 
-  const removeCover = () =>
-    setImages((prev) => [null, ...prev.slice(1)]);
+  const removeCover = () => setImages((prev) => [null, ...prev.slice(1)]);
   const removeExtra = (k) =>
     setImages((prev) => prev.filter((_, i) => i !== k + 1));
 
@@ -177,7 +179,11 @@ export default function NewMerchantProductPage() {
     if (!bundleItemTitle.trim()) return;
     setBundleItems((prev) => [
       ...prev,
-      { id: `bi-${Date.now()}`, title: bundleItemTitle.trim(), image: bundleItemImage },
+      {
+        id: `bi-${Date.now()}`,
+        title: bundleItemTitle.trim(),
+        image: bundleItemImage,
+      },
     ]);
     setBundleItemTitle("");
     setBundleItemImage(null);
@@ -187,15 +193,14 @@ export default function NewMerchantProductPage() {
     setBundleItems((prev) => prev.filter((b) => b.id !== id));
 
   const updateVariety = (key, patch) =>
-    setVarieties((v) => v.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+    setVarieties((v) =>
+      v.map((row) => (row.key === key ? { ...row, ...patch } : row)),
+    );
   const addVariety = () => setVarieties((v) => [...v, newVariety()]);
   const removeVariety = (key) =>
     setVarieties((v) => (v.length > 1 ? v.filter((r) => r.key !== key) : v));
 
   const cleanVarieties = varieties.filter((v) => v.label.trim());
-  const varietiesValid =
-    cleanVarieties.length >= 1 &&
-    cleanVarieties.every((v) => Number(v.price) > 0 && v.stock !== "");
 
   const partnerRateValid =
     !offerCommission ||
@@ -203,20 +208,44 @@ export default function NewMerchantProductPage() {
       Number(partnerProfitAmount) >= PARTNER_PROGRAM_MIN_PROFIT);
 
   const previewPrice = hasVariants
-    ? Math.min(...cleanVarieties.map((v) => Number(v.price) || Infinity), Infinity)
+    ? Math.min(
+        ...cleanVarieties.map((v) => Number(v.price) || Infinity),
+        Infinity,
+      )
     : Number(price) || 0;
 
-  const isValid = isGroup
-    ? title.trim().length > 0 && bundleItems.length >= 2 && price && stock !== ""
-    : hasVariants
-      ? title.trim().length > 0 &&
-        optionName.trim().length > 0 &&
-        varietiesValid &&
-        partnerRateValid
-      : title.trim().length > 0 &&
-        price &&
-        (deliveryType === "digital" || stock !== "") &&
-        partnerRateValid;
+  // Specific reasons "Submit for Review" is blocked, shown to the merchant so a
+  // disabled button is never a mystery. (Draft save only needs a title.)
+  const problems = [];
+  if (!title.trim()) problems.push("Add a product title.");
+  if (isGroup) {
+    if (bundleItems.length < 2)
+      problems.push("A bundle needs at least 2 items.");
+    if (!price) problems.push("Set the bundle price.");
+    if (stock === "") problems.push("Set the bundle inventory quantity.");
+  } else if (hasVariants) {
+    if (!optionName.trim())
+      problems.push("Name what the varieties differ by (e.g. Colour).");
+    if (cleanVarieties.length < 1)
+      problems.push("Add at least one variety with a name.");
+    cleanVarieties.forEach((v) => {
+      const name = v.label.trim();
+      if (!(Number(v.price) > 0))
+        problems.push(`Variety “${name}” needs a price above ₦0.`);
+      if (v.stock === "")
+        problems.push(`Variety “${name}” needs an inventory quantity.`);
+    });
+  } else {
+    if (!price) problems.push("Set the price.");
+    if (deliveryType !== "digital" && stock === "")
+      problems.push("Set the inventory quantity.");
+  }
+  if (offerCommission && !partnerRateValid)
+    problems.push(
+      `Partner profit must be at least ${formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.`,
+    );
+
+  const isValid = problems.length === 0;
 
   const submit = async (asDraft) => {
     if (submitting) return;
@@ -232,7 +261,12 @@ export default function NewMerchantProductPage() {
       images: images.filter(Boolean),
       productType,
       price: hasVariants ? previewPrice : Number(price) || 0,
-      stock: deliveryType === "digital" ? undefined : hasVariants ? undefined : Number(stock) || 0,
+      stock:
+        deliveryType === "digital"
+          ? undefined
+          : hasVariants
+            ? undefined
+            : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
       offerCommission: isGroup ? false : offerCommission,
@@ -253,7 +287,10 @@ export default function NewMerchantProductPage() {
       }));
     }
     if (isGroup) {
-      body.groupItems = bundleItems.map((b) => ({ title: b.title, image: b.image }));
+      body.groupItems = bundleItems.map((b) => ({
+        title: b.title,
+        image: b.image,
+      }));
     }
 
     try {
@@ -277,13 +314,22 @@ export default function NewMerchantProductPage() {
   return (
     <div className="flex flex-col gap-6 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
       {cropModal}
-      <AppHeader title="Add Product" backHref="/merchant/products" showBackOnDesktop />
+      <AppHeader
+        title="Add Product"
+        backHref="/merchant/products"
+        showBackOnDesktop
+      />
 
-      <form onSubmit={handleSubmit} className="product-form flex flex-col gap-6 px-4 lg:px-0">
+      <form
+        onSubmit={handleSubmit}
+        className="product-form flex flex-col gap-6 px-4 lg:px-0"
+      >
         {/* Basic info */}
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-semibold text-shop-heading">Product Title</span>
+            <span className="text-[13px] font-semibold text-shop-heading">
+              Product Title
+            </span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -293,7 +339,8 @@ export default function NewMerchantProductPage() {
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-[13px] font-semibold text-shop-heading">
-              Description <span className="font-normal text-shop-text">(optional)</span>
+              Description{" "}
+              <span className="font-normal text-shop-text">(optional)</span>
             </span>
             <textarea
               value={description}
@@ -304,7 +351,9 @@ export default function NewMerchantProductPage() {
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-semibold text-shop-heading">Category</span>
+            <span className="text-[13px] font-semibold text-shop-heading">
+              Category
+            </span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -321,7 +370,9 @@ export default function NewMerchantProductPage() {
 
         {/* Delivery type */}
         <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] font-semibold text-shop-heading">How is this delivered?</p>
+          <p className="text-[13px] font-semibold text-shop-heading">
+            How is this delivered?
+          </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <TypeCard
               selected={deliveryType === "physical"}
@@ -351,16 +402,23 @@ export default function NewMerchantProductPage() {
                   Upload the file buyers receive after purchase
                 </span>
               )}
-              <input type="file" className="hidden" onChange={handleDigitalFileChange} />
+              <input
+                type="file"
+                className="hidden"
+                onChange={handleDigitalFileChange}
+              />
             </label>
           ) : null}
           {deliveryType === "digital" ? (
             <p className="text-[11px] text-shop-text/60">
-              Any file type is accepted: PDF, ZIP, MP3, video, or anything else buyers need.
+              Any file type is accepted: PDF, ZIP, MP3, video, or anything else
+              buyers need.
             </p>
           ) : (
             <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">Processing Time</span>
+              <span className="text-[13px] font-semibold text-shop-heading">
+                Processing Time
+              </span>
               <select
                 value={processingTime}
                 onChange={(e) => setProcessingTime(e.target.value)}
@@ -379,14 +437,17 @@ export default function NewMerchantProductPage() {
         {/* Media: not shown for digital products */}
         {deliveryType !== "digital" && (
           <div className="flex flex-col gap-2.5">
-            <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
+            <p className="text-[13px] font-semibold text-shop-heading">
+              Product Photos
+            </p>
 
             <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
               <span>
-                The <span className="font-semibold">main cover image</span> must have a
-                plain white background, for a clean, uniform look across the site. Buyers
-                can still see your other background shots on the product page.
+                The <span className="font-semibold">main cover image</span> must
+                have a transparent background, for a clean, uniform look across
+                the site. Buyers can still see your other background shots on
+                the product page.
               </span>
             </div>
 
@@ -398,7 +459,11 @@ export default function NewMerchantProductPage() {
                 {cover ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={cover} alt="Cover" className="h-full w-full object-cover" />
+                    <img
+                      src={cover}
+                      alt="Cover"
+                      className="h-full w-full object-cover"
+                    />
                     <button
                       type="button"
                       onClick={(e) => {
@@ -446,7 +511,11 @@ export default function NewMerchantProductPage() {
                       className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={`Photo ${k + 2}`} className="h-full w-full object-cover" />
+                      <img
+                        src={src}
+                        alt={`Photo ${k + 2}`}
+                        className="h-full w-full object-cover"
+                      />
                       <button
                         type="button"
                         onClick={(e) => {
@@ -479,7 +548,9 @@ export default function NewMerchantProductPage() {
                   ) : (
                     <>
                       <Plus className="h-5 w-5" />
-                      <span className="text-[9.5px] font-medium">Add photo</span>
+                      <span className="text-[9.5px] font-medium">
+                        Add photo
+                      </span>
                     </>
                   )}
                   <input
@@ -493,12 +564,17 @@ export default function NewMerchantProductPage() {
             </div>
 
             <p className="mt-1 text-[13px] font-semibold text-shop-heading">
-              Product Video <span className="font-normal text-shop-text">(optional)</span>
+              Product Video{" "}
+              <span className="font-normal text-shop-text">(optional)</span>
             </p>
             <label className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
               {video ? (
                 <>
-                  <video src={video} className="h-full w-full object-cover" muted />
+                  <video
+                    src={video}
+                    className="h-full w-full object-cover"
+                    muted
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -513,10 +589,17 @@ export default function NewMerchantProductPage() {
               ) : (
                 <span className="flex flex-col items-center gap-1.5 text-shop-text/60">
                   <Video className="h-5 w-5" />
-                  <span className="text-[11.5px]">Tap to upload a short video</span>
+                  <span className="text-[11.5px]">
+                    Tap to upload a short video
+                  </span>
                 </span>
               )}
-              <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleVideoChange}
+              />
             </label>
 
             <label className="mt-1 flex flex-col gap-1.5">
@@ -542,10 +625,12 @@ export default function NewMerchantProductPage() {
         {/* Product type: not shown for digital */}
         {deliveryType !== "digital" && (
           <div className="flex flex-col gap-2.5">
-            <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
+            <p className="text-[13px] font-semibold text-shop-heading">
+              Product type
+            </p>
             <p className="text-[11.5px] text-shop-text">
-              Choose how this product is sold: as-is, with options like colour or size, or as a
-              bundle of items sold together.
+              Choose how this product is sold: as-is, with options like colour
+              or size, or as a bundle of items sold together.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <TypeCard
@@ -576,9 +661,19 @@ export default function NewMerchantProductPage() {
         {isGroup ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5 rounded-[10px] bg-shop-bg p-3.5 text-[11.5px] leading-[17px] text-shop-text">
-              <p><span className="font-semibold text-shop-heading">Step 1.</span> Add each item that&apos;s included in this bundle below.</p>
-              <p><span className="font-semibold text-shop-heading">Step 2.</span> Set one price and one inventory quantity for the whole bundle.</p>
-              <p><span className="font-semibold text-shop-heading">Step 3.</span> Publish. Shoppers buy the bundle as a single listing, not the items separately.</p>
+              <p>
+                <span className="font-semibold text-shop-heading">Step 1.</span>{" "}
+                Add each item that&apos;s included in this bundle below.
+              </p>
+              <p>
+                <span className="font-semibold text-shop-heading">Step 2.</span>{" "}
+                Set one price and one inventory quantity for the whole bundle.
+              </p>
+              <p>
+                <span className="font-semibold text-shop-heading">Step 3.</span>{" "}
+                Publish. Shoppers buy the bundle as a single listing, not the
+                items separately.
+              </p>
             </div>
 
             <div className="flex flex-col gap-2.5">
@@ -588,16 +683,25 @@ export default function NewMerchantProductPage() {
               {bundleItems.length > 0 && (
                 <div className="flex flex-col gap-2">
                   {bundleItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 rounded-[10px] border border-shop-border p-2.5">
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-[10px] border border-shop-border p-2.5"
+                    >
                       <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-shop-bg">
                         {item.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <Package className="h-4.5 w-4.5 text-shop-text/40" />
                         )}
                       </div>
-                      <span className="flex-1 text-[12.5px] font-medium text-shop-heading">{item.title}</span>
+                      <span className="flex-1 text-[12.5px] font-medium text-shop-heading">
+                        {item.title}
+                      </span>
                       <button
                         type="button"
                         onClick={() => removeBundleItem(item.id)}
@@ -614,11 +718,20 @@ export default function NewMerchantProductPage() {
                 <label className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-dashed border-shop-border bg-shop-bg">
                   {bundleItemImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={bundleItemImage} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={bundleItemImage}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <Camera className="h-4 w-4 text-shop-text/40" />
                   )}
-                  <input type="file" accept="image/*" className="hidden" onChange={handleBundleItemImageChange} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleBundleItemImageChange}
+                  />
                 </label>
                 <input
                   value={bundleItemTitle}
@@ -637,13 +750,17 @@ export default function NewMerchantProductPage() {
                 </button>
               </div>
               {bundleItems.length < 2 && (
-                <p className="text-[11px] text-shop-text/60">Add at least 2 items to publish this bundle.</p>
+                <p className="text-[11px] text-shop-text/60">
+                  Add at least 2 items to publish this bundle.
+                </p>
               )}
             </div>
 
             <div className="flex gap-3">
               <label className="flex flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">Bundle Price (₦)</span>
+                <span className="text-[13px] font-semibold text-shop-heading">
+                  Bundle Price (₦)
+                </span>
                 <MoneyInput
                   value={price}
                   onChange={setPrice}
@@ -652,10 +769,14 @@ export default function NewMerchantProductPage() {
                 />
               </label>
               <label className="flex flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">Bundle inventory quantity</span>
+                <span className="text-[13px] font-semibold text-shop-heading">
+                  Bundle inventory quantity
+                </span>
                 <input
                   value={stock}
-                  onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setStock(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                   inputMode="numeric"
                   placeholder="e.g. 10"
                   className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
@@ -682,7 +803,8 @@ export default function NewMerchantProductPage() {
                 Varieties ({cleanVarieties.length})
               </p>
               <p className="text-[11px] text-shop-text/60">
-                Each variety has its own price, inventory quantity and (optionally) photo. Shoppers pick one before adding to cart.
+                Each variety has its own price, inventory quantity and
+                (optionally) photo. Shoppers pick one before adding to cart.
               </p>
               {varieties.map((v) => (
                 <VarietyRow
@@ -707,7 +829,9 @@ export default function NewMerchantProductPage() {
         ) : (
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">Price (₦)</span>
+              <span className="text-[13px] font-semibold text-shop-heading">
+                Price (₦)
+              </span>
               <MoneyInput
                 value={price}
                 onChange={setPrice}
@@ -717,10 +841,14 @@ export default function NewMerchantProductPage() {
             </label>
             {deliveryType !== "digital" && (
               <label className="flex flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">Inventory quantity</span>
+                <span className="text-[13px] font-semibold text-shop-heading">
+                  Inventory quantity
+                </span>
                 <input
                   value={stock}
-                  onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setStock(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                   inputMode="numeric"
                   placeholder="24"
                   className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
@@ -738,12 +866,12 @@ export default function NewMerchantProductPage() {
                 Enroll this product in the Partner Program?
               </p>
               <p className="text-[11.5px] text-shop-text">
-                Partners can promote this product and earn a profit you choose. Customers still
-                see your normal price.
+                Partners can promote this product and earn a profit you choose.
+                Customers still see your normal price.
               </p>
               <p className="rounded-[8px] bg-emerald-50 px-3 py-2 text-[11.5px] leading-[16px] text-emerald-800">
-                💡 The more profit you offer, the more partners will pick up your
-                product. A higher rate is the fastest way to attract top
+                💡 The more profit you offer, the more partners will pick up
+                your product. A higher rate is the fastest way to attract top
                 partners and move stock.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -766,7 +894,8 @@ export default function NewMerchantProductPage() {
                 <div className="flex flex-col gap-2">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[13px] font-semibold text-shop-heading">
-                      How much do you want to give partners? (min {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
+                      How much do you want to give partners? (min{" "}
+                      {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
                     </span>
                     <MoneyInput
                       value={partnerProfitAmount}
@@ -777,23 +906,32 @@ export default function NewMerchantProductPage() {
                   </label>
                   {partnerProfitAmount && !partnerRateValid && (
                     <p className="text-[11.5px] text-shop-accent-3">
-                      The minimum Partner Program profit is {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.
+                      The minimum Partner Program profit is{" "}
+                      {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.
                     </p>
                   )}
-                  {partnerProfitAmount && partnerRateValid && previewPrice > 0 && Number.isFinite(previewPrice) && (
-                    <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
-                      Customers still see <span className="font-semibold text-shop-heading">{formatPrice(previewPrice)}</span>.
-                      Partners will see a partner price of{" "}
-                      <span className="font-semibold text-shop-heading">
-                        {formatPrice(previewPrice - Number(partnerProfitAmount))}
-                      </span>{" "}
-                      and earn up to{" "}
-                      <span className="font-semibold text-emerald-600">
-                        {formatPrice(Number(partnerProfitAmount))}
-                      </span>{" "}
-                      in profit for promoting it.
-                    </p>
-                  )}
+                  {partnerProfitAmount &&
+                    partnerRateValid &&
+                    previewPrice > 0 &&
+                    Number.isFinite(previewPrice) && (
+                      <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
+                        Customers still see{" "}
+                        <span className="font-semibold text-shop-heading">
+                          {formatPrice(previewPrice)}
+                        </span>
+                        . Partners will see a partner price of{" "}
+                        <span className="font-semibold text-shop-heading">
+                          {formatPrice(
+                            previewPrice - Number(partnerProfitAmount),
+                          )}
+                        </span>{" "}
+                        and earn up to{" "}
+                        <span className="font-semibold text-emerald-600">
+                          {formatPrice(Number(partnerProfitAmount))}
+                        </span>{" "}
+                        in profit for promoting it.
+                      </p>
+                    )}
                 </div>
               )}
             </div>
@@ -818,7 +956,8 @@ export default function NewMerchantProductPage() {
                       Let shoppers ask for a back-in-stock email
                     </span>
                     <span className="text-[11px] text-shop-text/60">
-                      When it sells out, shoppers can opt in and we email them the moment you restock.
+                      When it sells out, shoppers can opt in and we email them
+                      the moment you restock.
                     </span>
                   </span>
                   <input
@@ -833,18 +972,36 @@ export default function NewMerchantProductPage() {
           </>
         )}
 
+        {!isValid && problems.length > 0 && (
+          <div className="flex flex-col gap-1 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
+            <span className="font-semibold">
+              To submit for review, fix the following (or Save as draft for
+              now):
+            </span>
+            <ul className="list-disc pl-4">
+              {problems.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="flex flex-col gap-2.5 sm:flex-row-reverse">
           <button
             type="submit"
             disabled={!isValid || submitting || imageUploading || fileUploading}
             className="flex-1 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
           >
-            {imageUploading || fileUploading ? "Uploading…" : "Submit for Review"}
+            {imageUploading || fileUploading
+              ? "Uploading…"
+              : "Submit for Review"}
           </button>
           <button
             type="button"
             onClick={() => submit(true)}
-            disabled={!title.trim() || submitting || imageUploading || fileUploading}
+            disabled={
+              !title.trim() || submitting || imageUploading || fileUploading
+            }
             className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
           >
             Save as draft
