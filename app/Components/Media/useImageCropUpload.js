@@ -5,11 +5,12 @@ import { useMediaUpload } from "@/lib/api/mediaApi";
 import ImageCropModal from "./ImageCropModal";
 
 /**
- * Pick an image, position/crop it to a fixed aspect, then upload the result.
+ * Pick an image, crop it with the photo-editor tool, then upload the result.
  *
  *   const { pickAndCrop, uploading, modal } = useImageCropUpload("products");
  *   // in an <input type=file> onChange:
- *   const url = await pickAndCrop(file, { aspect: 1 });
+ *   const url = await pickAndCrop(file, { aspect: 1 });   // locked square
+ *   const url = await pickAndCrop(file);                  // free crop, any shape
  *   // render {modal} once anywhere in the component
  */
 export function useImageCropUpload(folder = "misc") {
@@ -17,11 +18,12 @@ export function useImageCropUpload(folder = "misc") {
   const [pending, setPending] = useState(null); // { file, aspect, title }
   const resolverRef = useRef(null);
 
-  const pickAndCrop = useCallback((file, { aspect = 1, title } = {}) => {
+  // `aspect` is optional — omit it (or pass null) for a completely free crop.
+  const pickAndCrop = useCallback((file, { aspect, title } = {}) => {
     if (!file) return Promise.resolve(null);
     return new Promise((resolve) => {
       resolverRef.current = resolve;
-      setPending({ file, aspect, title });
+      setPending({ file, aspect: aspect || undefined, title });
     });
   }, []);
 

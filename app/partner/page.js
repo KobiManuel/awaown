@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   TrendingUp,
   Clock,
@@ -61,18 +60,19 @@ export default function PartnerHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
-      <div className="relative mx-4 mt-4 flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8 lg:h-40">
-        {p?.bannerUrl && (
-          <Image
+      <div className="relative mx-4 mt-4 overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:mx-8 lg:mt-8">
+        {p?.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={p.bannerUrl}
             alt="Store banner"
-            fill
-            className="object-cover"
-            priority
+            className="block h-auto w-full"
           />
+        ) : (
+          <div className="h-32 lg:h-40" />
         )}
         <div className="absolute inset-0 bg-black/20" />
-        <div className="relative flex w-full items-end justify-between p-4">
+        <div className="absolute inset-x-0 bottom-0 flex w-full items-end justify-between p-4">
           <p className="text-[16px] font-bold text-white lg:text-[20px]">
             {p?.storeName ?? "…"}
           </p>

@@ -103,7 +103,7 @@ export default function NewMerchantProductPage() {
     e.target.value = "";
     const url = await cropProductImage(file, {
       aspect: 1,
-      title: "Position the product photo",
+      title: "Crop the product photo",
     });
     if (!url) return;
     setImages((prev) => {
@@ -137,7 +137,7 @@ export default function NewMerchantProductPage() {
     e.target.value = "";
     const url = await cropProductImage(file, {
       aspect: 1,
-      title: "Position the item photo",
+      title: "Crop the item photo",
     });
     if (url) setBundleItemImage(url);
   };

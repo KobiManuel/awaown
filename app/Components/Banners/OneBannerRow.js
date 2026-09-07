@@ -20,7 +20,6 @@ const OneBannerRow = () => {
         href="/shop"
         align="right"
         textColor="text-white"
-        aspect="aspect-[3/2] sm:aspect-[16/6] md:aspect-[1400/220]"
         rounded="rounded-[16px]"
         headingMaxWidth="max-w-[260px] sm:max-w-[420px] md:max-w-[520px]"
       />

@@ -1,115 +1,105 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, ZoomIn } from "lucide-react";
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  convertToPixelCrop,
+} from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { Loader2, RotateCcw } from "lucide-react";
 
 /**
- * Lightweight pan + zoom cropper. The user drags the photo behind a fixed
- * aspect frame and zooms with the slider; "Use photo" renders exactly the
- * framed region to a canvas and hands back a Blob.
+ * Photo-editor style cropper. The full image is shown and the user drags /
+ * resizes a selection box over it (8 handles + move), exactly like a desktop
+ * image editor. `aspect` optionally locks the box to a ratio; leave it out for
+ * a completely free crop. "Use photo" renders the selected region to a canvas
+ * at its real resolution and hands back a Blob.
  *
- *   <ImageCropModal file={file} aspect={1} onCancel={..} onCropped={(blob)=>..} />
+ *   <ImageCropModal file={file} onCancel={..} onCropped={(blob) => ..} />
+ *   <ImageCropModal file={file} aspect={1} ... />   // locked square
  */
-const FRAME_W = 300; // on-screen frame width in px
-const OUT_W = 1000; // exported width in px (height follows the aspect)
+const MAX_OUT = 2000; // cap the longest edge of the exported image (px)
+
+function initialCrop(mediaWidth, mediaHeight, aspect) {
+  if (aspect) {
+    return centerCrop(
+      makeAspectCrop({ unit: "%", width: 90 }, aspect, mediaWidth, mediaHeight),
+      mediaWidth,
+      mediaHeight,
+    );
+  }
+  // free crop: start from (almost) the whole image
+  return { unit: "%", x: 2, y: 2, width: 96, height: 96 };
+}
 
 export default function ImageCropModal({
   file,
-  aspect = 1,
-  title = "Position your photo",
+  aspect,
+  title = "Crop your image",
   onCancel,
   onCropped,
 }) {
-  const frameH = Math.round(FRAME_W / aspect);
   const [url, setUrl] = useState(null);
-  const [nat, setNat] = useState(null); // { w, h }
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [crop, setCrop] = useState(null);
+  const [completedCrop, setCompletedCrop] = useState(null);
   const [busy, setBusy] = useState(false);
-  const drag = useRef(null);
+  const imgRef = useRef(null);
 
   useEffect(() => {
+    // syncing an object-URL to the picked File is a legit external-resource effect
     const u = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [file]);
 
-  // base scale = cover the frame at zoom 1
-  const baseScale = nat
-    ? Math.max(FRAME_W / nat.w, frameH / nat.h)
-    : 1;
-  const scale = baseScale * zoom;
-  const dispW = nat ? nat.w * scale : 0;
-  const dispH = nat ? nat.h * scale : 0;
-
-  const clamp = useCallback(
-    (o) => {
-      const maxX = Math.max(0, (dispW - FRAME_W) / 2);
-      const maxY = Math.max(0, (dispH - frameH) / 2);
-      return {
-        x: Math.min(maxX, Math.max(-maxX, o.x)),
-        y: Math.min(maxY, Math.max(-maxY, o.y)),
-      };
+  const seedCrop = useCallback(
+    (el) => {
+      const { width, height } = el;
+      const next = initialCrop(width, height, aspect);
+      setCrop(next);
+      setCompletedCrop(convertToPixelCrop(next, width, height));
     },
-    [dispW, dispH, frameH],
+    [aspect],
   );
 
-  useEffect(() => {
-    setOffset((o) => clamp(o));
-  }, [zoom, nat, clamp]);
+  const onImageLoad = (e) => seedCrop(e.currentTarget);
 
-  const onImgLoad = (e) => {
-    setNat({ w: e.target.naturalWidth, h: e.target.naturalHeight });
-  };
-
-  const startDrag = (e) => {
-    const pt = "touches" in e ? e.touches[0] : e;
-    drag.current = { px: pt.clientX, py: pt.clientY, ...offset };
-  };
-  const moveDrag = (e) => {
-    if (!drag.current) return;
-    const pt = "touches" in e ? e.touches[0] : e;
-    setOffset(
-      clamp({
-        x: drag.current.x + (pt.clientX - drag.current.px),
-        y: drag.current.y + (pt.clientY - drag.current.py),
-      }),
-    );
-  };
-  const endDrag = () => {
-    drag.current = null;
+  const reset = () => {
+    if (imgRef.current) seedCrop(imgRef.current);
   };
 
   const apply = async () => {
-    if (!nat || busy) return;
+    const img = imgRef.current;
+    if (!img || !completedCrop || !completedCrop.width || busy) return;
     setBusy(true);
     try {
-      const outW = OUT_W;
-      const outH = Math.round(OUT_W / aspect);
+      // completedCrop is in on-screen px; scale up to the real image pixels
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      const srcW = completedCrop.width * scaleX;
+      const srcH = completedCrop.height * scaleY;
+      const srcX = completedCrop.x * scaleX;
+      const srcY = completedCrop.y * scaleY;
+
+      // keep the crop's real ratio, cap the longest edge
+      const ratio = Math.min(1, MAX_OUT / Math.max(srcW, srcH));
+      const outW = Math.max(1, Math.round(srcW * ratio));
+      const outH = Math.max(1, Math.round(srcH * ratio));
+
       const canvas = document.createElement("canvas");
       canvas.width = outW;
       canvas.height = outH;
       const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = "#ffffff"; // JPEG has no alpha
       ctx.fillRect(0, 0, outW, outH);
+      ctx.imageSmoothingQuality = "high";
 
-      // Map the on-screen frame back to source-image pixels. The image's centre
-      // sits at (FRAME_W/2 + offset.x, frameH/2 + offset.y) in frame space.
-      let sx = nat.w / 2 - (FRAME_W / 2 + offset.x) / scale;
-      let sy = nat.h / 2 - (frameH / 2 + offset.y) / scale;
-      let sw = FRAME_W / scale;
-      let sh = frameH / scale;
-      sx = Math.max(0, Math.min(sx, nat.w - sw));
-      sy = Math.max(0, Math.min(sy, nat.h - sh));
+      // drawImage reads the element's intrinsic pixels, so the already-loaded
+      // (and downscaled-for-display) <img> is the full-resolution source.
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
 
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = url;
-      await new Promise((res) => {
-        if (img.complete) res();
-        else img.onload = res;
-      });
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
       canvas.toBlob(
         (blob) => {
           setBusy(false);
@@ -124,53 +114,46 @@ export default function ImageCropModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 font-shop"
-      onMouseUp={endDrag}
-      onMouseLeave={endDrag}
-      onTouchEnd={endDrag}
-    >
-      <div className="flex w-full max-w-[360px] flex-col gap-4 rounded-[16px] bg-white p-4">
-        <p className="text-[14px] font-semibold text-shop-heading">{title}</p>
-
-        <div
-          className="relative mx-auto overflow-hidden rounded-[10px] bg-shop-bg select-none"
-          style={{ width: FRAME_W, height: frameH, touchAction: "none" }}
-          onMouseDown={startDrag}
-          onMouseMove={moveDrag}
-          onTouchStart={startDrag}
-          onTouchMove={moveDrag}
-        >
-          {url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={url}
-              alt=""
-              onLoad={onImgLoad}
-              draggable={false}
-              className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
-              style={{
-                width: dispW || "auto",
-                height: dispH || "auto",
-                transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
-              }}
-            />
-          )}
-          <div className="pointer-events-none absolute inset-0 border border-white/40" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 font-shop">
+      <div className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-4 overflow-hidden rounded-[16px] bg-white p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[14px] font-semibold text-shop-heading">{title}</p>
+          <button
+            type="button"
+            onClick={reset}
+            className="flex items-center gap-1 text-[11.5px] font-medium text-shop-text/70 hover:text-shop-heading"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Reset
+          </button>
         </div>
 
-        <label className="flex items-center gap-2">
-          <ZoomIn className="h-4 w-4 text-shop-text/60" />
-          <input
-            type="range"
-            min="1"
-            max="3"
-            step="0.01"
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1 accent-shop-accent-1"
-          />
-        </label>
+        <p className="-mt-1 text-[11.5px] text-shop-text/60">
+          Drag the box to move it, or pull any edge or corner to resize. The
+          shaded area is trimmed off.
+        </p>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-[10px] bg-shop-bg p-2">
+          {url && (
+            <ReactCrop
+              crop={crop ?? undefined}
+              onChange={(_px, percent) => setCrop(percent)}
+              onComplete={(px) => setCompletedCrop(px)}
+              aspect={aspect || undefined}
+              keepSelection
+              ruleOfThirds
+              className="max-h-[60vh]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={url}
+                alt=""
+                onLoad={onImageLoad}
+                className="max-h-[60vh] w-auto select-none"
+              />
+            </ReactCrop>
+          )}
+        </div>
 
         <div className="flex gap-2">
           <button
@@ -183,7 +166,7 @@ export default function ImageCropModal({
           <button
             type="button"
             onClick={apply}
-            disabled={!nat || busy}
+            disabled={busy || !completedCrop?.width}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

@@ -27,8 +27,8 @@ export default function BannerImageButton({
     e.target.value = "";
     if (!file) return;
     const url = await pickAndCrop(file, {
-      aspect: 16 / 6,
-      title: "Position your banner",
+      // free crop — the banner slot adapts to whatever shape they pick
+      title: "Crop your banner",
     });
     if (!url) return;
     try {

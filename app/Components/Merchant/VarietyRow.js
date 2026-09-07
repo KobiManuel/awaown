@@ -27,7 +27,7 @@ export default function VarietyRow({ value, onChange, onRemove, canRemove }) {
     if (!file) return;
     const url = await pickAndCrop(file, {
       aspect: 1,
-      title: "Position the variety photo",
+      title: "Crop the variety photo",
     });
     if (url) onChange({ image: url });
   };

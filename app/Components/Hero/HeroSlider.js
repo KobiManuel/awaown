@@ -43,19 +43,27 @@ const HeroSlider = () => {
 
   return (
     <div className="relative w-full flex-1 overflow-hidden rounded-[10px] font-shop">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[10px] sm:aspect-[4/3] md:aspect-[1100/495]">
-        {slides.map((slide, idx) => (
+      {/* No fixed aspect: height follows the active slide's image, so the
+          banner adapts to whatever shape the admin crops. */}
+      <div className="relative w-full overflow-hidden rounded-[10px]">
+        {slides.map((slide, idx) => {
+          const isActive = idx === active;
+          return (
           <div
             key={slide.title}
-            className={`absolute inset-0 transition-opacity duration-700 ${
-              idx === active ? "opacity-100 z-10" : "pointer-events-none opacity-0 z-0"
+            className={`transition-opacity duration-700 ${
+              isActive
+                ? "relative z-10 opacity-100"
+                : "pointer-events-none absolute inset-0 z-0 opacity-0"
             }`}
           >
-            <div className="group absolute inset-0 overflow-hidden">
+            <div className="group h-full w-full overflow-hidden">
               <img
                 src={slide.image}
                 alt={slide.title}
-                className="h-full w-full object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.1]"
+                className={`block w-full transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.1] ${
+                  isActive ? "h-auto" : "h-full object-cover"
+                }`}
               />
             </div>
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-center gap-3 px-6 text-white sm:px-10 md:px-16">
@@ -87,7 +95,8 @@ const HeroSlider = () => {
               </Link>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Dot indicators - positioned within the actual image box, not the stretched flex wrapper */}
         <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2 md:bottom-8">

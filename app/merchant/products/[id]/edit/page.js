@@ -117,7 +117,7 @@ export default function EditMerchantProductPage() {
     e.target.value = "";
     const url = await pickAndCrop(file, {
       aspect: 1,
-      title: "Position the product photo",
+      title: "Crop the product photo",
     });
     if (url) set({ images: [...form.images, url].slice(0, MAX_IMAGES) });
   };

@@ -137,7 +137,7 @@ export default function DashboardHome() {
                         src={cat.image}
                         alt={cat.label}
                         fill
-                        className="object-contain p-2.5"
+                        className="rounded-full object-cover"
                         sizes="64px"
                       />
                     ) : (

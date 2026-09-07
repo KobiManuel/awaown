@@ -15,13 +15,13 @@ const ThreeBannerRow = () => {
       {banners.map((b, i) => (
         <div
           key={i}
-          className="group relative aspect-[446/180] w-full overflow-hidden rounded-[12px] bg-shop-bg"
+          className="group relative w-full overflow-hidden rounded-[12px] bg-shop-bg"
         >
-          <Link href="/shop" className="absolute inset-0 block overflow-hidden">
+          <Link href="/shop" className="relative block overflow-hidden">
             <img
               src={b.image}
               alt={b.heading}
-              className="h-full w-full object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.15]"
+              className="block w-full h-auto object-cover transition-transform duration-[3000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.15]"
             />
           </Link>
           <div className="pointer-events-none absolute right-[7%] top-0 flex h-full flex-col items-start justify-center gap-1 text-left text-shop-heading sm:items-end sm:text-right">

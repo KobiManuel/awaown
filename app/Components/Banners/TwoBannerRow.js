@@ -22,7 +22,6 @@ const TwoBannerRow = () => {
           href="/shop"
           align="right"
           textColor="text-white"
-          aspect="aspect-[685/240]"
         />
       ))}
     </div>
