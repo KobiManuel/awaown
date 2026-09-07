@@ -5,7 +5,7 @@ import { Check, Circle } from "lucide-react";
 import { PASSWORD_RULES } from "@/lib/password-rules";
 
 /**
- * Live requirements list under a password field — a rule's icon turns into a
+ * Live requirements list under a password field. A rule's icon turns into a
  * check the moment the value satisfies it.
  */
 export default function PasswordChecklist({ value = "", className = "" }) {

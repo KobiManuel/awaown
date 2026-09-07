@@ -44,7 +44,7 @@ export default function AddressesPage() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setState = (e) => {
     const state = e.target.value;
-    // city options depend on state — drop a city that no longer applies
+    // city options depend on state, so drop a city that no longer applies
     setForm((f) => ({
       ...f,
       state,

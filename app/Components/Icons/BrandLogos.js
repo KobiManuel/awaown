@@ -1,7 +1,7 @@
 import React from "react";
 
 // Simplified, recognizable brand marks (not pixel-accurate reproductions of the
-// official logo artwork) — same approach as the inline Google/Facebook icons in
+// official logo artwork). Same approach as the inline Google/Facebook icons in
 // SocialButtons.js. Each renders as a small rounded badge sized by className.
 
 export const PaystackLogo = ({ className = "h-6 w-6" }) => (

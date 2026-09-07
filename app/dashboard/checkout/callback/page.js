@@ -22,7 +22,7 @@ function Callback() {
     try {
       orderRef = sessionStorage.getItem("awaown_pending_order") || "";
     } catch {}
-    // Paystack returns ?reference / ?trxref — the gateway ref is
+    // Paystack returns ?reference / ?trxref. The gateway ref is
     // "<ORDER>_<suffix>", so recover the order ref if the session was lost.
     if (!orderRef) {
       const gw = params.get("reference") || params.get("trxref") || "";
@@ -68,7 +68,7 @@ function Callback() {
         <>
           <CheckCircle2 className="h-10 w-10 text-emerald-600" />
           <p className="text-[14px] font-medium text-shop-heading">
-            Payment confirmed — taking you to your order.
+            Payment confirmed. Taking you to your order.
           </p>
         </>
       )}

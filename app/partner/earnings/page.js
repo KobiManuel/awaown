@@ -69,7 +69,7 @@ export default function PartnerEarningsPage() {
         </p>
       ) : orders.length === 0 ? (
         <p className="px-4 py-10 text-center text-[13px] text-shop-text">
-          No earnings yet — share a product link to get started.
+          No earnings yet. Share a product link to get started.
         </p>
       ) : (
         <div className="flex flex-col gap-2.5 px-4 lg:px-8">

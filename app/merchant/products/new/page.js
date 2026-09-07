@@ -285,7 +285,7 @@ export default function NewMerchantProductPage() {
               onClick={() => setDeliveryType("physical")}
               icon={Truck}
               title="Physical Product"
-              description="Shipped to the buyer — set a processing time below."
+              description="Shipped to the buyer. Set a processing time below."
             />
             <TypeCard
               selected={deliveryType === "digital"}
@@ -313,7 +313,7 @@ export default function NewMerchantProductPage() {
           ) : null}
           {deliveryType === "digital" ? (
             <p className="text-[11px] text-shop-text/60">
-              Any file type is accepted — PDF, ZIP, MP3, video, or anything else buyers need.
+              Any file type is accepted: PDF, ZIP, MP3, video, or anything else buyers need.
             </p>
           ) : (
             <label className="flex flex-col gap-1.5">
@@ -333,12 +333,12 @@ export default function NewMerchantProductPage() {
           )}
         </div>
 
-        {/* Media — not shown for digital products */}
+        {/* Media: not shown for digital products */}
         {deliveryType !== "digital" && (
           <div className="flex flex-col gap-2.5">
             <p className="text-[13px] font-semibold text-shop-heading">Product Photos</p>
             <p className="text-[11.5px] text-shop-text">
-              Add a few angles — shoppers convert better when they can see the product clearly.
+              Add a few angles. Shoppers convert better when they can see the product clearly.
               {hasVariants && " Each variety can also carry its own photo below."}
             </p>
             <div className="grid grid-cols-4 gap-2.5">
@@ -404,12 +404,12 @@ export default function NewMerchantProductPage() {
           </div>
         )}
 
-        {/* Product type — not shown for digital */}
+        {/* Product type: not shown for digital */}
         {deliveryType !== "digital" && (
           <div className="flex flex-col gap-2.5">
             <p className="text-[13px] font-semibold text-shop-heading">Product type</p>
             <p className="text-[11.5px] text-shop-text">
-              Choose how this product is sold — as-is, with options like colour or size, or as a
+              Choose how this product is sold: as-is, with options like colour or size, or as a
               bundle of items sold together.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -425,7 +425,7 @@ export default function NewMerchantProductPage() {
                 onClick={() => setProductType("variable")}
                 icon={Layers}
                 title={'Variable Product ("has options")'}
-                description="e.g. colour, size — each variety priced and stocked separately."
+                description="e.g. colour, size. Each variety priced and stocked separately."
               />
               <TypeCard
                 selected={isGroup}
@@ -443,7 +443,7 @@ export default function NewMerchantProductPage() {
             <div className="flex flex-col gap-1.5 rounded-[10px] bg-shop-bg p-3.5 text-[11.5px] leading-[17px] text-shop-text">
               <p><span className="font-semibold text-shop-heading">Step 1.</span> Add each item that&apos;s included in this bundle below.</p>
               <p><span className="font-semibold text-shop-heading">Step 2.</span> Set one price and one stock count for the whole bundle.</p>
-              <p><span className="font-semibold text-shop-heading">Step 3.</span> Publish — shoppers buy the bundle as a single listing, not the items separately.</p>
+              <p><span className="font-semibold text-shop-heading">Step 3.</span> Publish. Shoppers buy the bundle as a single listing, not the items separately.</p>
             </div>
 
             <div className="flex flex-col gap-2.5">
@@ -548,7 +548,7 @@ export default function NewMerchantProductPage() {
                 Varieties ({cleanVarieties.length})
               </p>
               <p className="text-[11px] text-shop-text/60">
-                Each variety has its own price, stock count and (optionally) photo — shoppers pick one before adding to cart.
+                Each variety has its own price, stock count and (optionally) photo. Shoppers pick one before adding to cart.
               </p>
               {varieties.map((v) => (
                 <VarietyRow
@@ -609,7 +609,7 @@ export default function NewMerchantProductPage() {
               </p>
               <p className="rounded-[8px] bg-emerald-50 px-3 py-2 text-[11.5px] leading-[16px] text-emerald-800">
                 💡 The more profit you offer, the more partners will pick up your
-                product — a higher rate is the fastest way to attract top
+                product. A higher rate is the fastest way to attract top
                 partners and move stock.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -665,7 +665,7 @@ export default function NewMerchantProductPage() {
               )}
             </div>
 
-            {/* Stock visibility + restock alerts — not applicable to digital */}
+            {/* Stock visibility + restock alerts: not applicable to digital */}
             {deliveryType !== "digital" && (
               <div className="flex flex-col gap-2.5">
                 <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">

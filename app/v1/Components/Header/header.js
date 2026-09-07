@@ -56,7 +56,7 @@ const mobileMenuItems = [
   },
   {
     title: "About Us",
-    subtitle: "Welcome to AwaOwn — Nigeria's trusted marketplace.",
+    subtitle: "Welcome to AwaOwn, Nigeria's trusted marketplace.",
     img: aboutThumb,
     href: "/about",
   },

@@ -7,7 +7,7 @@ import { formatPrice } from "@/lib/merchant-data";
 
 /**
  * Read-only product card for the public storefront pages (`/store/[code]`,
- * `/shop/[slug]`). No cart/wishlist actions — a visitor taps through to the
+ * `/shop/[slug]`). No cart/wishlist actions; a visitor taps through to the
  * product page (with `?ref=` for partner attribution) and signs in there.
  */
 export default function PublicStoreProductCard({ product, href, accentColor }) {

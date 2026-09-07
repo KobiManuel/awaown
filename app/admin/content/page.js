@@ -52,7 +52,7 @@ function FaqEditor() {
         answer: "Answer goes here.",
         status: "draft",
       }).unwrap();
-      showToast("FAQ added — edit the question and answer below");
+      showToast("FAQ added. Edit the question and answer below");
     } catch {
       showToast("Could not add FAQ");
     }
@@ -91,7 +91,7 @@ function FaqEditor() {
       return;
     }
     run(
-      `"${faq.question}" removed — undo within 8 seconds`,
+      `"${faq.question}" removed. Undo within 8 seconds`,
       async () => {
         await saveFaq({
           question: faq.question,

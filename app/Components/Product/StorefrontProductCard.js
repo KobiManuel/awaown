@@ -12,7 +12,7 @@ import { toggleWishlist } from "@/lib/store/wishlistSlice";
 // Common color names merchants/partners actually type into a "Color" option
 // group (see app/merchant/products/new/page.js's Option Names field). Variant
 // records only ever store the free-text combined label ("Black / M"), never a
-// hex value, so this is a heuristic match on that label — not a structured
+// hex value, so this is a heuristic match on that label, not a structured
 // per-attribute color field. Good enough for the common case; won't catch an
 // unusual color name.
 const COLOR_NAME_HEX = {
@@ -43,7 +43,7 @@ function extractColorSwatches(product) {
 // Visually matches app/Components/Product/ProductCard.js (same hover-reveal action
 // icons, image swap, color swatches, layout) but sourced from real merchant/partner
 // product records (Naira pricing, `images[]`) instead of the disconnected
-// shop-data.js demo catalog — used on merchant and partner public store pages so a
+// shop-data.js demo catalog, used on merchant and partner public store pages so a
 // store "feels" like the rest of AwaOwn's shop.
 const StorefrontProductCard = ({ product, accentColor }) => {
   const dispatch = useDispatch();

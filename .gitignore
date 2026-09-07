@@ -34,7 +34,7 @@ yarn-error.log*
 .env*
 !.env.example
 
-# backend (NestJS API) — lives in its own repo: Rheel-Git/awaown-be
+# backend (NestJS API): lives in its own repo, Rheel-Git/awaown-be
 /backend/
 
 # local agent config

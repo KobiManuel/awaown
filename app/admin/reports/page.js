@@ -117,7 +117,7 @@ export default function AdminReportsPage() {
       <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
         <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
           <BarChart3 className="h-4 w-4 text-shop-accent-1" />
-          Sales — last 10 days
+          Sales · last 10 days
         </p>
         {isLoading ? (
           <SkeletonRows count={5} />

@@ -18,7 +18,7 @@ import {
   Caveat,
 } from "next/font/google";
 
-// Self-hosted via next/font (built at compile time) — avoids the runtime
+// Self-hosted via next/font (built at compile time). Avoids the runtime
 // cdnfonts loading issue the main site's Bai Jamjuree import hit. Isolated to
 // the partner storefront only; does not affect the rest of the app.
 const baiJamjuree = Bai_Jamjuree({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });

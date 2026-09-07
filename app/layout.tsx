@@ -4,7 +4,7 @@ import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
 import ModalRoot from "@/app/Components/Modals/ModalRoot";
 import { SITE_URL } from "@/lib/site-config";
 
-const title = "AwaOwn — Shop. Sell. Earn.";
+const title = "AwaOwn · Shop. Sell. Earn.";
 const description =
   "Discover verified merchants across Nigeria, grow your business with a powerful vendor dashboard, and earn real money sharing products you love, all from one platform.";
 const siteUrl = SITE_URL;
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: title,
-    template: "%s — AwaOwn",
+    template: "%s · AwaOwn",
   },
   description,
   keywords: [

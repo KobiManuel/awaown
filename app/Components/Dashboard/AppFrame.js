@@ -13,7 +13,7 @@ import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
 // re-establishes the session from the refresh cookie, gates on auth +
 // onboarding, then renders the desktop sidebar / mobile bottom-tab chrome.
 // `navItems` drives both nav renderings. `loginHref` doubles as the role source
-// (its last segment — /login/customer -> "customer").
+// (its last segment: /login/customer -> "customer").
 /**
  * @param {object} props
  * @param {React.ReactNode} props.children

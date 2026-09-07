@@ -102,7 +102,7 @@ function OrderDetailContent() {
   const doConfirm = async () => {
     try {
       await confirmDelivery(order.reference).unwrap();
-      showToast("Delivery confirmed — payment released");
+      showToast("Delivery confirmed. Payment released");
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -113,7 +113,7 @@ function OrderDetailContent() {
     if (!reason || reason.trim().length < 4) return;
     try {
       await requestRefund({ reference: order.reference, reason }).unwrap();
-      showToast("Refund requested — our team will review it");
+      showToast("Refund requested. Our team will review it");
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -227,7 +227,7 @@ function OrderDetailContent() {
         />
         <p className="text-[12px] leading-[18px] text-shop-text">
           {order.status === "ESCROW_RELEASED"
-            ? "Delivery confirmed — payment has been released to the merchant."
+            ? "Delivery confirmed. Payment has been released to the merchant."
             : order.status === "REFUND_REQUESTED"
               ? "A refund request is under review. Escrow release is paused."
               : "Your payment stays in escrow until you confirm delivery."}

@@ -138,7 +138,7 @@ export default function PublicPartnerStorePage() {
               className="py-16 text-center text-[13px]"
               style={{ color: theme.subtleText }}
             >
-              This store doesn&apos;t have any products yet — check back soon.
+              This store doesn&apos;t have any products yet. Check back soon.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

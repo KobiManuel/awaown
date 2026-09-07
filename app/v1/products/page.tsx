@@ -4,7 +4,7 @@ import Featured from "@/app/v1/Sections/Featured/main";
 import ShopByCategory from "@/app/v1/Sections/ShopByCategory/main";
 
 export const metadata = {
-  title: "Shop — AwaOwn",
+  title: "Shop · AwaOwn",
   description:
     "Browse verified merchants across Nigeria on AwaOwn's marketplace.",
 };

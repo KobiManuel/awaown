@@ -195,8 +195,8 @@ export default function MerchantOrderDetailPage() {
           {order.status === "PROCESSING" ? (
             <>
               <p className="text-[12px] text-shop-text/70">
-                Add the carrier and tracking number, then mark the order shipped —
-                the customer is emailed the details.
+                Add the carrier and tracking number, then mark the order shipped.
+                The customer is emailed the details.
               </p>
               <input
                 value={ship.carrier}
@@ -234,11 +234,11 @@ export default function MerchantOrderDetailPage() {
             <div className="text-[12.5px] text-shop-text">
               <p>
                 <span className="text-shop-text/60">Carrier: </span>
-                {order.tracking.carrier || "—"}
+                {order.tracking.carrier || "-"}
               </p>
               <p>
                 <span className="text-shop-text/60">Tracking #: </span>
-                {order.tracking.number || "—"}
+                {order.tracking.number || "-"}
               </p>
               {order.tracking.url && (
                 <a

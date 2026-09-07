@@ -139,7 +139,7 @@ export default function OtpAuthFlow({
   };
 
   // Password fields keep a server-side error (e.g. "found in a data breach")
-  // visible until the user acts on it — clear it as soon as they start typing
+  // visible until the user acts on it. Clear it as soon as they start typing
   // a new value, same as any other form validation error would.
   const updatePassword = (v) => {
     setPassword(v);
@@ -168,15 +168,15 @@ export default function OtpAuthFlow({
       finish(data);
     } catch (err) {
       if (err?.status === 409) {
-        // account uses email codes — send one and switch to the code view
+        // account uses email codes: send one and switch to the code view
         try {
           await requestLogin({ role, email }).unwrap();
         } catch {
-          /* ignore — generic anyway */
+          /* ignore, generic anyway */
         }
         setCooldown(RESEND_COOLDOWN);
         setNotice(
-          "This account signs in with an email code — we've just sent you one.",
+          "This account signs in with an email code. We've just sent you one.",
         );
         setView("code");
         return;
@@ -251,7 +251,7 @@ export default function OtpAuthFlow({
           ? await verifyRegistration({ role, email, code: value }).unwrap()
           : await verifyLogin({ role, email, code: value }).unwrap();
 
-      // Accounts from before password sign-in existed have no password yet —
+      // Accounts from before password sign-in existed have no password yet.
       // catch that here (only possible on an OTP login, never after signup,
       // which always sets one) and have them set one before continuing in.
       if (view === "code" && data?.user && data.user.hasPassword === false) {
@@ -311,7 +311,7 @@ export default function OtpAuthFlow({
     reset: { t: "Set a new password", s: notice },
     setpw: {
       t: "Set a password",
-      s: "This account doesn't have one yet — set one so you can sign in faster next time.",
+      s: "This account doesn't have one yet. Set one so you can sign in faster next time.",
     },
   };
   const h = headings[view];

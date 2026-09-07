@@ -6,7 +6,7 @@ import { Undo2, Mail } from "lucide-react";
 const BUFFER_MS = 8000;
 
 // Lets an admin action apply immediately (for instant UI feedback) while its
-// "email notification" is held for a short buffer — undoing within the window
+// "email notification" is held for a short buffer. Undoing within the window
 // reverts state and cancels the notification, guarding against a fat-fingered
 // approve/reject/suspend/remove.
 export function useUndoBuffer() {

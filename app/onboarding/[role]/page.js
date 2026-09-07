@@ -109,7 +109,7 @@ function OnboardingForm() {
       await complete(body).unwrap();
       markSignedIn(role);
       // Full navigation so the session cookie we just wrote is sent with the
-      // request proxy.ts sees — a client replace can land back here "stuck".
+      // request proxy.ts sees. A client replace can land back here "stuck".
       window.location.assign(dest);
     } catch (err) {
       setFormError(errorMessage(err));

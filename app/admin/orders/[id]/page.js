@@ -122,7 +122,7 @@ export default function AdminOrderDetailPage() {
               </p>
               <p className="text-[11.5px] text-shop-text/70">
                 {formatPrice(order.refund.amount)}
-                {order.refund.reason ? ` — ${order.refund.reason}` : ""}
+                {order.refund.reason ? ` · ${order.refund.reason}` : ""}
               </p>
             </div>
           </>
@@ -158,7 +158,7 @@ export default function AdminOrderDetailPage() {
           </p>
           {order.tracking && (
             <p className="text-[12px] text-shop-text">
-              Current: {order.tracking.carrier || "—"}
+              Current: {order.tracking.carrier || "-"}
               {order.tracking.number ? ` · ${order.tracking.number}` : ""}
             </p>
           )}

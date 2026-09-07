@@ -475,8 +475,8 @@ function ProductDetail() {
             <div className="flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
               <Store className="mt-0.5 h-4 w-4 shrink-0 text-shop-accent-1" strokeWidth={1.75} />
               <p className="text-[12px] leading-[18px] text-shop-text">
-                Protected by <strong className="text-shop-heading">AwaOwn Escrow</strong> —
-                your payment is only released after you confirm delivery.
+                Protected by <strong className="text-shop-heading">AwaOwn Escrow</strong>.
+                Your payment is only released after you confirm delivery.
               </p>
             </div>
 

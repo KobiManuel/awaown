@@ -88,7 +88,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         <div className="grid grid-cols-2 gap-2.5 text-[12.5px]">
           <div className="rounded-[10px] bg-shop-bg p-3">
             <p className="text-shop-text/60">Category</p>
-            <p className="font-semibold text-shop-heading">{product.category || "—"}</p>
+            <p className="font-semibold text-shop-heading">{product.category || "-"}</p>
           </div>
           <div className="rounded-[10px] bg-shop-bg p-3">
             <p className="text-shop-text/60">Price</p>
@@ -123,7 +123,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
               <p className="text-shop-text/60">Partner Program</p>
               <p className="font-semibold text-shop-heading">
-                Enrolled — {formatPrice(product.partnerProfitAmount)} profit per sale
+                Enrolled · {formatPrice(product.partnerProfitAmount)} profit per sale
               </p>
             </div>
           )}
@@ -279,7 +279,7 @@ export default function AdminProductsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">{p.title}</p>
                   <p className="text-[11.5px] text-shop-text/70">
-                    {formatPrice(p.price)} · {p.category || "—"}
+                    {formatPrice(p.price)} · {p.category || "-"}
                   </p>
                   {p.rejectionReason && (
                     <p className="mt-0.5 text-[10.5px] text-shop-accent-3">Reason: {p.rejectionReason}</p>

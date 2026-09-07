@@ -114,7 +114,7 @@ export default function PartnerHome() {
           />
           <span className="text-[12.5px] leading-[18px] text-amber-800">
             {pendingVerif
-              ? "Your identity verification is under review — we'll notify you once it's approved."
+              ? "Your identity verification is under review. We'll notify you once it's approved."
               : "You'll need to verify your identity before your first withdrawal."}
           </span>
         </Link>

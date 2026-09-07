@@ -7,19 +7,19 @@ import FlipCards from "./FlipCards";
 export const metadata = {
   title: "About AwaOwn",
   description:
-    "AwaOwn is a digital marketplace connecting Merchants, Partners, Inventory investors and Customers in one ecosystem — with escrow-protected payments and verified participants.",
+    "AwaOwn is a digital marketplace connecting Merchants, Partners, Inventory investors and Customers in one ecosystem, with escrow-protected payments and verified participants.",
 };
 
 const ROLES = [
   {
     icon: Store,
     title: "Merchants",
-    body: "Bring products and businesses to the marketplace. From local manufacturers and wholesalers to retailers, independent business owners and growing small businesses — AwaOwn gives merchants another way to reach customers and grow their sales.",
+    body: "Bring products and businesses to the marketplace. From local manufacturers and wholesalers to retailers, independent business owners and growing small businesses, AwaOwn gives merchants another way to reach customers and grow their sales.",
   },
   {
     icon: Users2,
     title: "Partners",
-    body: "Build their own digital stores, curate products, promote them to their audiences and earn from sales — without having to buy or hold inventory themselves.",
+    body: "Build their own digital stores, curate products, promote them to their audiences and earn from sales, without having to buy or hold inventory themselves.",
   },
   {
     icon: Coins,
@@ -50,7 +50,7 @@ export default function AboutPage() {
           <p className="max-w-[720px] text-[15px] leading-[24px] text-shop-text md:text-[16px]">
             Commerce has always been about more. AwaOwn is a digital marketplace built to
             connect Merchants, Partners, Inventory investors and Customers in a single
-            ecosystem — creating more ways for people to participate in commerce and build
+            ecosystem, creating more ways for people to participate in commerce and build
             businesses.
           </p>
         </section>
@@ -99,7 +99,7 @@ export default function AboutPage() {
             <h3 className="text-[18px] font-semibold text-shop-heading">Our vision</h3>
             <p className="mt-2 max-w-[820px] text-[14.5px] leading-[24px] text-shop-text">
               To create a more inclusive commerce ecosystem that enables more individuals
-              to participate, start businesses and generate opportunities — thereby
+              to participate, start businesses and generate opportunities, thereby
               fostering the circulation of wealth. We&apos;re building AwaOwn for the way
               commerce is evolving, where products, businesses, people, capital and
               customers can connect in more ways.
@@ -125,7 +125,7 @@ export default function AboutPage() {
               Find your place in the marketplace
             </h2>
             <p className="mt-1 text-[13.5px] text-white/80">
-              Shop, sell, resell or invest — pick the role that fits you.
+              Shop, sell, resell or invest. Pick the role that fits you.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

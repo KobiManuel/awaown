@@ -4,7 +4,7 @@ import Testimonials from "@/app/v1/Sections/Testimonials/main";
 import { ShieldCheck, HandCoins, Users } from "lucide-react";
 
 export const metadata = {
-  title: "About — AwaOwn",
+  title: "About · AwaOwn",
   description:
     "AwaOwn is Nigeria's trusted marketplace where shoppers save, merchants grow, and affiliates earn, all in one platform.",
 };

@@ -51,7 +51,7 @@ export default function AdminTeamPage() {
     if (!name.trim() || !email.trim()) return;
     try {
       await invite({ fullName: name.trim(), email: email.trim(), teamRole: role }).unwrap();
-      showToast(`${name.trim()} invited — they'll get an email to set their password`);
+      showToast(`${name.trim()} invited. They'll get an email to set their password`);
       setName("");
       setEmail("");
       setRole_("administrator");

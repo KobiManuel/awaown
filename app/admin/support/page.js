@@ -28,7 +28,7 @@ export default function AdminSupportPage() {
         </p>
         <p className="line-clamp-1 text-[11.5px] text-shop-text/70">
           {c.customer}
-          {c.orderRef ? ` · ${c.orderRef}` : ""} — {c.lastMessage}
+          {c.orderRef ? ` · ${c.orderRef}` : ""} · {c.lastMessage}
         </p>
       </div>
       <span className="shrink-0 text-[10.5px] text-shop-text/50">

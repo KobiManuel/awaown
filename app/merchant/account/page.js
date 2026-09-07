@@ -224,7 +224,7 @@ export default function MerchantAccountPage() {
               </button>
             </div>
             <p className="text-[10.5px] text-shop-text/60">
-              The logo is your store&apos;s profile picture — use a square image
+              The logo is your store&apos;s profile picture. Use a square image
               of your brand mark, not a product photo.
             </p>
             <textarea

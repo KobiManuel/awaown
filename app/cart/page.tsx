@@ -4,7 +4,7 @@ import ScrollToTop from "@/app/Components/Header/ScrollToTop";
 import CartClient from "./CartClient";
 
 export const metadata = {
-  title: "Cart — AwaOwn",
+  title: "Cart · AwaOwn",
   description: "Review the items in your AwaOwn shopping cart.",
 };
 

@@ -217,7 +217,7 @@ export default function EditMerchantProductPage() {
               />
             </div>
             <p className="text-[11px] text-shop-text/60">
-              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"} — each has its own price, stock and photo.
+              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"}, each with its own price, stock and photo.
             </p>
             {form.varieties.map((v) => (
               <VarietyRow

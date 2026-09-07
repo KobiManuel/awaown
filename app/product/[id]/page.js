@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const p = await getProduct(id);
   if (!p) {
-    return { title: "Product not found — AwaOwn" };
+    return { title: "Product not found · AwaOwn" };
   }
   const priceLabel = new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }) {
   }).format(p.price);
   const description = (
     p.description ||
-    `${p.title} from ${p.vendor} on AwaOwn — escrow-protected checkout.`
+    `${p.title} from ${p.vendor} on AwaOwn. Escrow-protected checkout.`
   ).slice(0, 160);
   const image = p.images?.[0]?.startsWith("http")
     ? p.images[0]
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }) {
   const url = `${SITE}/product/${p.slug}`;
 
   return {
-    title: `${p.title} — ${priceLabel}`,
+    title: `${p.title} · ${priceLabel}`,
     description,
     alternates: { canonical: url },
     openGraph: {

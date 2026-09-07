@@ -108,7 +108,7 @@ export default function AdminMerchantDetailPage() {
         <Stat label="Escrow Balance" value={formatPrice(m.escrowBalance)} />
         <Stat
           label="Business"
-          value={<span className="text-[12.5px]">{m.businessName || "—"}</span>}
+          value={<span className="text-[12.5px]">{m.businessName || "-"}</span>}
         />
       </div>
 
@@ -122,7 +122,7 @@ export default function AdminMerchantDetailPage() {
         <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
             <IdCard className="h-4 w-4 text-shop-accent-1" />
-            Verification Documents — {v.status}
+            Verification Documents · {v.status}
           </p>
           {(v.idType || v.idNumber) && (
             <p className="text-[12px] text-shop-text">

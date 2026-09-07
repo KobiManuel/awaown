@@ -85,7 +85,7 @@ export default function AdminSettingsPage() {
               Payment Gateways
             </span>
             <p className="text-[11px] text-shop-text/60">
-              More than one can be active at once — e.g. a fallback for cards the primary
+              More than one can be active at once, e.g. a fallback for cards the primary
               provider declines.
             </p>
             <div className="flex flex-wrap gap-2">

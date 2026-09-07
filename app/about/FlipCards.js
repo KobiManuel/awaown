@@ -22,7 +22,7 @@ const CARDS = [
     title: "KYC Verification",
     front:
       "KYC verification helps establish the identity of everyone involved, creating a more trusted marketplace for all participants.",
-    back: "Merchants, Partners and inventory investors are identity-checked before they can transact — so you always know who you're dealing with.",
+    back: "Merchants, Partners and inventory investors are identity-checked before they can transact, so you always know who you're dealing with.",
   },
   {
     icon: Truck,
@@ -35,7 +35,7 @@ const CARDS = [
     icon: Store,
     title: "Personalised Digital Stores",
     front:
-      "Partners can create and personalise their own digital stores — from their store name and profile to the products they choose to feature — giving them a space that feels like their own business.",
+      "Partners can create and personalise their own digital stores, from their store name and profile to the products they choose to feature, giving them a space that feels like their own business.",
     back: "Pick your name, theme and product line-up. Share one link and your whole store travels with it.",
   },
   {

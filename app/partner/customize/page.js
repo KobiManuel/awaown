@@ -163,14 +163,14 @@ export default function PartnerCustomizePage() {
 
       <div className="flex flex-col gap-6 px-4 lg:px-0">
         <p className="rounded-[10px] bg-shop-bg p-3.5 text-[12px] leading-[18px] text-shop-text">
-          Make your store feel like yours — customers will still recognize it&apos;s
+          Make your store feel like yours. Customers will still recognize it&apos;s
           powered by AwaOwn, and every purchase stays protected by AwaOwn&apos;s
           payment protection policy.
         </p>
 
         {isDirty && (
           <p className="flex items-center gap-1.5 rounded-[10px] bg-amber-50 p-3 text-[12px] text-amber-800">
-            Your dashboard is showing these changes live — they won&apos;t apply for
+            Your dashboard is showing these changes live. They won&apos;t apply for
             your visitors, or stay after you leave this page, until you hit Save
             Changes.
           </p>

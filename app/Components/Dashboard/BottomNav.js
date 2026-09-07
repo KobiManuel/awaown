@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// items: [{ href, label, icon, badge?, exact? }] — badge counts are computed by the
+// items: [{ href, label, icon, badge?, exact? }]. Badge counts are computed by the
 // caller (each role's layout) so this component stays role-agnostic.
 const BottomNav = ({ items }) => {
   const pathname = usePathname();

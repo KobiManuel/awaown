@@ -63,7 +63,7 @@ function Callback() {
         <>
           <CheckCircle2 className="h-10 w-10 text-emerald-600" />
           <p className="text-[14px] font-medium text-shop-heading">
-            Wallet funded — taking you back…
+            Wallet funded. Taking you back…
           </p>
         </>
       )}

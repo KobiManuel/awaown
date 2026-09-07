@@ -102,7 +102,7 @@ export default function CartPage() {
                     )}
                     {item.inStock === false && (
                       <p className="text-[11px] font-semibold text-shop-accent-3">
-                        Out of stock — remove to check out
+                        Out of stock. Remove to check out
                       </p>
                     )}
                   </div>

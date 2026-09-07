@@ -6,7 +6,7 @@ const AnnouncementBar = () => {
       <div className="mx-auto grid w-full max-w-[1460px] grid-cols-3 items-center px-8 py-2">
         <div />
         <p className="text-center">
-          Every order is escrow-protected — your money is safe until you confirm delivery.{" "}
+          Every order is escrow-protected. Your money is safe until you confirm delivery.{" "}
           <Link href="/shop" className="underline hover:text-shop-accent-1">
             SHOP NOW
           </Link>

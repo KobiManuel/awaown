@@ -100,9 +100,9 @@ export default function AdminLoginPage() {
 
   const heading =
     view === "signin"
-      ? { t: "Sign in to the admin panel", s: "Restricted access — AwaOwn staff only." }
+      ? { t: "Sign in to the admin panel", s: "Restricted access. AwaOwn staff only." }
       : view === "forgot"
-        ? { t: "Set / reset your password", s: "Enter your admin email — we'll send a code." }
+        ? { t: "Set / reset your password", s: "Enter your admin email and we'll send a code." }
         : { t: "Set your password", s: notice };
 
   return (

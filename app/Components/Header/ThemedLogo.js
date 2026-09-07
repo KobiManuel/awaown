@@ -16,11 +16,11 @@ function isDarkSurface(hex) {
 }
 
 // Swaps the AwaOwn wordmark for a light-on-dark version whenever the surface behind it
-// is dark — reads the resolved --shop-surface custom property at its own position in
+// is dark. Reads the resolved --shop-surface custom property at its own position in
 // the tree, rather than checking one specific mechanism, so it stays correct for both
 // the site-wide dark mode toggle (sets data-theme on <html>, no re-render of this
 // component) and the Partner dashboard's own store-theme reskin (sets --shop-surface
-// via inline style on an ancestor, which *does* re-render this component — hence the
+// via inline style on an ancestor, which *does* re-render this component, hence the
 // unconditional per-render remeasure below alongside the attribute observer).
 const ThemedLogo = ({ fill, width, height, sizes, className, priority }) => {
   const ref = useRef(null);

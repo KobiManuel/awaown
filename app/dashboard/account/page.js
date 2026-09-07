@@ -43,7 +43,7 @@ export default function AccountPage() {
   const [markAll] = useMarkAllNotificationsReadMutation();
 
   const balance = wallet?.balance ?? user?.walletBalance ?? 0;
-  // Only unread activity shows here, capped at 2 — reading one makes it drop off.
+  // Only unread activity shows here, capped at 2. Reading one makes it drop off.
   const unread = (notifications?.items ?? []).filter((n) => !n.readAt);
   const recent = unread.slice(0, 2);
 

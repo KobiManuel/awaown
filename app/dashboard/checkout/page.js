@@ -20,7 +20,7 @@ import { openPaystackPopup } from "@/lib/paystack";
 const SHIPPING_FEE = 1500;
 
 const METHODS = [
-  { id: "CARD", label: "Debit / Credit Card", description: "Visa, Mastercard, Verve — secured by Paystack" },
+  { id: "CARD", label: "Debit / Credit Card", description: "Visa, Mastercard, Verve. Secured by Paystack" },
   { id: "WALLET", label: "AwaOwn Wallet", description: "Pay from your wallet balance" },
   { id: "TRANSFER", label: "Bank Transfer", description: "Pay via your bank app" },
 ];
@@ -64,7 +64,7 @@ export default function CheckoutPage() {
     try {
       await confirmPayment(reference).unwrap();
     } catch {
-      // payment may still be settling — the order page shows the real state
+      // payment may still be settling; the order page shows the real state
     }
     router.push(`/dashboard/orders/${reference}?placed=true`);
   };
@@ -80,7 +80,7 @@ export default function CheckoutPage() {
       onCancel: () => {
         setBusy(false);
         setError(
-          "Payment cancelled. Your order is saved — you can pay from the order page.",
+          "Payment cancelled. Your order is saved, and you can pay from the order page.",
         );
         router.push(`/dashboard/orders/${reference}`);
       },
@@ -117,7 +117,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // mock gateway (dev) or wallet — no popup needed
+      // mock gateway (dev) or wallet: no popup needed
       if (pay) {
         await confirmPayment(reference).unwrap();
       }

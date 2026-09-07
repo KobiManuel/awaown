@@ -47,16 +47,16 @@
 
   /* Indirection so a subtree (e.g. the Partner dashboard shell) can override
      the body font via inline style without fighting every page's own
-     `font-shop` class re-declaration — see AppFrame.js's `themeVars` prop. */
+     `font-shop` class re-declaration. See AppFrame.js's `themeVars` prop. */
   --shop-font-family: "Bai Jamjuree", sans-serif;
 }
 
 /* !important on the neutral tokens here is deliberate: the Partner dashboard
-   reskin (AppFrame's `themeVars` — see Partner Customize) sets these same
+   reskin (AppFrame's `themeVars`, see Partner Customize) sets these same
    variables via an inline `style` attribute, which normally beats any
    stylesheet rule regardless of source order. Without `!important`, a partner
    whose store theme picks a light page background would get stuck in light
-   mode with no way for the dark/light toggle to override it — the exact bug
+   mode with no way for the dark/light toggle to override it. That is the exact bug
    this fixes. Accent color and font are intentionally left un-forced below, so
    a partner's brand accent/font still shows through in dark mode; only the
    background/surface/text tokens are dark mode's to own outright. */
@@ -79,7 +79,7 @@
 
 /* Partner dashboard reskin (Customize My Store's theme/accent/font): most page
    content uses literal `bg-white`, not `bg-shop-surface`, so `--shop-surface`
-   alone doesn't reach it — this scoped rule bridges that, mirroring the dark-mode
+   alone doesn't reach it, so this scoped rule bridges that, mirroring the dark-mode
    override above. AppFrame sets `data-shop-theme` on its wrapper whenever it's
    given `themeVars` (currently: Partner role only). */
 [data-shop-theme] .bg-white,
@@ -194,8 +194,8 @@ p {
   margin: 0;
 }
 
-/* Every clickable control inside any dashboard (customer/merchant/partner/admin —
-   all share the AppFrame shell, marked with .app-frame) gets an explicit pointer
+/* Every clickable control inside any dashboard (customer/merchant/partner/admin,
+   all sharing the AppFrame shell, marked with .app-frame) gets an explicit pointer
    cursor on desktop. Native <button> elements don't get one by default in most
    browsers, which read as "is this actually clickable?" on hover. Scoped to
    desktop only (matches the app's lg: 1024px breakpoint) since pointer cursors

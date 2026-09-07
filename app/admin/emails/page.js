@@ -120,7 +120,7 @@ function Editor({ tplKey }) {
         </label>
       </div>
       <p className="-mt-2 text-[10.5px] text-shop-text/50">
-        &ldquo;Sending&rdquo; is this email&apos;s on/off switch — turn it off to
+        &ldquo;Sending&rdquo; is this email&apos;s on/off switch. Turn it off to
         stop AwaOwn sending it (e.g. pause review-request nudges). The preview
         below updates as you edit.
       </p>

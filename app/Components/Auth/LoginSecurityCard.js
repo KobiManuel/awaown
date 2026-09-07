@@ -40,7 +40,7 @@ function PwInput({ value, onChange, placeholder, autoComplete }) {
 }
 
 /**
- * "Login & security" — shown on every customer/merchant/partner account page.
+ * "Login & security". Shown on every customer/merchant/partner account page.
  * Choose password vs email-code sign-in, and set/change the password.
  */
 export default function LoginSecurityCard() {

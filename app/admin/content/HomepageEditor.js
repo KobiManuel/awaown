@@ -326,7 +326,7 @@ function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange, visi
             placeholder="Section title"
           />
           <p className="text-[11.5px] text-shop-text/60">
-            Products shown in this section come from the live product catalog — manage
+            Products shown in this section come from the live product catalog. Manage
             which products appear from Products, not here.
           </p>
         </div>
@@ -502,7 +502,7 @@ function ReviewsEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
-// Off by default (see sectionVisibilityDefaults) — a template for slotting in a new
+// Off by default (see sectionVisibilityDefaults). A template for slotting in a new
 // recurring homepage feature without a code change each time: pick a merchant, add a
 // note, flip it on. The same shape could grow into "Partner of the Month" etc. later.
 function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
@@ -511,7 +511,7 @@ function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
   const selected = merchants.find((m) => m.id === data.merchantId);
 
   return (
-    <SectionShell title="Merchant of the Week (extra — off by default)" visible={visible} onToggleVisible={onToggleVisible}>
+    <SectionShell title="Merchant of the Week (extra, off by default)" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="flex flex-col gap-2.5">
         <div className="flex flex-col gap-1">
           <span className={LABEL}>Merchant</span>
@@ -548,7 +548,7 @@ function MerchantOfWeekEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
-// Live preview of the homepage "Our Community" section, edited inline — same
+// Live preview of the homepage "Our Community" section, edited inline. Same
 // interaction model as every other section on this page.
 function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
   const vs = data.vendorSpotlight ?? {};
@@ -595,7 +595,7 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
             <InlineText
               value={vs.buttonUrl}
               onChange={(v) => setCard("vendorSpotlight", { buttonUrl: v })}
-              placeholder="Button link (optional — defaults to /shop)"
+              placeholder="Button link (optional, defaults to /shop)"
               className="text-[11px] text-white/70"
             />
           </div>
@@ -672,7 +672,7 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
           <InlineText
             value={ch.buttonUrl}
             onChange={(v) => setCard("challenge", { buttonUrl: v })}
-            placeholder="Button link (optional — defaults to /shop)"
+            placeholder="Button link (optional, defaults to /shop)"
             className="text-[11px] text-white/80"
           />
         </div>
@@ -708,7 +708,7 @@ export default function HomepageEditor() {
   const { data: cms, isLoading } = useGetHomepageCmsQuery();
   const [saveHomepageCms, { isLoading: isSaving }] = useSaveHomepageCmsMutation();
 
-  // Only overrides are persisted server-side — deep-merge onto the code defaults so
+  // Only overrides are persisted server-side, so deep-merge onto the code defaults so
   // sections the admin has never touched still render with their live homepage copy.
   const mergedContent = { ...homepageContentDefaults, ...(cms?.content ?? {}) };
   const mergedVisibility = {

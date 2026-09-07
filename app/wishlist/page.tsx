@@ -4,7 +4,7 @@ import ScrollToTop from "@/app/Components/Header/ScrollToTop";
 import WishlistClient from "./WishlistClient";
 
 export const metadata = {
-  title: "Wishlist — AwaOwn",
+  title: "Wishlist · AwaOwn",
   description: "Products you've saved for later on AwaOwn.",
 };
 

@@ -13,7 +13,7 @@ function CustomerLogin() {
       mode={mode}
       eyebrow="Welcome"
       title="Sign in to your account"
-      subtitle="Use your password — or an email code if that's how you set the account up."
+      subtitle="Use your password, or an email code if that's how you set the account up."
     />
   );
 }
