@@ -29,6 +29,7 @@ import { errorMessage } from "@/lib/api/errorMessage";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 
 const MAX_IMAGES = 4;
 
@@ -593,11 +594,10 @@ export default function NewMerchantProductPage() {
             <div className="flex gap-3">
               <label className="flex flex-1 flex-col gap-1.5">
                 <span className="text-[13px] font-semibold text-shop-heading">Bundle Price (₦)</span>
-                <input
+                <MoneyInput
                   value={price}
-                  onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                  inputMode="numeric"
-                  placeholder="e.g. 25000"
+                  onChange={setPrice}
+                  placeholder="e.g. 25,000"
                   className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
                 />
               </label>
@@ -658,11 +658,10 @@ export default function NewMerchantProductPage() {
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5">
               <span className="text-[13px] font-semibold text-shop-heading">Price (₦)</span>
-              <input
+              <MoneyInput
                 value={price}
-                onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                inputMode="numeric"
-                placeholder="15000"
+                onChange={setPrice}
+                placeholder="15,000"
                 className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
               />
             </label>
@@ -719,11 +718,10 @@ export default function NewMerchantProductPage() {
                     <span className="text-[13px] font-semibold text-shop-heading">
                       How much do you want to give partners? (min {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
                     </span>
-                    <input
+                    <MoneyInput
                       value={partnerProfitAmount}
-                      onChange={(e) => setPartnerProfitAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                      inputMode="numeric"
-                      placeholder="2500"
+                      onChange={setPartnerProfitAmount}
+                      placeholder="2,500"
                       className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
                     />
                   </label>

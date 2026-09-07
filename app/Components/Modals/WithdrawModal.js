@@ -10,6 +10,7 @@ import {
   useRequestWithdrawalMutation,
 } from "@/lib/api/partnerApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import ModalShell from "./ModalShell";
 
 const MIN_WITHDRAWAL = 1000;
@@ -62,8 +63,8 @@ const WithdrawModal = () => {
     );
   }
 
-  const handleAmount = (value) => {
-    setAmount(value.replace(/[^0-9]/g, ""));
+  const handleAmount = (digits) => {
+    setAmount(digits);
   };
 
   const handleConfirm = async () => {
@@ -118,12 +119,10 @@ const WithdrawModal = () => {
               <p className="mb-2 text-[12.5px] font-semibold text-shop-heading">Amount</p>
               <div className="mb-2 flex items-center gap-2 rounded-[10px] border border-shop-border px-3.5 py-3 focus-within:border-shop-accent-1">
                 <span className="text-[14px] font-semibold text-shop-text">₦</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
+                <MoneyInput
                   value={amount}
-                  onChange={(e) => handleAmount(e.target.value)}
-                  placeholder="0.00"
+                  onChange={handleAmount}
+                  placeholder="0"
                   className="w-full bg-transparent text-[14px] text-shop-heading outline-none placeholder:text-shop-text/40"
                 />
               </div>

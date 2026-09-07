@@ -14,6 +14,7 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   useGetMerchantProductsQuery,
@@ -255,11 +256,10 @@ export default function EditMerchantProductPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={LABEL}>Price (₦)</label>
-              <input
-                type="number"
-                inputMode="numeric"
+              <MoneyInput
                 value={form.price}
-                onChange={(e) => set({ price: e.target.value })}
+                onChange={(v) => set({ price: v })}
+                placeholder="15,000"
                 className={FIELD}
               />
             </div>
@@ -416,11 +416,10 @@ export default function EditMerchantProductPage() {
               <label className="text-[11.5px] text-shop-text">
                 Partner profit per sale (min {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
               </label>
-              <input
-                type="number"
-                inputMode="numeric"
+              <MoneyInput
                 value={form.partnerProfitAmount}
-                onChange={(e) => set({ partnerProfitAmount: e.target.value })}
+                onChange={(v) => set({ partnerProfitAmount: v })}
+                placeholder="2,500"
                 className={FIELD}
               />
               {profitTooLow && (

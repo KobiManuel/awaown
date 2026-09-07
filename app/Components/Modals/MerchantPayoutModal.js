@@ -10,6 +10,7 @@ import {
   useRequestMerchantPayoutMutation,
 } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import ModalShell from "./ModalShell";
 
 const MIN_PAYOUT = 2000;
@@ -127,13 +128,9 @@ const MerchantPayoutModal = () => {
               </p>
               <div className="mb-2 flex items-center gap-2 rounded-[10px] border border-shop-border px-3.5 py-3 focus-within:border-shop-accent-1">
                 <span className="text-[14px] font-semibold text-shop-text">₦</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
+                <MoneyInput
                   value={amount}
-                  onChange={(e) =>
-                    setAmount(e.target.value.replace(/[^0-9]/g, ""))
-                  }
+                  onChange={setAmount}
                   placeholder="0"
                   className="w-full bg-transparent text-[14px] text-shop-heading outline-none placeholder:text-shop-text/40"
                 />

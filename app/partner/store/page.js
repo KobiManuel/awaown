@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Link2, Check, Minus, Store, Package, Tag, Plus, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
@@ -169,18 +170,11 @@ export default function PartnerStorePage() {
                   {formatPrice(product.maxDiscount)} margin
                 </span>
                 <div className="flex items-center gap-2">
-                  <input
+                  <MoneyInput
                     value={drafts[product.productId] ?? product.discount ?? ""}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [product.productId]: e.target.value.replace(
-                          /[^0-9]/g,
-                          "",
-                        ),
-                      }))
+                    onChange={(v) =>
+                      setDrafts((prev) => ({ ...prev, [product.productId]: v }))
                     }
-                    inputMode="numeric"
                     placeholder="0"
                     className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
                   />

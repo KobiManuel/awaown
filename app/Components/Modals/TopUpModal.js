@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/walletApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import ModalShell from "./ModalShell";
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000];
@@ -26,8 +27,7 @@ const TopUpModal = () => {
   const [topUp] = useTopUpWalletMutation();
   const [verifyTopUp] = useVerifyWalletTopUpMutation();
 
-  const handleCustomAmount = (value) => {
-    const digits = value.replace(/[^0-9]/g, "");
+  const handleCustomAmount = (digits) => {
     setCustomAmount(digits);
     setAmount(digits ? Number(digits) : 0);
   };
@@ -131,12 +131,10 @@ const TopUpModal = () => {
               </p>
               <div className="mb-5 flex items-center gap-2 rounded-[10px] border border-shop-border px-3.5 py-3 focus-within:border-shop-accent-1">
                 <span className="text-[14px] font-semibold text-shop-text">₦</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
+                <MoneyInput
                   value={customAmount}
-                  onChange={(e) => handleCustomAmount(e.target.value)}
-                  placeholder="0.00"
+                  onChange={handleCustomAmount}
+                  placeholder="0"
                   className="w-full bg-transparent text-[14px] text-shop-heading outline-none placeholder:text-shop-text/40"
                 />
               </div>

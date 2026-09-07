@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { ImagePlus, Loader2, X, Trash2 } from "lucide-react";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 
 let seq = 0;
 export const newVariety = () => ({
@@ -129,11 +130,10 @@ export default function VarietyRow({
             <span className="text-[10px] font-medium uppercase tracking-wide text-shop-text/50">
               Price (₦)
             </span>
-            <input
+            <MoneyInput
               value={value.price}
-              onChange={(e) => onChange({ price: e.target.value.replace(/[^0-9]/g, "") })}
-              inputMode="numeric"
-              placeholder="15000"
+              onChange={(v) => onChange({ price: v })}
+              placeholder="15,000"
               className="w-full rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
             />
           </label>

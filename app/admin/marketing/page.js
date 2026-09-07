@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
@@ -164,18 +165,16 @@ export default function AdminMarketingPage() {
               <option value="percent">% off</option>
               <option value="fixed">₦ off</option>
             </select>
-            <input
+            <MoneyInput
               value={value}
-              onChange={(e) => setValue(e.target.value.replace(/[^0-9]/g, ""))}
-              inputMode="numeric"
-              placeholder={type === "percent" ? "10" : "1500"}
+              onChange={setValue}
+              placeholder={type === "percent" ? "10" : "1,500"}
               className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
             />
           </div>
-          <input
+          <MoneyInput
             value={minSpend}
-            onChange={(e) => setMinSpend(e.target.value.replace(/[^0-9]/g, ""))}
-            inputMode="numeric"
+            onChange={setMinSpend}
             placeholder="Minimum spend (optional)"
             className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
           />
