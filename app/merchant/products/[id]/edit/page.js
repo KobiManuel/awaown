@@ -1,30 +1,16 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import { X, Loader2, Users2, Plus } from "lucide-react";
-import {
-  formatPrice,
-  PRODUCT_CATEGORIES,
-  PROCESSING_TIME_OPTIONS,
-  PARTNER_PROGRAM_MIN_PROFIT,
-} from "@/lib/merchant-data";
+import ProductForm from "@/app/Components/Merchant/ProductForm";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
-import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import VarietyRow, { newVariety } from "@/app/Components/Merchant/VarietyRow";
-import MoneyInput from "@/app/Components/Inputs/MoneyInput";
-import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import {
   useGetMerchantProductsQuery,
   useUpdateMerchantProductMutation,
 } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-
-const FIELD =
-  "w-full rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1";
-const LABEL = "text-[12px] font-semibold text-shop-heading";
 
 export default function EditMerchantProductPage() {
   const { id } = useParams();
@@ -36,163 +22,17 @@ export default function EditMerchantProductPage() {
     () => (data?.items ?? []).find((p) => p.productId === id),
     [data, id],
   );
-
   const [update, { isLoading: saving }] = useUpdateMerchantProductMutation();
-  const { pickAndCrop, uploading, modal: cropModal } = useImageCropUpload("products");
 
-  const [form, setForm] = useState(null);
-
-  // seed the form once the product is in cache
-  if (form === null && product) {
-    const hasVariants = !!product.hasVariants && (product.variants?.length ?? 0) > 0;
-    setForm({
-      title: product.title ?? "",
-      description: product.description ?? "",
-      price: String(product.price ?? ""),
-      stock: String(product.stock ?? ""),
-      category: product.category ?? PRODUCT_CATEGORIES[0].slug,
-      processingTime: product.processingTime ?? PROCESSING_TIME_OPTIONS[1].id,
-      images: product.images ?? [],
-      weight: product.weightKg != null ? String(product.weightKg) : "",
-      status: product.status === "DRAFT" ? "DRAFT" : "ACTIVE",
-      hideStock: !!product.hideStock,
-      backInStockAlerts: product.backInStockAlerts ?? true,
-      offerCommission: !!product.offerCommission,
-      partnerProfitAmount: product.partnerProfitAmount
-        ? String(product.partnerProfitAmount)
-        : "",
-      hasVariants,
-      optionName: product.optionName ?? "",
-      varieties: hasVariants
-        ? product.variants.map((v) => ({
-            key: `v-${v.id}`,
-            label: v.label ?? "",
-            price: String(v.price ?? ""),
-            stock: String(v.stock ?? ""),
-            image: v.image ?? null,
-          }))
-        : [newVariety(), newVariety()],
-    });
-  }
-
-  if (isLoading || (!product && !data)) {
-    return (
-      <div className="flex flex-col gap-4 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[640px]">
-        <AppHeader title="Edit Product" backHref="/merchant/products" showBackOnDesktop />
-        <div className="px-4">
-          <Skeleton className="h-64 w-full rounded-[14px]" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!product || !form) {
-    return (
-      <div className="flex flex-col gap-4 font-shop">
-        <AppHeader title="Edit Product" backHref="/merchant/products" showBackOnDesktop />
-        <p className="px-4 py-10 text-center text-[13px] text-shop-text">
-          This product couldn&apos;t be found.
-        </p>
-      </div>
-    );
-  }
-
-  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
-  const setVariety = (key, patch) =>
-    setForm((f) => ({
-      ...f,
-      varieties: f.varieties.map((v) => (v.key === key ? { ...v, ...patch } : v)),
-    }));
-  const addVariety = () =>
-    setForm((f) => ({ ...f, varieties: [...f.varieties, newVariety()] }));
-  const removeVariety = (key) =>
-    setForm((f) => ({
-      ...f,
-      varieties:
-        f.varieties.length > 1 ? f.varieties.filter((v) => v.key !== key) : f.varieties,
-    }));
-
-  const addImage = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    const url = await pickAndCrop(file, {
-      aspect: 1,
-      title: "Crop the product photo",
-    });
-    if (url) set({ images: [...form.images, url] });
-  };
-
-  const profit = Number(form.partnerProfitAmount) || 0;
-  const profitTooLow = form.offerCommission && profit < PARTNER_PROGRAM_MIN_PROFIT;
-
-  const cleanVarieties = form.varieties.filter((v) => v.label.trim());
-
-  // Specific reasons publishing is blocked (drafts can still be saved).
-  const problems = [];
-  if (!form.title.trim()) problems.push("Add a product title.");
-  if (form.hasVariants) {
-    if (!form.optionName.trim())
-      problems.push("Name what the varieties differ by (e.g. Colour).");
-    if (cleanVarieties.length < 1)
-      problems.push("Add at least one variety with a name.");
-    cleanVarieties.forEach((v) => {
-      const name = v.label.trim();
-      if (!(Number(v.price) > 0))
-        problems.push(`Variety “${name}” needs a price above ₦0.`);
-      if (v.stock === "")
-        problems.push(`Variety “${name}” needs an inventory quantity.`);
-    });
-  } else if (!(Number(form.price) > 0)) {
-    problems.push("Set a price above ₦0.");
-  }
-  if (profitTooLow)
-    problems.push(
-      `Partner profit must be at least ${formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.`,
-    );
-
-  const valid = problems.length === 0;
-
-  const isDraft = form.status === "DRAFT";
-
-  const save = async ({ publish = false, keepDraft = false } = {}) => {
-    if (saving) return;
-    if (!keepDraft && !valid) return;
-    if (keepDraft && !form.title.trim()) return;
-    const nextStatus = publish ? "ACTIVE" : keepDraft ? "DRAFT" : form.status;
-    const body = {
-      id: product.productId,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      category: form.category,
-      processingTime: form.processingTime,
-      images: form.images,
-      status: nextStatus,
-      hideStock: form.hideStock,
-      backInStockAlerts: form.backInStockAlerts,
-      offerCommission: form.offerCommission,
-      partnerProfitAmount: form.offerCommission ? profit : 0,
-      weightKg: form.weight ? Number(form.weight) : 0,
-    };
-    if (form.hasVariants) {
-      body.optionName = form.optionName.trim();
-      body.variants = cleanVarieties.map((v) => ({
-        label: v.label.trim(),
-        price: Number(v.price) || 0,
-        stock: Number(v.stock || 0),
-        image: v.image || null,
-      }));
-    } else {
-      body.price = Number(form.price) || 0;
-      body.stock = Number(form.stock) || 0;
-    }
+  const handleSubmit = async (body, { asDraft }) => {
+    const wasDraft = product.status === "DRAFT";
     try {
-      await update(body).unwrap();
+      await update({ id: product.productId, ...body }).unwrap();
       showToast(
-        publish
-          ? "Published — sent for admin review"
-          : keepDraft
-            ? "Draft saved"
+        asDraft
+          ? "Draft saved"
+          : wasDraft
+            ? "Published — sent for admin review"
             : "Product updated",
       );
       router.push("/merchant/products");
@@ -201,300 +41,42 @@ export default function EditMerchantProductPage() {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-5 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[640px]">
-      {cropModal}
-      <AppHeader title="Edit Product" backHref="/merchant/products" showBackOnDesktop />
-
-      {product.approvalStatus === "REJECTED" && product.rejectionReason && (
-        <p className="mx-4 rounded-[10px] bg-red-50 px-3 py-2 text-[12px] text-shop-accent-3">
-          Rejected: {product.rejectionReason}. Edit and it will be re-reviewed.
-        </p>
-      )}
-
-      <div className="flex flex-col gap-4 px-4">
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL}>Title</label>
-          <input
-            value={form.title}
-            onChange={(e) => set({ title: e.target.value })}
-            className={FIELD}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL}>Description</label>
-          <textarea
-            rows={4}
-            value={form.description}
-            onChange={(e) => set({ description: e.target.value })}
-            className={`${FIELD} resize-none`}
-          />
-        </div>
-
-        {form.hasVariants ? (
-          <div className="flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>What do the varieties differ by?</label>
-              <input
-                value={form.optionName}
-                onChange={(e) => set({ optionName: e.target.value })}
-                placeholder="e.g. Colour, Size"
-                className={FIELD}
-              />
-            </div>
-            <p className="text-[11px] text-shop-text/60">
-              {cleanVarieties.length} variety{cleanVarieties.length === 1 ? "" : "ies"}, each with its own price, inventory quantity and photo.
-            </p>
-            {form.varieties.map((v) => (
-              <VarietyRow
-                key={v.key}
-                value={v}
-                onChange={(patch) => setVariety(v.key, patch)}
-                onRemove={() => removeVariety(v.key)}
-                canRemove={form.varieties.length > 1}
-                productImages={(form.images ?? []).filter(Boolean)}
-              />
-            ))}
-            <button
-              type="button"
-              onClick={addVariety}
-              className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add another variety
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Price (₦)</label>
-              <MoneyInput
-                value={form.price}
-                onChange={(v) => set({ price: v })}
-                placeholder="15,000"
-                className={FIELD}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Inventory quantity</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={form.stock}
-                onChange={(e) => set({ stock: e.target.value })}
-                className={FIELD}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL}>
-            Weight <span className="font-normal text-shop-text/60">(kg, optional)</span>
-          </label>
-          <input
-            inputMode="decimal"
-            value={form.weight}
-            onChange={(e) => set({ weight: e.target.value.replace(/[^0-9.]/g, "") })}
-            placeholder="e.g. 0.5"
-            className={FIELD}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Category</label>
-            <select
-              value={form.category}
-              onChange={(e) => set({ category: e.target.value })}
-              className={FIELD}
-            >
-              {PRODUCT_CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Processing time</label>
-            <select
-              value={form.processingTime}
-              onChange={(e) => set({ processingTime: e.target.value })}
-              className={FIELD}
-            >
-              {PROCESSING_TIME_OPTIONS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Images — first one is the cover */}
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL}>
-            Photos{" "}
-            <span className="font-normal text-shop-text/60">
-              (the first is the cover — drag isn&apos;t supported yet, remove and
-              re-add to reorder)
-            </span>
-          </label>
-          <div className="flex flex-wrap gap-2.5">
-            {form.images.map((src, i) => (
-              <div
-                key={src}
-                className="relative h-20 w-20 overflow-hidden rounded-[10px] border border-shop-border bg-shop-bg"
-              >
-                <Image src={src} alt="" fill className="object-cover" sizes="80px" />
-                {i === 0 && (
-                  <span className="absolute bottom-0 inset-x-0 bg-black/55 py-0.5 text-center text-[8.5px] font-semibold text-white">
-                    COVER
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    set({ images: form.images.filter((_, idx) => idx !== i) })
-                  }
-                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                  aria-label="Remove photo"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-            <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-2 border-dashed border-shop-border text-shop-text/50 hover:border-shop-accent-1 hover:text-shop-accent-1">
-              {uploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
-                  <span className="text-[9.5px] font-medium">Uploading…</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  <span className="text-[10px]">Add photo</span>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={addImage}
-              />
-            </label>
-          </div>
-        </div>
-
-        {/* Status + stock options */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Listing status</label>
-            <select
-              value={form.status}
-              onChange={(e) => set({ status: e.target.value })}
-              className={FIELD}
-            >
-              <option value="ACTIVE">Active</option>
-              <option value="DRAFT">Draft (hidden from shoppers)</option>
-            </select>
-          </div>
-          <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3">
-            <span className="text-[12.5px] text-shop-heading">Hide inventory quantity from shoppers</span>
-            <input
-              type="checkbox"
-              checked={form.hideStock}
-              onChange={(e) => set({ hideStock: e.target.checked })}
-              className="h-4 w-4 accent-shop-accent-1"
-            />
-          </label>
-          <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3">
-            <span className="flex flex-col">
-              <span className="text-[12.5px] text-shop-heading">Back-in-stock email alerts</span>
-              <span className="text-[11px] text-shop-text/60">
-                Shoppers can opt in when it sells out.
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={form.backInStockAlerts}
-              onChange={(e) => set({ backInStockAlerts: e.target.checked })}
-              className="h-4 w-4 accent-shop-accent-1"
-            />
-          </label>
-        </div>
-
-        {/* Partner program */}
-        <div className="flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
-          <label className="flex items-center gap-2 text-[12.5px] font-semibold text-shop-heading">
-            <input
-              type="checkbox"
-              checked={form.offerCommission}
-              onChange={(e) => set({ offerCommission: e.target.checked })}
-              className="h-4 w-4 accent-shop-accent-1"
-            />
-            <Users2 className="h-4 w-4 text-shop-accent-1" />
-            Offer this product to Partners
-          </label>
-          {form.offerCommission && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11.5px] text-shop-text">
-                Partner profit per sale (min {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
-              </label>
-              <MoneyInput
-                value={form.partnerProfitAmount}
-                onChange={(v) => set({ partnerProfitAmount: v })}
-                placeholder="2,500"
-                className={FIELD}
-              />
-              {profitTooLow && (
-                <p className="text-[11px] font-medium text-shop-accent-3">
-                  Must be at least {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {!valid && problems.length > 0 && (
-          <div className="mt-1 flex flex-col gap-1 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
-            <span className="font-semibold">
-              {isDraft
-                ? "To publish, fix the following (or keep it as a draft):"
-                : "Fix the following to save:"}
-            </span>
-            <ul className="list-disc pl-4">
-              {problems.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="mt-1 flex flex-col gap-2.5 sm:flex-row-reverse">
-          <button
-            type="button"
-            onClick={() => save(isDraft ? { publish: true } : {})}
-            disabled={!valid || saving || uploading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isDraft ? "Publish" : "Save Changes"}
-          </button>
-          {isDraft && (
-            <button
-              type="button"
-              onClick={() => save({ keepDraft: true })}
-              disabled={!form.title.trim() || saving || uploading}
-              className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
-            >
-              Save draft
-            </button>
-          )}
+  if (isLoading || (!product && !data)) {
+    return (
+      <div className="flex flex-col gap-4 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
+        <AppHeader
+          title="Edit Product"
+          backHref="/merchant/products"
+          showBackOnDesktop
+        />
+        <div className="px-4">
+          <Skeleton className="h-64 w-full rounded-[14px]" />
         </div>
       </div>
-    </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex flex-col gap-4 font-shop">
+        <AppHeader
+          title="Edit Product"
+          backHref="/merchant/products"
+          showBackOnDesktop
+        />
+        <p className="px-4 py-10 text-center text-[13px] text-shop-text">
+          This product couldn&apos;t be found.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ProductForm
+      key={product.productId}
+      product={product}
+      submitting={saving}
+      onSubmit={handleSubmit}
+    />
   );
 }
