@@ -3,11 +3,9 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
 import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
-import { addToCart } from "@/lib/store/cartSlice";
-import { toggleWishlist } from "@/lib/store/wishlistSlice";
+import { useCommerce } from "@/lib/useCommerce";
 
 // Common color names merchants/partners actually type into a "Color" option
 // group (see app/merchant/products/new/page.js's Option Names field). Variant
@@ -46,10 +44,8 @@ function extractColorSwatches(product) {
 // shop-data.js demo catalog, used on merchant and partner public store pages so a
 // store "feels" like the rest of AwaOwn's shop.
 const StorefrontProductCard = ({ product, accentColor }) => {
-  const dispatch = useDispatch();
-  const isWishlisted = useSelector((state) =>
-    state.wishlist.items.some((item) => item.id === product.id),
-  );
+  const commerce = useCommerce();
+  const isWishlisted = commerce.isWishlisted(product);
   const [justAdded, setJustAdded] = useState(false);
   const image = product.images?.[0];
   const hoverImage = product.images?.[1];
@@ -57,20 +53,11 @@ const StorefrontProductCard = ({ product, accentColor }) => {
   const href = `/product/${product.id}`;
 
   const handleWishlist = () => {
-    dispatch(
-      toggleWishlist({
-        id: product.id,
-        title: product.title,
-        vendor: null,
-        price: product.price,
-        compareAt: null,
-        image,
-      }),
-    );
+    commerce.toggleWishlist(product);
   };
 
-  const handleAddToCart = () => {
-    dispatch(addToCart({ id: product.id, title: product.title, vendor: null, price: product.price, image, qty: 1 }));
+  const handleAddToCart = async () => {
+    await commerce.addToCart(product, { qty: 1 });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1600);
   };

@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { Home, LayoutGrid, ShoppingBag, Heart, User, Package } from "lucide-react";
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
 import CommerceSync from "@/app/Components/Dashboard/CommerceSync";
+import GuestCommerceMerge from "@/app/Components/Dashboard/GuestCommerceMerge";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cartCount = useSelector((s: any) =>
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       roleLabel="Customer"
       hideThemeToggleOnMobile
     >
+      <GuestCommerceMerge />
       <CommerceSync />
       {children}
     </AppFrame>

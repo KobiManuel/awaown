@@ -4,7 +4,6 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useSelector } from "react-redux";
 import {
   Heart,
   Star,
@@ -39,11 +38,7 @@ import {
   useGetStockAlertQuery,
   useSubscribeStockAlertMutation,
 } from "@/lib/api/catalogApi";
-import {
-  useGetWishlistQuery,
-  useAddToCartMutation,
-  useToggleWishlistMutation,
-} from "@/lib/api/commerceApi";
+import { useCommerce } from "@/lib/useCommerce";
 import { errorMessage } from "@/lib/api/errorMessage";
 
 function ProductDetail() {
@@ -64,15 +59,14 @@ function ProductDetail() {
 
   const { data: product, isLoading, isError } = useGetProductQuery(id);
   const { data: related } = useGetRelatedProductsQuery(id, { skip: !product });
-  const { data: wishlist } = useGetWishlistQuery(undefined, { skip: !authed });
 
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(null); // thumbnail the buyer tapped
+  const [adding, setAdding] = useState(false);
 
-  const [addToCart, addState] = useAddToCartMutation();
-  const [toggleWishlist, wishState] = useToggleWishlistMutation();
+  const commerce = useCommerce();
 
   useEffect(() => {
     if (product?.hasVariants && selected == null) {
@@ -115,9 +109,7 @@ function ProductDetail() {
   const [alerted, setAlerted] = useState(false);
   const isSubscribed = alerted || !!alertStatus?.subscribed;
 
-  const isWishlisted = !!(
-    product && (wishlist?.items ?? []).some((i) => i.id === product.id || i.productId === product.productId)
-  );
+  const isWishlisted = !!(product && commerce.isWishlisted(product));
 
   const requireLogin = () => {
     const next = encodeURIComponent(pathname + (search.toString() ? `?${search}` : ""));
@@ -178,10 +170,8 @@ function ProductDetail() {
   };
 
   const handleWishlist = async () => {
-    if (wishState.isLoading) return;
-    if (!authed) return requireLogin();
     try {
-      await toggleWishlist(product.productId).unwrap();
+      await commerce.toggleWishlist(product);
       showToast(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
     } catch {
       showToast("Couldn't update wishlist");
@@ -189,18 +179,18 @@ function ProductDetail() {
   };
 
   const handleAddToCart = async () => {
-    if (!authed) {
-      requireLogin();
-      return false;
-    }
+    if (adding) return false;
+    setAdding(true);
     try {
-      await addToCart({
-        productId: product.productId,
-        qty,
-        variantId: resolved.variantId ?? undefined,
-        variantLabel: resolved.variantLabel ?? undefined,
-        ref: refCode ?? undefined,
-      }).unwrap();
+      await commerce.addToCart(
+        { ...product, price: resolved.price, image: resolved.image },
+        {
+          qty,
+          variantId: resolved.variantId ?? null,
+          variantLabel: resolved.variantLabel ?? null,
+          ref: refCode ?? undefined,
+        },
+      );
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
@@ -208,6 +198,22 @@ function ProductDetail() {
     } catch (err) {
       showToast(errorMessage(err));
       return false;
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const buyNow = async () => {
+    if (!(await handleAddToCart())) return;
+    if (commerce.authed) {
+      router.push("/dashboard/checkout");
+    } else {
+      try {
+        localStorage.setItem("awaown_merge_guest", "1");
+      } catch {
+        /* ignore */
+      }
+      router.push("/login/customer?next=/dashboard/checkout");
     }
   };
 
@@ -487,12 +493,12 @@ function ProductDetail() {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={addState.isLoading}
+                  disabled={adding}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] py-3.5 text-[14px] font-semibold text-white transition-colors disabled:opacity-60 ${
                     justAdded ? "bg-emerald-600" : "bg-shop-accent-1 hover:bg-shop-accent-1-dark"
                   }`}
                 >
-                  {addState.isLoading ? (
+                  {adding ? (
                     <Loader2 className="h-4.5 w-4.5 animate-spin" />
                   ) : justAdded ? (
                     <>
@@ -510,9 +516,7 @@ function ProductDetail() {
             {!outOfStock && (
               <button
                 type="button"
-                onClick={async () => {
-                  if (await handleAddToCart()) router.push("/dashboard/checkout");
-                }}
+                onClick={buyNow}
                 className="w-full rounded-[10px] border border-shop-accent-1 py-3 text-[13.5px] font-semibold text-shop-accent-1"
               >
                 Buy Now

@@ -3,15 +3,10 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
 import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { getProductId } from "@/lib/product-id";
-import {
-  useAddToCartMutation,
-  useToggleWishlistMutation,
-} from "@/lib/api/commerceApi";
+import { useCommerce } from "@/lib/useCommerce";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 // Rough colour-name → hex map so a "Color" variant group renders as swatches.
@@ -74,45 +69,38 @@ function normalise(product) {
 
 const ProductCard = ({ product, bordered = false }) => {
   const p = normalise(product);
-  const router = useRouter();
-  const pathname = usePathname();
   const showToast = useToast();
 
-  const [addToCart, addState] = useAddToCartMutation();
-  const [toggleWishlist, wishState] = useToggleWishlistMutation();
-
-  const isWishlisted = useSelector((s) =>
-    s.wishlist.items.some((i) => i.id === p.id || i.id === p.productId),
-  );
+  const commerce = useCommerce();
+  const isWishlisted = commerce.isWishlisted(p);
 
   const [justAdded, setJustAdded] = useState(false);
-
-  const loginWall = () =>
-    router.push(`/login/customer?next=${encodeURIComponent(pathname)}`);
+  const [busy, setBusy] = useState(false);
 
   const handleWishlist = async (e) => {
     e.preventDefault();
-    if (wishState.isLoading || !p.productId) return;
+    if (!p.productId) return;
     try {
-      await toggleWishlist(p.productId).unwrap();
+      await commerce.toggleWishlist(p);
       showToast(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
-    } catch (err) {
-      if (err?.status === 401) return loginWall();
+    } catch {
       showToast("Couldn't update wishlist");
     }
   };
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
-    if (addState.isLoading || !p.productId) return;
+    if (busy || !p.productId) return;
+    setBusy(true);
     try {
-      await addToCart({ productId: p.productId, qty: 1 }).unwrap();
+      await commerce.addToCart(p, { qty: 1 });
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
-    } catch (err) {
-      if (err?.status === 401) return loginWall();
+    } catch {
       showToast("Couldn't add to cart");
+    } finally {
+      setBusy(false);
     }
   };
 

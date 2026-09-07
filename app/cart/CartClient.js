@@ -3,15 +3,30 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
-import { removeFromCart, updateQty } from "@/lib/store/cartSlice";
 import { formatPrice } from "@/lib/shop-data";
+import { useCommerce } from "@/lib/useCommerce";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 
 const CartClient = () => {
   const items = useSelector((state) => state.cart.items);
-  const dispatch = useDispatch();
+  const router = useRouter();
+  const commerce = useCommerce();
+
+  const goToCheckout = () => {
+    if (commerce.authed) {
+      router.push("/dashboard/checkout");
+    } else {
+      try {
+        localStorage.setItem("awaown_merge_guest", "1");
+      } catch {
+        /* ignore */
+      }
+      router.push("/login/customer?next=/dashboard/checkout");
+    }
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const shipping = subtotal > 0 && subtotal < 200 ? 15 : 0;
@@ -64,7 +79,7 @@ const CartClient = () => {
                 <button
                   type="button"
                   aria-label="Remove item"
-                  onClick={() => dispatch(removeFromCart(item.id))}
+                  onClick={() => commerce.removeFromCart(item.id)}
                   className="shrink-0 text-shop-text/50 hover:text-shop-accent-3 sm:hidden"
                 >
                   <X className="h-4 w-4" />
@@ -76,7 +91,7 @@ const CartClient = () => {
                   <button
                     type="button"
                     aria-label="Decrease quantity"
-                    onClick={() => dispatch(updateQty({ id: item.id, qty: item.qty - 1 }))}
+                    onClick={() => commerce.updateQty(item.id, item.qty - 1)}
                     className="flex h-6 w-6 items-center justify-center text-shop-heading hover:text-shop-accent-1"
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -87,7 +102,7 @@ const CartClient = () => {
                   <button
                     type="button"
                     aria-label="Increase quantity"
-                    onClick={() => dispatch(updateQty({ id: item.id, qty: item.qty + 1 }))}
+                    onClick={() => commerce.updateQty(item.id, item.qty + 1)}
                     className="flex h-6 w-6 items-center justify-center text-shop-heading hover:text-shop-accent-1"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -101,7 +116,7 @@ const CartClient = () => {
                 <button
                   type="button"
                   aria-label="Remove item"
-                  onClick={() => dispatch(removeFromCart(item.id))}
+                  onClick={() => commerce.removeFromCart(item.id)}
                   className="hidden shrink-0 text-shop-text/50 hover:text-shop-accent-3 sm:block"
                 >
                   <X className="h-4 w-4" />
@@ -139,11 +154,17 @@ const CartClient = () => {
           </div>
           <button
             type="button"
+            onClick={goToCheckout}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-[8px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
           >
             Proceed to Checkout
             <ArrowRight className="h-4 w-4" />
           </button>
+          {!commerce.authed && (
+            <p className="mt-2 text-center text-[11.5px] text-shop-text/60">
+              You&apos;ll sign in at checkout — your cart comes with you.
+            </p>
+          )}
         </div>
       </div>
     </div>

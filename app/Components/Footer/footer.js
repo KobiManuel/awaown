@@ -31,8 +31,8 @@ const columns = [
     title: "Shop",
     links: [
       { label: "All Products", href: "/shop" },
-      { label: "Your Cart", href: "/dashboard/cart" },
-      { label: "Your Wishlist", href: "/dashboard/wishlist" },
+      { label: "Your Cart", href: "/cart" },
+      { label: "Your Wishlist", href: "/wishlist" },
       { label: "Your Orders", href: "/dashboard/orders" },
     ],
   },

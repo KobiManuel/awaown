@@ -15,6 +15,11 @@ const MainHeader = ({ onMenuClick }) => {
     state.cart.items.reduce((sum, item) => sum + item.qty, 0),
   );
   const wishlistCount = useSelector((state) => state.wishlist.items.length);
+  const isCustomer = useSelector(
+    (s) => s.auth.status === "authenticated" && s.auth.role === "customer",
+  );
+  const cartHref = isCustomer ? "/dashboard/cart" : "/cart";
+  const wishlistHref = isCustomer ? "/dashboard/wishlist" : "/wishlist";
 
   const submitSearch = (e) => {
     e.preventDefault();
@@ -73,13 +78,13 @@ const MainHeader = ({ onMenuClick }) => {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/dashboard/wishlist" aria-label="Wishlist" className="relative">
+            <Link href={wishlistHref} aria-label="Wishlist" className="relative">
               <Heart className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
               <span className="absolute -right-2 -top-2 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-shop-accent-1 text-[10px] text-white">
                 {wishlistCount}
               </span>
             </Link>
-            <Link href="/dashboard/cart" aria-label="Cart" className="relative">
+            <Link href={cartHref} aria-label="Cart" className="relative">
               <ShoppingCart
                 className="h-6 w-6 text-shop-heading"
                 strokeWidth={1.5}
