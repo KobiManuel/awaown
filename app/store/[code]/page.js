@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { ShieldCheck, User, Clock, Loader2 } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
-import PublicStoreProductCard from "@/app/Components/Product/PublicStoreProductCard";
+import ProductCard from "@/app/Components/Product/ProductCard";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
 import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
 
@@ -149,13 +149,13 @@ export default function PublicPartnerStorePage() {
               This store doesn&apos;t have any products yet. Check back soon.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
               {products.map((product) => (
-                <PublicStoreProductCard
+                <ProductCard
                   key={product.slug}
                   product={product}
-                  href={`/product/${product.slug}?ref=${store.code}`}
-                  accentColor={accent.value}
+                  bordered
+                  hrefExtra={`?ref=${store.code}`}
                 />
               ))}
             </div>

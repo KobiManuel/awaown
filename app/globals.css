@@ -244,6 +244,38 @@ p {
   animation: shop-marquee 22s linear infinite;
 }
 
+/* Skeleton "wave" - a light grey base with a highlight sweeping across it,
+   used for image areas that are still loading (e.g. the product gallery). */
+@keyframes shop-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.shop-shimmer {
+  background-color: var(--shop-bg, #f2f2f3);
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shop-shimmer 1.5s linear infinite;
+}
+:root:not([data-theme="light"]) .shop-shimmer,
+[data-theme="dark"] .shop-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0) 65%
+  );
+}
+
 .shop-tooltip {
   position: relative;
 }

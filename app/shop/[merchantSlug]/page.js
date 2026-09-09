@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ShieldCheck, Store, MapPin, Phone, Clock, Loader2 } from "lucide-react";
-import PublicStoreProductCard from "@/app/Components/Product/PublicStoreProductCard";
+import ProductCard from "@/app/Components/Product/ProductCard";
 import { useGetMerchantStorefrontQuery } from "@/lib/api/storefrontApi";
 
 export default function PublicMerchantStorePage() {
@@ -120,14 +120,9 @@ export default function PublicMerchantStorePage() {
               This store doesn&apos;t have any products yet. Check back soon.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
               {products.map((product) => (
-                <PublicStoreProductCard
-                  key={product.slug}
-                  product={product}
-                  href={`/product/${product.slug}`}
-                  accentColor="#6D28D9"
-                />
+                <ProductCard key={product.slug} product={product} bordered />
               ))}
             </div>
           )}

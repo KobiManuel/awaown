@@ -2,6 +2,7 @@ import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
 import ScrollToTop from "@/app/Components/Header/ScrollToTop";
 import CartClient from "./CartClient";
+import CartShell from "./CartShell";
 
 export const metadata = {
   title: "Cart · AwaOwn",
@@ -10,11 +11,11 @@ export const metadata = {
 
 export default function CartPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-shop-bg">
+    <CartShell>
       <Header />
       <CartClient />
       <Footer />
       <ScrollToTop />
-    </div>
+    </CartShell>
   );
 }

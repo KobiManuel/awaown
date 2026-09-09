@@ -18,6 +18,7 @@ import {
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
+import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 
 const SHIPPING_FEE = 1500;
 
@@ -176,6 +177,7 @@ export default function CheckoutPage() {
   };
 
   return (
+    <StoreThemeShell className="min-h-screen">
     <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader
         title={isBuyNow ? "Express Checkout" : "Checkout"}
@@ -407,5 +409,6 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+    </StoreThemeShell>
   );
 }

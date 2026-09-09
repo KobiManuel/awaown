@@ -26,6 +26,7 @@ import { isColorAxis, colorHex } from "@/lib/variant-options";
 import { smartTitle, sentenceCase } from "@/lib/text-format";
 import { setBuyNow as setBuyNowItem } from "@/lib/express-checkout";
 import FullScreenLoader from "@/app/Components/Dashboard/FullScreenLoader";
+import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import { rememberRef, readRef } from "@/lib/partner-ref";
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
@@ -271,6 +272,11 @@ function ProductDetail() {
         <div className="lg:grid lg:grid-cols-2 lg:gap-10">
           <div className="flex flex-col gap-3 lg:sticky lg:top-28 lg:self-start">
             <div className="relative aspect-square overflow-hidden rounded-[16px] bg-shop-bg">
+              {/* wave skeleton fills the box until the image paints, so it's
+                  never a blank rectangle while switching photos */}
+              {shownImg && imgLoading && (
+                <div className="shop-shimmer absolute inset-0 z-[1]" />
+              )}
               {discount && (
                 <span className="absolute left-3 top-3 z-10 rounded-[4px] bg-shop-accent-3 px-2 py-1 text-[11px] font-semibold text-white">
                   -{discount}%
@@ -283,15 +289,13 @@ function ProductDetail() {
                   alt={product.title}
                   fill
                   onLoad={() => setImgLoading(false)}
-                  className={`object-contain p-8 transition-opacity duration-300 ${
+                  onError={() => setImgLoading(false)}
+                  className={`relative z-[2] object-contain p-8 transition-opacity duration-300 ${
                     imgLoading ? "opacity-0" : "opacity-100"
                   }`}
                   sizes="(max-width: 1024px) 480px, 540px"
                   priority
                 />
-              )}
-              {imgLoading && shownImg && (
-                <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-shop-bg to-shop-border/40" />
               )}
             </div>
 
@@ -743,11 +747,13 @@ function ReviewsBlock({ slug, reviews, authed, onRequireLogin }) {
 
 function PageShell({ children }) {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-shop-bg">
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+    <StoreThemeShell>
+      <div className="flex min-h-screen w-full flex-col bg-shop-bg">
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </StoreThemeShell>
   );
 }
 

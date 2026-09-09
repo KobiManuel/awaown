@@ -82,8 +82,9 @@ function normalise(product) {
   };
 }
 
-const ProductCard = ({ product, bordered = false }) => {
+const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
   const p = normalise(product);
+  const productHref = `/product/${p.id}${hrefExtra}`;
   const showToast = useToast();
 
   const commerce = useCommerce();
@@ -164,7 +165,7 @@ const ProductCard = ({ product, bordered = false }) => {
 
       {/* Media */}
       <Link
-        href={`/product/${p.id}`}
+        href={productHref}
         className="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-shop-bg"
       >
         {p.badge && (
@@ -212,7 +213,7 @@ const ProductCard = ({ product, bordered = false }) => {
           </span>
         )}
         <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
-          <Link href={`/product/${p.id}`}>{p.title}</Link>
+          <Link href={productHref}>{p.title}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
           {Array.from({ length: 5 }).map((_, i) => (
