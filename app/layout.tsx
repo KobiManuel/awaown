@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
 import PublicCommerceGate from "@/app/Components/Providers/PublicCommerceGate";
+import StoreContextTracker from "@/app/Components/Providers/StoreContextTracker";
 import ModalRoot from "@/app/Components/Modals/ModalRoot";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -59,6 +61,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <ReduxProvider>
           <PublicCommerceGate />
+          <Suspense fallback={null}>
+            <StoreContextTracker />
+          </Suspense>
           {children}
           <ModalRoot />
         </ReduxProvider>
