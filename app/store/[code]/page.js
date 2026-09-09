@@ -7,6 +7,7 @@ import { ShieldCheck, User, Clock, Loader2 } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import PublicStoreProductCard from "@/app/Components/Product/PublicStoreProductCard";
+import StorePattern from "@/app/Components/PartnerStore/StorePattern";
 import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
 
 export default function PublicPartnerStorePage() {
@@ -50,14 +51,21 @@ export default function PublicPartnerStorePage() {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="relative min-h-screen w-full"
       style={{
         backgroundColor: theme.pageBg,
         color: theme.textColor,
         fontFamily: bodyFont.style.fontFamily,
       }}
     >
-      <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">
+      {store.pattern && store.pattern !== "none" && (
+        <StorePattern
+          pattern={store.pattern}
+          color={accent.value}
+          opacity={theme.id === "bold" ? 0.14 : 0.08}
+        />
+      )}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">
         <div
           className="relative h-40 w-full overflow-hidden rounded-[20px] sm:h-56"
           style={{

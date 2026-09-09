@@ -11,7 +11,10 @@ import {
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
 import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
 import { useGetPartnerOverviewQuery } from "@/lib/api/partnerApi";
-import { STORE_CUSTOMIZATION_DEFAULTS } from "@/lib/partner-store-options";
+import {
+  STORE_CUSTOMIZATION_DEFAULTS,
+  getAccent,
+} from "@/lib/partner-store-options";
 
 export default function PartnerLayout({
   children,
@@ -41,6 +44,8 @@ export default function PartnerLayout({
       loginHref="/login/partner"
       roleLabel="Partner"
       themeVars={themeVars}
+      pattern={p?.pattern ?? "none"}
+      patternColor={getAccent(p?.accent).value}
       hideThemeToggle
     >
       {children}

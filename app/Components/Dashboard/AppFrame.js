@@ -7,6 +7,7 @@ import BottomNav from "@/app/Components/Dashboard/BottomNav";
 import DesktopSidebar from "@/app/Components/Dashboard/DesktopSidebar";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewContext";
+import StorePattern from "@/app/Components/PartnerStore/StorePattern";
 import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
 
 // Shared shell for every role dashboard (customer/merchant/partner/admin): it
@@ -21,6 +22,8 @@ import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
  * @param {string} props.loginHref
  * @param {string} props.roleLabel
  * @param {Record<string, string> | null} [props.themeVars] CSS custom-property overrides
+ * @param {string} [props.pattern] category doodle backdrop id (partner shell)
+ * @param {string} [props.patternColor] hex the doodle backdrop is stroked in
  * @param {boolean} [props.hideThemeToggle]
  * @param {boolean} [props.hideThemeToggleOnMobile]
  */
@@ -30,12 +33,18 @@ const AppFrame = ({
   loginHref,
   roleLabel,
   themeVars = null,
+  pattern = "none",
+  patternColor = "#6D28D9",
   hideThemeToggle = false,
   hideThemeToggleOnMobile = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [preview, setPreview] = React.useState(null);
+  const [patternPreview, setPatternPreview] = React.useState(null);
+
+  const activePattern = patternPreview?.pattern ?? pattern;
+  const activePatternColor = patternPreview?.color ?? patternColor;
 
   const role = loginHref.split("/").filter(Boolean).pop();
   const { resolving, authed, unauth, onboardingComplete } =
@@ -68,11 +77,25 @@ const AppFrame = ({
         style={{ ...themeVars, ...preview }}
         {...(themeVars ? { "data-shop-theme": "" } : {})}
       >
-        <ThemePreviewContext.Provider value={{ setThemePreview: setPreview }}>
+        <ThemePreviewContext.Provider
+          value={{
+            setThemePreview: setPreview,
+            setPatternPreview,
+          }}
+        >
           <DesktopSidebar items={navItems} roleLabel={roleLabel} />
           <div className="w-full lg:min-w-0 lg:flex-1">
             <div className="relative mx-auto flex min-h-screen w-full max-w-[480px] flex-col border-x border-shop-border bg-white font-shop lg:max-w-none lg:border-x-0">
-              <div className="flex-1 pb-[92px] lg:pb-0">{children}</div>
+              {activePattern && activePattern !== "none" && (
+                <StorePattern
+                  pattern={activePattern}
+                  color={activePatternColor}
+                  opacity={0.06}
+                />
+              )}
+              <div className="relative z-10 flex-1 pb-[92px] lg:pb-0">
+                {children}
+              </div>
               <BottomNav items={navItems} />
             </div>
           </div>
