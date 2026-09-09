@@ -69,7 +69,11 @@ function OnboardingForm() {
   const [formError, setFormError] = useState("");
   const [complete, completeState] = useCompleteOnboardingMutation();
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const raw = e.target.value;
+    const value = k === "phone" ? raw.replace(/[^\d+]/g, "") : raw;
+    setForm((f) => ({ ...f, [k]: value }));
+  };
 
   useEffect(() => {
     if (unauth) router.replace(`/login/${role}`);

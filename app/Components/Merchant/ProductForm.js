@@ -787,7 +787,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               </span>
               <input
                 value={weight}
-                onChange={(e) => setWeight(e.target.value.replace(/[^0-9.]/g, ""))}
+                onChange={(e) =>
+                  setWeight(
+                    e.target.value
+                      .replace(/[^0-9.]/g, "")
+                      .replace(/(\..*)\./g, "$1"),
+                  )
+                }
                 inputMode="decimal"
                 placeholder="e.g. 0.5"
                 className={`w-full max-w-[180px] ${FIELD}`}

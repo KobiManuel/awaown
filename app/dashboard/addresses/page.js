@@ -41,7 +41,11 @@ export default function AddressesPage() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const raw = e.target.value;
+    const value = k === "phone" ? raw.replace(/[^\d+]/g, "") : raw;
+    setForm((f) => ({ ...f, [k]: value }));
+  };
   const setState = (e) => {
     const state = e.target.value;
     // city options depend on state, so drop a city that no longer applies
