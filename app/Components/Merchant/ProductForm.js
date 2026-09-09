@@ -273,7 +273,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     if (!bundleItemTitle.trim()) return;
     setBundleItems((prev) => [
       ...prev,
-      { id: `bi-${Date.now()}`, title: bundleItemTitle.trim(), image: bundleItemImage },
+      {
+        id: `bi-${Date.now()}`,
+        title: bundleItemTitle.trim(),
+        image: bundleItemImage,
+      },
     ]);
     setBundleItemTitle("");
     setBundleItemImage(null);
@@ -282,13 +286,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     setBundleItems((prev) => prev.filter((b) => b.id !== id));
 
   const updateAxis = (id, patch) =>
-    setAxes((list) =>
-      list.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-    );
+    setAxes((list) => list.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   const addAxis = () =>
     setAxes((list) => (list.length < MAX_AXES ? [...list, newAxis()] : list));
   const removeAxis = (id) =>
-    setAxes((list) => (list.length > 1 ? list.filter((a) => a.id !== id) : list));
+    setAxes((list) =>
+      list.length > 1 ? list.filter((a) => a.id !== id) : list,
+    );
 
   const productImages = images.filter(Boolean);
 
@@ -333,7 +337,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   if (!title.trim()) problems.push("Add a product title.");
   if (deliveryType !== "digital" && !(basePrice > 0)) {
     problems.push(
-      isGroup ? "Set the bundle price." : hasVariants ? "Set the base price." : "Set the price.",
+      isGroup
+        ? "Set the bundle price."
+        : hasVariants
+          ? "Set the base price."
+          : "Set the price.",
     );
   }
   if (deliveryType !== "digital" && stock === "") {
@@ -345,7 +353,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           : "Set the inventory quantity.",
     );
   }
-  if (deliveryType === "digital" && !(basePrice > 0)) problems.push("Set the price.");
+  if (deliveryType !== "digital" && !(Number(weight) > 0)) {
+    problems.push("Add the item weight in kg (an estimate is fine).");
+  }
+  if (deliveryType === "digital" && !(basePrice > 0))
+    problems.push("Set the price.");
   if (isGroup && bundleItems.length < 2)
     problems.push("A bundle needs at least 2 items.");
   if (hasVariants) {
@@ -462,7 +474,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
 
       {product?.approvalStatus === "REJECTED" && product.rejectionReason && (
         <p className="mx-4 rounded-[10px] bg-red-50 px-3 py-2 text-[12px] text-shop-accent-3 lg:mx-0">
-          Rejected: {product.rejectionReason}. Fix it and it will be re-reviewed.
+          Rejected: {product.rejectionReason}. Fix it and it will be
+          re-reviewed.
         </p>
       )}
 
@@ -559,8 +572,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 />
               </label>
               <p className="text-[11px] text-shop-text/60">
-                Any file type is accepted: PDF, ZIP, MP3, video, or anything else
-                buyers need.
+                Any file type is accepted: PDF, ZIP, MP3, video, or anything
+                else buyers need.
               </p>
             </>
           ) : (
@@ -590,8 +603,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               Product type
             </p>
             <p className="text-[11.5px] text-shop-text">
-              Choose how this product is sold: as-is, with options like colour or
-              size, or as a bundle of items sold together.
+              Choose how this product is sold: as-is, with options like colour
+              or size, or as a bundle of items sold together.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <TypeCard
@@ -629,10 +642,10 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
               <span>
-                The <span className="font-semibold">main cover image</span> must
-                have a plain white background, for a clean, uniform look across
-                the site. Buyers can still see your other background shots on the
-                product page.
+                The <span className="font-semibold">main cover image</span>{" "}
+                should preferably have a transparent background, for a clean,
+                uniform look across the site. Buyers can still see your other
+                background shots on the product page.
               </span>
             </div>
 
@@ -732,7 +745,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                   ) : (
                     <>
                       <Plus className="h-5 w-5" />
-                      <span className="text-[9.5px] font-medium">Add photo</span>
+                      <span className="text-[9.5px] font-medium">
+                        Add photo
+                      </span>
                     </>
                   )}
                   <input
@@ -752,7 +767,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             <label className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
               {video ? (
                 <>
-                  <video src={video} className="h-full w-full object-cover" muted />
+                  <video
+                    src={video}
+                    className="h-full w-full object-cover"
+                    muted
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -767,7 +786,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               ) : (
                 <span className="flex flex-col items-center gap-1.5 text-shop-text/60">
                   <Video className="h-5 w-5" />
-                  <span className="text-[11.5px]">Tap to upload a short video</span>
+                  <span className="text-[11.5px]">
+                    Tap to upload a short video
+                  </span>
                 </span>
               )}
               <input
@@ -780,10 +801,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
 
             <label className="mt-1 flex flex-col gap-1.5">
               <span className="text-[13px] font-semibold text-shop-heading">
-                Weight{" "}
-                <span className="font-normal text-shop-text/70">
-                  (kg, optional - helps with shipping estimates)
-                </span>
+                Weight (kg)
+              </span>
+              <span className="-mt-1 text-[11px] text-shop-text/70">
+                Used to price and book delivery. An estimate is fine if you
+                aren&apos;t sure of the exact weight - round up.
               </span>
               <input
                 value={weight}
@@ -909,7 +931,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 </span>
                 <input
                   value={stock}
-                  onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setStock(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                   inputMode="numeric"
                   placeholder="e.g. 10"
                   className={FIELD}
@@ -954,9 +978,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             {hasVariants && (
               <>
                 <p className="-mt-2 text-[11px] text-shop-text/60">
-                  The default price and quantity are this product&apos;s headline
-                  numbers - used for the Partner Program and as the starting
-                  value for each combination below.
+                  The default price and quantity are this product&apos;s
+                  headline numbers - used for the Partner Program and as the
+                  starting value for each combination below.
                 </p>
 
                 <div className="flex flex-col gap-2.5">
@@ -1004,146 +1028,142 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
 
         {/* Partner enrollment - available for every product type */}
         <>
-            <div className="flex flex-col gap-2.5">
-              <p className="text-[13px] font-semibold text-shop-heading">
-                Enroll this {isGroup ? "bundle" : "product"} in the Partner
-                Program?
-              </p>
-              <p className="text-[11.5px] text-shop-text">
-                Partners can promote this product and earn a profit you choose.
-                Customers still see your normal price.
-              </p>
-              <p className="rounded-[8px] bg-emerald-50 px-3 py-2 text-[11.5px] leading-[16px] text-emerald-800">
-                💡 The more profit you offer, the more partners will pick up your
-                product. A higher rate is the fastest way to attract top partners
-                and move stock.
-              </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <TypeCard
-                  selected={!offerCommission}
-                  onClick={() => setOfferCommission(false)}
-                  icon={Users2}
-                  title="No"
-                  description="Keep this product off the Partner Program."
-                />
-                <TypeCard
-                  selected={offerCommission}
-                  onClick={() => setOfferCommission(true)}
-                  icon={Users2}
-                  title="Yes"
-                  description="Let Partners promote it and earn a profit."
-                />
-              </div>
-              {offerCommission && (
-                <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[13px] font-semibold text-shop-heading">
-                      How much do you want to give partners? (min{" "}
-                      {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
-                    </span>
-                    <MoneyInput
-                      value={partnerProfitAmount}
-                      onChange={setPartnerProfitAmount}
-                      placeholder={
-                        payoutSuggestion
-                          ? String(payoutSuggestion.low)
-                          : "2,500"
-                      }
-                      className={FIELD}
-                    />
-                  </label>
-
-                  {payoutSuggestion && (
-                    <div className="flex flex-col gap-1.5 rounded-[8px] border border-shop-accent-1/30 bg-shop-accent-1-light/50 p-3">
-                      <p className="text-[11.5px] leading-[16px] text-shop-heading">
-                        For a{" "}
-                        <span className="font-semibold">
-                          {formatPrice(basePrice)}
-                        </span>{" "}
-                        {isGroup ? "bundle" : "product"}, standard partner payouts
-                        are{" "}
-                        <span className="font-semibold text-shop-accent-1">
-                          {formatPrice(payoutSuggestion.low)} –{" "}
-                          {formatPrice(payoutSuggestion.high)}
-                        </span>
-                        .
-                      </p>
-                      <p className="text-[10.5px] leading-[15px] text-shop-text/70">
-                        {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} is our minimum,
-                        but matching or beating these figures is the fastest way
-                        to attract top partners and move stock.
-                      </p>
-                    </div>
-                  )}
-
-                  {partnerProfitAmount && !partnerRateValid && (
-                    <p className="text-[11.5px] text-shop-accent-3">
-                      The minimum Partner Program profit is{" "}
-                      {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.
-                    </p>
-                  )}
-                  {partnerProfitAmount &&
-                    partnerRateValid &&
-                    basePrice > 0 && (
-                      <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
-                        Customers still see{" "}
-                        <span className="font-semibold text-shop-heading">
-                          {formatPrice(basePrice)}
-                        </span>
-                        . Partners buy in at{" "}
-                        <span className="font-semibold text-shop-heading">
-                          {formatPrice(basePrice - Number(partnerProfitAmount))}
-                        </span>{" "}
-                        and keep{" "}
-                        <span className="font-semibold text-emerald-600">
-                          {formatPrice(
-                            Math.round(
-                              Number(partnerProfitAmount) *
-                                (1 - PARTNER_PLATFORM_FEE_RATE),
-                            ),
-                          )}
-                        </span>{" "}
-                        per sale (after AwaOwn&apos;s{" "}
-                        {Math.round(PARTNER_PLATFORM_FEE_RATE * 100)}% platform
-                        fee).
-                      </p>
-                    )}
-                </div>
-              )}
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[13px] font-semibold text-shop-heading">
+              Enroll this {isGroup ? "bundle" : "product"} in the Partner
+              Program?
+            </p>
+            <p className="text-[11.5px] text-shop-text">
+              Partners can promote this product and earn a profit you choose.
+              Customers still see your normal price.
+            </p>
+            <p className="rounded-[8px] bg-emerald-50 px-3 py-2 text-[11.5px] leading-[16px] text-emerald-800">
+              💡 The more profit you offer, the more partners will pick up your
+              product. A higher rate is the fastest way to attract top partners
+              and move stock.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <TypeCard
+                selected={!offerCommission}
+                onClick={() => setOfferCommission(false)}
+                icon={Users2}
+                title="No"
+                description="Keep this product off the Partner Program."
+              />
+              <TypeCard
+                selected={offerCommission}
+                onClick={() => setOfferCommission(true)}
+                icon={Users2}
+                title="Yes"
+                description="Let Partners promote it and earn a profit."
+              />
             </div>
+            {offerCommission && (
+              <div className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">
+                    How much do you want to give partners? (min{" "}
+                    {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)})
+                  </span>
+                  <MoneyInput
+                    value={partnerProfitAmount}
+                    onChange={setPartnerProfitAmount}
+                    placeholder={
+                      payoutSuggestion ? String(payoutSuggestion.low) : "2,500"
+                    }
+                    className={FIELD}
+                  />
+                </label>
 
-            {!isGroup && deliveryType !== "digital" && (
-              <div className="flex flex-col gap-2.5">
-                <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
-                  <span className="text-[13px] font-medium text-shop-heading">
-                    Hide inventory quantity from shoppers
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={hideStock}
-                    onChange={(e) => setHideStock(e.target.checked)}
-                    className="h-4.5 w-4.5 accent-[#6d28d9]"
-                  />
-                </label>
-                <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
-                  <span className="flex flex-col">
-                    <span className="text-[13px] font-medium text-shop-heading">
-                      Let shoppers ask for a back-in-stock email
+                {payoutSuggestion && (
+                  <div className="flex flex-col gap-1.5 rounded-[8px] border border-shop-accent-1/30 bg-shop-accent-1-light/50 p-3">
+                    <p className="text-[11.5px] leading-[16px] text-shop-heading">
+                      For a{" "}
+                      <span className="font-semibold">
+                        {formatPrice(basePrice)}
+                      </span>{" "}
+                      {isGroup ? "bundle" : "product"}, standard partner payouts
+                      are{" "}
+                      <span className="font-semibold text-shop-accent-1">
+                        {formatPrice(payoutSuggestion.low)} –{" "}
+                        {formatPrice(payoutSuggestion.high)}
+                      </span>
+                      .
+                    </p>
+                    <p className="text-[10.5px] leading-[15px] text-shop-text/70">
+                      {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} is our minimum,
+                      but matching or beating these figures is the fastest way
+                      to attract top partners and move stock.
+                    </p>
+                  </div>
+                )}
+
+                {partnerProfitAmount && !partnerRateValid && (
+                  <p className="text-[11.5px] text-shop-accent-3">
+                    The minimum Partner Program profit is{" "}
+                    {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.
+                  </p>
+                )}
+                {partnerProfitAmount && partnerRateValid && basePrice > 0 && (
+                  <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
+                    Customers still see{" "}
+                    <span className="font-semibold text-shop-heading">
+                      {formatPrice(basePrice)}
                     </span>
-                    <span className="text-[11px] text-shop-text/60">
-                      When it sells out, shoppers can opt in and we email them
-                      the moment you restock.
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={backInStockAlerts}
-                    onChange={(e) => setBackInStockAlerts(e.target.checked)}
-                    className="h-4.5 w-4.5 accent-[#6d28d9]"
-                  />
-                </label>
+                    . Partners buy in at{" "}
+                    <span className="font-semibold text-shop-heading">
+                      {formatPrice(basePrice - Number(partnerProfitAmount))}
+                    </span>{" "}
+                    and keep{" "}
+                    <span className="font-semibold text-emerald-600">
+                      {formatPrice(
+                        Math.round(
+                          Number(partnerProfitAmount) *
+                            (1 - PARTNER_PLATFORM_FEE_RATE),
+                        ),
+                      )}
+                    </span>{" "}
+                    per sale (after AwaOwn&apos;s{" "}
+                    {Math.round(PARTNER_PLATFORM_FEE_RATE * 100)}% platform
+                    fee).
+                  </p>
+                )}
               </div>
             )}
+          </div>
+
+          {!isGroup && deliveryType !== "digital" && (
+            <div className="flex flex-col gap-2.5">
+              <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
+                <span className="text-[13px] font-medium text-shop-heading">
+                  Hide inventory quantity from shoppers
+                </span>
+                <input
+                  type="checkbox"
+                  checked={hideStock}
+                  onChange={(e) => setHideStock(e.target.checked)}
+                  className="h-4.5 w-4.5 accent-[#6d28d9]"
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
+                <span className="flex flex-col">
+                  <span className="text-[13px] font-medium text-shop-heading">
+                    Let shoppers ask for a back-in-stock email
+                  </span>
+                  <span className="text-[11px] text-shop-text/60">
+                    When it sells out, shoppers can opt in and we email them the
+                    moment you restock.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={backInStockAlerts}
+                  onChange={(e) => setBackInStockAlerts(e.target.checked)}
+                  className="h-4.5 w-4.5 accent-[#6d28d9]"
+                />
+              </label>
+            </div>
+          )}
         </>
 
         {!isValid && problems.length > 0 && (

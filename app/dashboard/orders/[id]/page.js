@@ -3,17 +3,27 @@
 import React, { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
-import { CheckCircle2, Check, ShieldCheck, Loader2, Truck } from "lucide-react";
+import {
+  CheckCircle2,
+  Check,
+  ShieldCheck,
+  Loader2,
+  Truck,
+  KeyRound,
+  X,
+  ImagePlus,
+} from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
 import { statusMeta, ORDER_STEPS } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   useGetOrderQuery,
   useConfirmDeliveryMutation,
   useConfirmPaymentMutation,
-  useRequestRefundMutation,
+  useDisputeOrderMutation,
   useSimulateFulfilmentMutation,
   useRetryPaymentMutation,
   useCancelOrderMutation,
@@ -56,7 +66,8 @@ function OrderDetailContent() {
   const { data: order, isLoading, isError } = useGetOrderQuery(id);
   const [confirmDelivery, confirmState] = useConfirmDeliveryMutation();
   const [confirmPayment] = useConfirmPaymentMutation();
-  const [requestRefund, refundState] = useRequestRefundMutation();
+  const [disputeOrder, disputeState] = useDisputeOrderMutation();
+  const [disputeOpen, setDisputeOpen] = useState(false);
   const [simulate, simState] = useSimulateFulfilmentMutation();
   const [retryPayment] = useRetryPaymentMutation();
   const [cancelOrder, cancelState] = useCancelOrderMutation();
@@ -106,22 +117,29 @@ function OrderDetailContent() {
     "SHIPPED",
     "DELIVERED",
   ].includes(order.status);
+  const autoReleaseAt = order.autoReleaseAt
+    ? new Date(order.autoReleaseAt)
+    : null;
 
   const doConfirm = async () => {
     try {
       await confirmDelivery(order.reference).unwrap();
-      showToast("Delivery confirmed. Payment released");
+      showToast("Received - payment released to the seller");
     } catch (err) {
       showToast(errorMessage(err));
     }
   };
 
-  const doRefund = async () => {
-    const reason = window.prompt("Why are you requesting a refund?");
-    if (!reason || reason.trim().length < 4) return;
+  const submitDispute = async ({ reason, description, images }) => {
     try {
-      await requestRefund({ reference: order.reference, reason }).unwrap();
-      showToast("Refund requested. Our team will review it");
+      await disputeOrder({
+        reference: order.reference,
+        reason,
+        description,
+        images,
+      }).unwrap();
+      setDisputeOpen(false);
+      showToast("Reported. Our team will review it and get back to you");
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -306,16 +324,43 @@ function OrderDetailContent() {
         </div>
       )}
 
-      {order.tracking && (
+      {order.deliveryOtp &&
+        ["PROCESSING", "SHIPPED"].includes(order.status) && (
+          <div className="mx-4 flex items-center gap-3 rounded-[12px] border border-shop-accent-1/30 bg-shop-accent-1-light/50 p-3.5">
+            <KeyRound className="h-5 w-5 shrink-0 text-shop-accent-1" />
+            <div>
+              <p className="text-[12px] text-shop-text">
+                Give this delivery code to the dispatch rider
+              </p>
+              <p className="text-[18px] font-bold tracking-[3px] text-shop-heading">
+                {order.deliveryOtp}
+              </p>
+            </div>
+          </div>
+        )}
+
+      {(order.tracking || (order.shipments ?? []).length > 0) && (
         <div className="mx-4 flex flex-col gap-1.5 rounded-[12px] border border-shop-border p-3.5">
           <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-shop-heading">
             <Truck className="h-4 w-4 text-shop-accent-1" /> Shipment tracking
           </p>
-          <p className="text-[12px] text-shop-text">
-            {order.tracking.carrier || "Courier"}
-            {order.tracking.number ? ` · ${order.tracking.number}` : ""}
-          </p>
-          {order.tracking.url && (
+          {(order.shipments ?? []).length > 0 ? (
+            (order.shipments ?? []).map((s) => (
+              <div key={s.id} className="text-[12px] text-shop-text">
+                <span className="font-medium text-shop-heading">
+                  {s.carrier}
+                </span>
+                {s.waybill ? ` · ${s.waybill}` : ""} ·{" "}
+                {String(s.status).replace(/_/g, " ")}
+              </div>
+            ))
+          ) : (
+            <p className="text-[12px] text-shop-text">
+              {order.tracking.carrier || "Courier"}
+              {order.tracking.number ? ` · ${order.tracking.number}` : ""}
+            </p>
+          )}
+          {order.tracking?.url && (
             <a
               href={order.tracking.url}
               target="_blank"
@@ -335,10 +380,15 @@ function OrderDetailContent() {
         />
         <p className="text-[12px] leading-[18px] text-shop-text">
           {order.status === "ESCROW_RELEASED"
-            ? "Delivery confirmed. Payment has been released to the merchant."
+            ? "Delivery confirmed. Payment has been released to the seller."
             : order.status === "REFUND_REQUESTED"
-              ? "A refund request is under review. Escrow release is paused."
-              : "Your payment stays in escrow until you confirm delivery."}
+              ? "Your report is under review. Escrow release is paused."
+              : order.status === "DELIVERED" && autoReleaseAt
+                ? `Delivered. Payment releases to the seller on ${autoReleaseAt.toLocaleDateString(
+                    "en-NG",
+                    { day: "numeric", month: "short" },
+                  )} unless you confirm sooner or report a problem.`
+                : "Your payment stays in escrow until the item is delivered and you confirm receipt."}
         </p>
       </div>
 
@@ -354,18 +404,17 @@ function OrderDetailContent() {
               {confirmState.isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Confirm delivery & release payment"
+                "Mark as received & release payment"
               )}
             </button>
           )}
           {canRefund && order.status !== "REFUND_REQUESTED" && (
             <button
               type="button"
-              onClick={doRefund}
-              disabled={refundState.isLoading}
-              className="rounded-[10px] border border-shop-border py-3 text-[13.5px] font-semibold text-shop-heading disabled:opacity-70"
+              onClick={() => setDisputeOpen(true)}
+              className="rounded-[10px] border border-shop-border py-3 text-[13.5px] font-semibold text-shop-heading"
             >
-              Request a refund
+              Report a problem
             </button>
           )}
           {DEV && !canConfirm && order.status !== "REFUND_REQUESTED" && (
@@ -456,6 +505,146 @@ function OrderDetailContent() {
           <span>Total</span>
           <span>{formatPrice(order.total)}</span>
         </div>
+      </div>
+
+      {disputeOpen && (
+        <DisputeModal
+          submitting={disputeState.isLoading}
+          onClose={() => setDisputeOpen(false)}
+          onSubmit={submitDispute}
+        />
+      )}
+    </div>
+  );
+}
+
+function DisputeModal({ onClose, onSubmit, submitting }) {
+  const [reason, setReason] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState([]);
+  const { pickAndCrop, uploading, modal } = useImageCropUpload("disputes");
+
+  const addImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || images.length >= 4) return;
+    const url = await pickAndCrop(file, { aspect: 1, title: "Crop the photo" });
+    if (url) setImages((p) => [...p, url]);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/40 p-0 font-shop sm:items-center sm:p-4">
+      {modal}
+      <div className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3 overflow-y-auto rounded-t-[18px] bg-white p-5 sm:rounded-[18px]">
+        <div className="flex items-center justify-between">
+          <p className="text-[15px] font-semibold text-shop-heading">
+            Report a problem
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-shop-text/50 hover:text-shop-heading"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <p className="text-[12px] leading-[17px] text-shop-text">
+          Tell us what went wrong. Our team reviews every report and your payment
+          stays in escrow until it&apos;s resolved.
+        </p>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-semibold text-shop-heading">
+            What&apos;s the issue?
+          </span>
+          <select
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="rounded-[8px] border border-shop-border bg-white px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+          >
+            <option value="">Select a reason</option>
+            <option value="Item not received">Item not received</option>
+            <option value="Wrong item delivered">Wrong item delivered</option>
+            <option value="Item damaged / defective">
+              Item damaged or defective
+            </option>
+            <option value="Item not as described">Item not as described</option>
+            <option value="Missing parts / incomplete">
+              Missing parts or incomplete
+            </option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-semibold text-shop-heading">
+            Describe what happened
+          </span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="Give us the details so we can help quickly"
+            className="resize-none rounded-[8px] border border-shop-border bg-white px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+          />
+        </label>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-semibold text-shop-heading">
+            Photos <span className="font-normal text-shop-text/60">(up to 4)</span>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className="relative h-16 w-16 overflow-hidden rounded-[8px] border border-shop-border"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImages((p) => p.filter((_, k) => k !== i))}
+                  className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-white"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ))}
+            {images.length < 4 && (
+              <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-[8px] border-2 border-dashed border-shop-border text-shop-text/50">
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={addImage}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={
+            submitting || uploading || !reason || description.trim().length < 4
+          }
+          onClick={() =>
+            onSubmit({
+              reason,
+              description: description.trim(),
+              images,
+            })
+          }
+          className="mt-1 flex items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3 text-[13.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          Submit report
+        </button>
       </div>
     </div>
   );

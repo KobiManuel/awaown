@@ -138,6 +138,54 @@ export default function AdminFinancePage() {
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+        <p className="flex items-center justify-between text-[13px] font-semibold text-shop-heading">
+          <span>Escrow Released to Sellers</span>
+          {!isLoading && (
+            <span className="text-[12px] font-normal text-shop-text">
+              {formatPrice(data?.releasedTotal ?? 0)} recent
+            </span>
+          )}
+        </p>
+        <div className="flex flex-col gap-2">
+          {isLoading ? (
+            <SkeletonRows count={2} />
+          ) : (data?.releases ?? []).length === 0 ? (
+            <p className="py-3 text-center text-[12px] text-shop-text/60">
+              No escrow releases yet - money moves here when a buyer confirms
+              delivery.
+            </p>
+          ) : (
+            (data?.releases ?? []).map((rel) => (
+              <div
+                key={rel.orderRef}
+                className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-shop-heading">
+                    {rel.orderRef}
+                  </p>
+                  <p className="text-[11.5px] text-shop-text/70">
+                    {rel.seller}
+                    {rel.partnerAmount > 0
+                      ? ` · incl. ${formatPrice(rel.partnerAmount)} partner profit`
+                      : ""}
+                    {" · "}
+                    {new Date(rel.date).toLocaleDateString("en-NG", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </p>
+                </div>
+                <span className="text-[13px] font-semibold text-emerald-600">
+                  {formatPrice(rel.total)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
         <p className="text-[13px] font-semibold text-shop-heading">Refund Requests</p>
         <div className="flex flex-col gap-2">
           {isLoading ? (
@@ -156,6 +204,27 @@ export default function AdminFinancePage() {
                     {formatPrice(r.amount)}
                     {r.reason ? ` · ${r.reason}` : ""}
                   </p>
+                  {r.description && (
+                    <p className="mt-0.5 line-clamp-2 text-[11px] text-shop-text/60">
+                      {r.description}
+                    </p>
+                  )}
+                  {r.images?.length > 0 && (
+                    <div className="mt-1.5 flex gap-1.5">
+                      {r.images.map((src) => (
+                        <a
+                          key={src}
+                          href={src}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-11 w-11 overflow-hidden rounded-[6px] border border-shop-border"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt="" className="h-full w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {r.status === "pending" ? (
                   <div className="flex gap-2">
