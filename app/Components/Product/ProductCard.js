@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
+import { smartTitle } from "@/lib/text-format";
 import { getProductId } from "@/lib/product-id";
 import { useCommerce } from "@/lib/useCommerce";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -65,7 +66,7 @@ function normalise(product) {
   return {
     id,
     productId: product.productId || null,
-    title: product.title,
+    title: smartTitle(product.title),
     vendor: product.vendor,
     price: product.price,
     priceFrom: !!product.hasVariants,

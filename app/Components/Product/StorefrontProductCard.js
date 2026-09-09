@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, Check, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
+import { smartTitle } from "@/lib/text-format";
 import { useCommerce } from "@/lib/useCommerce";
 
 // Common color names merchants/partners actually type into a "Color" option
@@ -156,7 +157,7 @@ const StorefrontProductCard = ({ product, accentColor }) => {
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
         <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
-          <Link href={href}>{product.title}</Link>
+          <Link href={href}>{smartTitle(product.title)}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
           {Array.from({ length: 5 }).map((_, i) => (

@@ -283,34 +283,50 @@ export default function MerchantProductsPage() {
                         ` · Ships in ${processingLabel(product.processingTime)}`}
                     </p>
                   )}
-                  {product.status !== "DRAFT" && (
-                    <span
-                      className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${APPROVAL_TONE[product.approvalStatus]}`}
-                    >
-                      {APPROVAL_LABEL[product.approvalStatus]}
-                    </span>
-                  )}
-                  {product.approvalStatus === "REJECTED" &&
-                    product.rejectionReason && (
+                  {product.status !== "DRAFT" &&
+                    product.status !== "ARCHIVED" && (
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${APPROVAL_TONE[product.approvalStatus]}`}
+                      >
+                        {APPROVAL_LABEL[product.approvalStatus]}
+                      </span>
+                    )}
+                  {product.rejectionReason &&
+                    (product.status === "ARCHIVED" ||
+                      product.approvalStatus === "REJECTED") && (
                       <p className="mt-1 text-[10.5px] text-shop-accent-3">
-                        Reason: {product.rejectionReason}
+                        {product.status === "ARCHIVED"
+                          ? "Removed by AwaOwn: "
+                          : "Reason: "}
+                        {product.rejectionReason}
                       </p>
                     )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-                      product.status === "ACTIVE"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-shop-bg text-shop-text"
-                    }`}
-                  >
-                    {product.status === "ACTIVE"
-                      ? "Active"
-                      : product.status === "DRAFT"
-                        ? "Draft"
-                        : "Archived"}
-                  </span>
+                  {(() => {
+                    const removedByAdmin =
+                      product.status === "ARCHIVED" &&
+                      product.approvalStatus === "REJECTED";
+                    return (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+                          product.status === "ACTIVE"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : removedByAdmin
+                              ? "bg-red-50 text-shop-accent-3"
+                              : "bg-shop-bg text-shop-text"
+                        }`}
+                      >
+                        {product.status === "ACTIVE"
+                          ? "Active"
+                          : product.status === "DRAFT"
+                            ? "Draft"
+                            : removedByAdmin
+                              ? "Removed by AwaOwn"
+                              : "Archived"}
+                      </span>
+                    );
+                  })()}
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/merchant/products/${product.productId}/edit`}

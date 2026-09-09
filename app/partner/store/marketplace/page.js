@@ -133,6 +133,17 @@ export default function PartnerMarketplacePage() {
                   <p className="text-[11.5px] text-shop-text/70">
                     Public Price: {formatPrice(product.price)}
                   </p>
+                  {product.vendor && (
+                    <span className="mt-1 flex w-fit items-center gap-1 rounded-full border border-shop-border bg-white py-0.5 pl-1 pr-2 text-[10.5px] font-medium text-shop-heading">
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-shop-accent-1-light">
+                        <Store
+                          className="h-2.5 w-2.5 text-shop-accent-1"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      Sold by {product.vendor}
+                    </span>
+                  )}
                 </div>
               </div>
 

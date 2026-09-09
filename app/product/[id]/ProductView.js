@@ -23,6 +23,7 @@ import {
   formatPrice,
 } from "@/lib/dashboard-data";
 import { isColorAxis, colorHex } from "@/lib/variant-options";
+import { smartTitle, sentenceCase } from "@/lib/text-format";
 import { rememberRef, readRef } from "@/lib/partner-ref";
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
@@ -316,7 +317,7 @@ function ProductDetail() {
                 {product.vendor}
               </span>
               <h1 className="text-[20px] font-semibold leading-[26px] text-shop-heading">
-                {product.title}
+                {smartTitle(product.title)}
               </h1>
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-0.5">
@@ -601,8 +602,8 @@ function ProductDetail() {
 
             <div className="flex flex-col gap-2 border-t border-shop-border pt-4">
               <p className="text-[13px] font-semibold text-shop-heading">Description</p>
-              <p className="text-[13px] leading-[21px] text-shop-text">
-                {product.description}
+              <p className="whitespace-pre-line text-[13px] leading-[21px] text-shop-text">
+                {sentenceCase(product.description)}
               </p>
             </div>
 

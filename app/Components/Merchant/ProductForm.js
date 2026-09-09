@@ -21,6 +21,8 @@ import {
   PRODUCT_CATEGORIES,
   PROCESSING_TIME_OPTIONS,
   PARTNER_PROGRAM_MIN_PROFIT,
+  PARTNER_PLATFORM_FEE_RATE,
+  partnerPayoutSuggestion,
 } from "@/lib/merchant-data";
 import { useMediaUpload } from "@/lib/api/mediaApi";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
@@ -323,6 +325,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       Number(partnerProfitAmount) >= PARTNER_PROGRAM_MIN_PROFIT);
 
   const basePrice = Number(price) || 0;
+  const payoutSuggestion =
+    basePrice > 0 ? partnerPayoutSuggestion(basePrice) : null;
 
   // ── what's blocking "Submit for Review" / "Publish" ──────────────────
   const problems = [];
@@ -400,9 +404,10 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       stock: deliveryType === "digital" ? undefined : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
-      offerCommission: isGroup ? false : offerCommission,
-      partnerProfitAmount:
-        !isGroup && offerCommission ? Number(partnerProfitAmount) : undefined,
+      offerCommission,
+      partnerProfitAmount: offerCommission
+        ? Number(partnerProfitAmount)
+        : undefined,
       weightKg:
         deliveryType === "digital" || !weight ? undefined : Number(weight),
       // Only touch status on create or when moving a draft. Editing a live
@@ -991,12 +996,12 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           </div>
         )}
 
-        {!isGroup && (
-          <>
-            {/* Partner enrollment */}
+        {/* Partner enrollment — available for every product type */}
+        <>
             <div className="flex flex-col gap-2.5">
               <p className="text-[13px] font-semibold text-shop-heading">
-                Enroll this product in the Partner Program?
+                Enroll this {isGroup ? "bundle" : "product"} in the Partner
+                Program?
               </p>
               <p className="text-[11.5px] text-shop-text">
                 Partners can promote this product and earn a profit you choose.
@@ -1033,10 +1038,38 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                     <MoneyInput
                       value={partnerProfitAmount}
                       onChange={setPartnerProfitAmount}
-                      placeholder="2,500"
+                      placeholder={
+                        payoutSuggestion
+                          ? String(payoutSuggestion.low)
+                          : "2,500"
+                      }
                       className={FIELD}
                     />
                   </label>
+
+                  {payoutSuggestion && (
+                    <div className="flex flex-col gap-1.5 rounded-[8px] border border-shop-accent-1/30 bg-shop-accent-1-light/50 p-3">
+                      <p className="text-[11.5px] leading-[16px] text-shop-heading">
+                        For a{" "}
+                        <span className="font-semibold">
+                          {formatPrice(basePrice)}
+                        </span>{" "}
+                        {isGroup ? "bundle" : "product"}, standard partner payouts
+                        are{" "}
+                        <span className="font-semibold text-shop-accent-1">
+                          {formatPrice(payoutSuggestion.low)} –{" "}
+                          {formatPrice(payoutSuggestion.high)}
+                        </span>
+                        .
+                      </p>
+                      <p className="text-[10.5px] leading-[15px] text-shop-text/70">
+                        {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} is our minimum,
+                        but matching or beating these figures is the fastest way
+                        to attract top partners and move stock.
+                      </p>
+                    </div>
+                  )}
+
                   {partnerProfitAmount && !partnerRateValid && (
                     <p className="text-[11.5px] text-shop-accent-3">
                       The minimum Partner Program profit is{" "}
@@ -1051,22 +1084,29 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                         <span className="font-semibold text-shop-heading">
                           {formatPrice(basePrice)}
                         </span>
-                        . Partners will see a partner price of{" "}
+                        . Partners buy in at{" "}
                         <span className="font-semibold text-shop-heading">
                           {formatPrice(basePrice - Number(partnerProfitAmount))}
                         </span>{" "}
-                        and earn up to{" "}
+                        and keep{" "}
                         <span className="font-semibold text-emerald-600">
-                          {formatPrice(Number(partnerProfitAmount))}
+                          {formatPrice(
+                            Math.round(
+                              Number(partnerProfitAmount) *
+                                (1 - PARTNER_PLATFORM_FEE_RATE),
+                            ),
+                          )}
                         </span>{" "}
-                        in profit for promoting it.
+                        per sale (after AwaOwn&apos;s{" "}
+                        {Math.round(PARTNER_PLATFORM_FEE_RATE * 100)}% platform
+                        fee).
                       </p>
                     )}
                 </div>
               )}
             </div>
 
-            {deliveryType !== "digital" && (
+            {!isGroup && deliveryType !== "digital" && (
               <div className="flex flex-col gap-2.5">
                 <label className="flex items-center justify-between rounded-[10px] border border-shop-border p-3.5">
                   <span className="text-[13px] font-medium text-shop-heading">
@@ -1098,8 +1138,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 </label>
               </div>
             )}
-          </>
-        )}
+        </>
 
         {!isValid && problems.length > 0 && (
           <div className="flex flex-col gap-1 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">

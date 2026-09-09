@@ -12,6 +12,9 @@ import {
   ChevronRight,
   Plus,
   ShieldAlert,
+  Store,
+  Loader2,
+  Camera,
 } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
 import { statusMeta } from "@/lib/order-status";
@@ -22,6 +25,8 @@ import {
   useUpdateMerchantStoreMutation,
 } from "@/lib/api/merchantApi";
 import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
+import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
@@ -37,6 +42,29 @@ export default function MerchantHome() {
   const { data, isLoading } = useGetMerchantOverviewQuery();
   const { data: orders, isLoading: ordersLoading } = useGetMerchantOrdersQuery();
   const [updateStore] = useUpdateMerchantStoreMutation();
+  const showToast = useToast();
+  const {
+    pickAndCrop,
+    uploading: logoUploading,
+    modal: logoModal,
+  } = useImageCropUpload("stores");
+
+  const changeLogo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const url = await pickAndCrop(file, {
+      aspect: 1,
+      title: "Crop your store logo",
+    });
+    if (!url) return;
+    try {
+      await updateStore({ logoUrl: url }).unwrap();
+      showToast("Store logo updated");
+    } catch {
+      showToast("Couldn't save the logo");
+    }
+  };
 
   const verified = data?.verification?.status === "VERIFIED";
   const pendingVerif = data?.verification?.status === "PENDING";
@@ -45,6 +73,7 @@ export default function MerchantHome() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px] lg:gap-8">
+      {logoModal}
       <div className="mx-4 mt-4 flex flex-col gap-2.5 lg:mx-8 lg:mt-8">
         <div className="relative flex h-32 items-end overflow-hidden rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 lg:h-40">
           {data?.profile?.bannerUrl && (
@@ -58,9 +87,36 @@ export default function MerchantHome() {
           )}
           <div className="absolute inset-0 bg-black/20" />
           <div className="relative flex w-full items-end justify-between p-4">
-            <p className="text-[16px] font-bold text-white lg:text-[20px]">
-              {data?.profile?.storeName ?? "…"}
-            </p>
+            <div className="flex items-center gap-2.5">
+              <label className="group relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow lg:h-14 lg:w-14">
+                {data?.profile?.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.profile.logoUrl}
+                    alt="Store logo"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Store className="h-5 w-5 text-shop-text/50" />
+                )}
+                <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+                  {logoUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-4 w-4 text-white" />
+                  )}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={changeLogo}
+                />
+              </label>
+              <p className="text-[16px] font-bold text-white lg:text-[20px]">
+                {data?.profile?.storeName ?? "…"}
+              </p>
+            </div>
           </div>
         </div>
 
