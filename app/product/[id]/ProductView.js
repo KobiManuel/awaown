@@ -27,6 +27,7 @@ import { smartTitle, sentenceCase } from "@/lib/text-format";
 import { setBuyNow as setBuyNowItem } from "@/lib/express-checkout";
 import FullScreenLoader from "@/app/Components/Dashboard/FullScreenLoader";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import { useStoreTheme } from "@/lib/useStoreTheme";
 import { rememberRef, readRef } from "@/lib/partner-ref";
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
@@ -746,9 +747,17 @@ function ReviewsBlock({ slug, reviews, authed, onRequireLogin }) {
 }
 
 function PageShell({ children }) {
+  // When a store theme is active, StoreThemeShell paints the page background and
+  // draws the doodle backdrop - so the inner wrapper must stay transparent or it
+  // covers the pattern.
+  const storeThemed = !!useStoreTheme();
   return (
     <StoreThemeShell>
-      <div className="flex min-h-screen w-full flex-col bg-shop-bg">
+      <div
+        className={`flex min-h-screen w-full flex-col ${
+          storeThemed ? "" : "bg-shop-bg"
+        }`}
+      >
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
