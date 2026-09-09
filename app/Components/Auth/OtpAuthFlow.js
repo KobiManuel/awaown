@@ -159,7 +159,7 @@ export default function OtpAuthFlow({
     try {
       await checkResetCode({ role, email, code }).unwrap();
       setCodeVerified(true);
-      setNotice("Code confirmed — now choose a new password.");
+      setNotice("Code confirmed - now choose a new password.");
     } catch (err) {
       setFormError(errorMessage(err, "That code didn't work. Try again."));
     }

@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Link2, Check, Minus, Store, Package, Tag, Plus, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
+import { smartTitle } from "@/lib/text-format";
+import SellerPill from "@/app/Components/Product/SellerPill";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -133,11 +135,18 @@ export default function PartnerStorePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
-                    {product.title}
+                    {smartTitle(product.title)}
                   </p>
                   <p className="text-[11.5px] text-shop-text/70">
                     Public Price: {formatPrice(product.price)}
                   </p>
+                  <SellerPill
+                    seller={
+                      product.seller ??
+                      (product.vendor ? { name: product.vendor } : null)
+                    }
+                    className="mt-1"
+                  />
                 </div>
               </div>
 

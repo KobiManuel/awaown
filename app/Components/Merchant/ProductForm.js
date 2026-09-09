@@ -293,7 +293,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const productImages = images.filter(Boolean);
 
   // The axes that actually carry values, and the full combination list they
-  // generate — shared by the validation checklist and the submit payload.
+  // generate - shared by the validation checklist and the submit payload.
   const activeAxes = axes.filter(
     (a) => a.name.trim() && a.values.some((v) => v.label.trim()),
   );
@@ -366,7 +366,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       )
     )
       problems.push(
-        "Every combination needs a price — set the default price above, or fill each row.",
+        "Every combination needs a price - set the default price above, or fill each row.",
       );
   }
   if (offerCommission && !partnerRateValid)
@@ -606,7 +606,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 onClick={() => setProductType("variable")}
                 icon={Layers}
                 title={'Variable Product ("has options")'}
-                description="Options like colour or size — each combination priced and stocked on its own."
+                description="Options like colour or size - each combination priced and stocked on its own."
               />
               <TypeCard
                 selected={isGroup}
@@ -685,7 +685,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               <span className="text-[12px] font-semibold text-shop-heading">
                 More photos{" "}
                 <span className="font-normal text-shop-text/70">
-                  (optional, any background — add as many as you need)
+                  (optional, any background - add as many as you need)
                 </span>
               </span>
               <div className="grid grid-cols-4 gap-2.5">
@@ -782,7 +782,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               <span className="text-[13px] font-semibold text-shop-heading">
                 Weight{" "}
                 <span className="font-normal text-shop-text/70">
-                  (kg, optional — helps with shipping estimates)
+                  (kg, optional - helps with shipping estimates)
                 </span>
               </span>
               <input
@@ -949,7 +949,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               <>
                 <p className="-mt-2 text-[11px] text-shop-text/60">
                   The default price and quantity are this product&apos;s headline
-                  numbers — used for the Partner Program and as the starting
+                  numbers - used for the Partner Program and as the starting
                   value for each combination below.
                 </p>
 
@@ -958,7 +958,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                     Variant types
                   </p>
                   <p className="text-[11px] text-shop-text/60">
-                    Add what this product varies by — Colour, Size, Material and
+                    Add what this product varies by - Colour, Size, Material and
                     so on. Every combination of the values you enter becomes a
                     row you can price and stock separately.
                   </p>
@@ -996,7 +996,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           </div>
         )}
 
-        {/* Partner enrollment — available for every product type */}
+        {/* Partner enrollment - available for every product type */}
         <>
             <div className="flex flex-col gap-2.5">
               <p className="text-[13px] font-semibold text-shop-heading">

@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Plus, Store, Package, Check } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
+import { smartTitle } from "@/lib/text-format";
+import SellerPill from "@/app/Components/Product/SellerPill";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
@@ -128,22 +130,18 @@ export default function PartnerMarketplacePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
-                    {product.title}
+                    {smartTitle(product.title)}
                   </p>
                   <p className="text-[11.5px] text-shop-text/70">
                     Public Price: {formatPrice(product.price)}
                   </p>
-                  {product.vendor && (
-                    <span className="mt-1 flex w-fit items-center gap-1 rounded-full border border-shop-border bg-white py-0.5 pl-1 pr-2 text-[10.5px] font-medium text-shop-heading">
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-shop-accent-1-light">
-                        <Store
-                          className="h-2.5 w-2.5 text-shop-accent-1"
-                          strokeWidth={1.75}
-                        />
-                      </span>
-                      Sold by {product.vendor}
-                    </span>
-                  )}
+                  <SellerPill
+                    seller={
+                      product.seller ??
+                      (product.vendor ? { name: product.vendor } : null)
+                    }
+                    className="mt-1"
+                  />
                 </div>
               </div>
 

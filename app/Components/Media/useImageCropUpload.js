@@ -18,7 +18,7 @@ export function useImageCropUpload(folder = "misc") {
   const [pending, setPending] = useState(null); // { file, aspect, title }
   const resolverRef = useRef(null);
 
-  // `aspect` is optional — omit it (or pass null) for a completely free crop.
+  // `aspect` is optional - omit it (or pass null) for a completely free crop.
   const pickAndCrop = useCallback((file, { aspect, title } = {}) => {
     if (!file) return Promise.resolve(null);
     return new Promise((resolve) => {

@@ -32,7 +32,7 @@ export default function EditMerchantProductPage() {
         asDraft
           ? "Draft saved"
           : wasDraft
-            ? "Published — sent for admin review"
+            ? "Published - sent for admin review"
             : "Product updated",
       );
       router.push("/merchant/products");

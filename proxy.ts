@@ -52,7 +52,7 @@ async function maintenanceGate(req: NextRequest): Promise<NextResponse | null> {
         });
       }
     } catch {
-      /* backend unreachable — let the redirect through without the cookie */
+      /* backend unreachable - let the redirect through without the cookie */
     }
     return res;
   }

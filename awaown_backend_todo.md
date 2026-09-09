@@ -1,8 +1,8 @@
 # AwaOwn Backend Plan & Todo
 
 > Merged doc. Two sources fed this:
-> 1. The **auth/infra plan** (OTP onboarding, dashboard tokens, VPS) — this file.
-> 2. The **"make the dummy real" feature backlog** — 4 rounds of PM feedback captured
+> 1. The **auth/infra plan** (OTP onboarding, dashboard tokens, VPS) - this file.
+> 2. The **"make the dummy real" feature backlog** - 4 rounds of PM feedback captured
 >    while the frontend was built as client-only simulation. Full detail lives in the
 >    Claude memory `awaown_backend_todo.md`
 >    (`~/.claude/projects/c--dev-work-awaown/memory/`). Section 15 below is the
@@ -10,7 +10,7 @@
 
 ---
 
-## ✅ Milestones 1–6 shipped (2026-08-31) — full marketplace, backend + frontend
+## ✅ Milestones 1–6 shipped (2026-08-31) - full marketplace, backend + frontend
 
 - **M1** OTP auth foundation · **M2** auth frontend wiring (RTK Query, `useAuthBootstrap`,
   OTP UI, skeletons).
@@ -38,11 +38,11 @@ admin@awaown.com`.
 
 ## ✅ Milestones 1–4 shipped (2026-08-31)
 
-- **M1 — OTP auth foundation** (see below).
-- **M2 — auth frontend wiring**: RTK Query (`lib/api/*`), reworked `authSlice`,
+- **M1 - OTP auth foundation** (see below).
+- **M2 - auth frontend wiring**: RTK Query (`lib/api/*`), reworked `authSlice`,
   `useAuthBootstrap` guard (replaces the `localStorage.awaown_auth` check), OTP
   login/signup/onboarding UI, skeleton primitives (`components/ui/skeleton.jsx`).
-- **M3–4 — customer domain, backend + frontend, verified end-to-end**:
+- **M3–4 - customer domain, backend + frontend, verified end-to-end**:
   catalog (categories/products/detail/search/reviews), cart (with partner-link
   pricing), wishlist, addresses, wallet (mock top-up), orders + checkout + **escrow
   state machine** (direct + partner sales, 20% partner platform fee, coupons,
@@ -53,18 +53,18 @@ admin@awaown.com`.
 **Run:** `cd backend && npm run start:dev` (:3001), `npm run dev` (:3000).
 Log in as `customer@awaown.com` (OTP prints to the API console).
 
-### ⏳ Remaining — M5+: merchant / partner / admin dashboards
+### ⏳ Remaining - M5+: merchant / partner / admin dashboards
 Schema already in place; needs backend modules + frontend wiring for `app/merchant/**`,
 `app/partner/**`, `app/admin/**`. See §12 for the feature backlog.
 
 ---
 
-## ✅ Milestone 1 — OTP auth foundation
+## ✅ Milestone 1 - OTP auth foundation
 
 The `backend/` NestJS + Prisma API is built and verified end-to-end against local
 Postgres. See `backend/README.md` to run it. Sprint 1 below is complete except the
 items explicitly deferred to Milestone 2 (frontend) / 3 (deploy). Test users from
-verification remain in the local dev DB — `cd backend && npx prisma migrate reset`
+verification remain in the local dev DB - `cd backend && npx prisma migrate reset`
 to wipe, then `npm run seed`.
 
 Verified: register → OTP (console/Mailtrap) → verify → tokens + httpOnly cookie →
@@ -79,7 +79,7 @@ uniform error envelope → audit rows for every action.
 ## 0) Where we are
 
 - Frontend: Next.js 16 app at repo root. Customer / merchant / partner / admin
-  dashboards **all built already** as client-only simulation — Redux slices
+  dashboards **all built already** as client-only simulation - Redux slices
   (`lib/store/*Slice.js`) + `localStorage` persistence, no server.
 - Auth today: `app/login/{customer,merchant,partner,admin}/page.js` dispatch a fake
   `login()` with `dummyUser` after a 900ms `setTimeout`. Guard is a direct
@@ -91,15 +91,15 @@ uniform error envelope → audit rows for every action.
 ## 1) Stack & repo layout
 
 - **Backend:** NestJS + Prisma + PostgreSQL, in a `backend/` folder at the repo root
-  (same repo, standalone-intended — mirrors the cevver project the owner built the same
+  (same repo, standalone-intended - mirrors the cevver project the owner built the same
   way). Frontend calls `NEXT_PUBLIC_API_URL/api/*`.
 - **ORM:** Prisma (migrations, `prisma studio` alongside pgAdmin).
-- **Email:** provider abstraction — Nodemailer (Mailtrap) for local dev, Resend for
+- **Email:** provider abstraction - Nodemailer (Mailtrap) for local dev, Resend for
   staging/prod, chosen by `EMAIL_PROVIDER` env var.
 - **OTP / rate-limit store:** a Postgres table to start. Redis only if/when it hurts.
 - **Process/deploy:** PM2 or systemd on the VPS, Nginx reverse proxy, Let's Encrypt TLS.
 
-## 2) VPS + database — answering the owner's questions
+## 2) VPS + database - answering the owner's questions
 
 **"How do I test online, not just locally?"**
 - Everyday dev stays local: local Postgres + `npm run start:dev` for the API +
@@ -116,7 +116,7 @@ uniform error envelope → audit rows for every action.
 - **No, not to start.** Install PostgreSQL on the same VPS as the API. One box, simplest
   to learn. This is fine for a pre-launch / low-traffic app.
 - Connect pgAdmin from home to the VPS DB over an **SSH tunnel** (don't expose 5432 to
-  the public internet — keep `listen_addresses='localhost'` and tunnel in). pgAdmin has
+  the public internet - keep `listen_addresses='localhost'` and tunnel in). pgAdmin has
   built-in SSH tunnel support: host `localhost:5432` *through* SSH to the VPS.
 - Move to managed Postgres (Neon / Supabase / DigitalOcean Managed DB / Railway) later
   **only** when you want automated backups + point-in-time restore + easy scaling. At
@@ -124,10 +124,10 @@ uniform error envelope → audit rows for every action.
   managed host. Nothing else changes.
 - Either way: automated `pg_dump` to off-box storage from day one.
 
-## 3) Auth model — OTP only
+## 3) Auth model - OTP only
 
 **Sign up**
-1. User picks account type (customer / merchant / partner) — admin is invite-only.
+1. User picks account type (customer / merchant / partner) - admin is invite-only.
 2. Enters full name + email.
 3. `POST /api/auth/{role}/register` → backend creates a `pending` user, generates OTP,
    emails it. No token yet.
@@ -158,7 +158,7 @@ uniform error envelope → audit rows for every action.
 
 ## 4) Dashboard-scoped tokens
 
-Each dashboard gets its own token — being signed in as a customer must not grant
+Each dashboard gets its own token - being signed in as a customer must not grant
 merchant/partner/admin access even for the same email.
 
 - **Access token (JWT, ~15 min):** `{ sub, role, dashboard, sessionId, email, iat, exp }`
@@ -171,16 +171,16 @@ merchant/partner/admin access even for the same email.
 - **Transport:** `httpOnly; Secure; SameSite=Lax` cookies, name-scoped per dashboard
   (`awaown_customer_rt` etc.) so tokens don't collide when one browser is logged into
   two roles. Access token returned in the JSON body, held in memory by the frontend.
-  *(This replaces the current `localStorage.awaown_auth` guard — see §6.)*
+  *(This replaces the current `localStorage.awaown_auth` guard - see §6.)*
 - **Guards:** `CustomerGuard`, `MerchantGuard`, `PartnerGuard`, `AdminGuard`, plus a
   generic `RolesGuard`. Guard checks role **and** `dashboard` claim.
 
-## 5) Database schema — first migration
+## 5) Database schema - first migration
 
 **users** (auth identity only)
 `id uuid pk · email citext · role enum · status enum(pending,active,blocked) ·
 full_name · email_verified_at · last_login_at · created_at · updated_at`
-— unique on `(email, role)` so one email can hold separate customer + merchant records.
+- unique on `(email, role)` so one email can hold separate customer + merchant records.
 
 **otp_codes**
 `id · user_id fk (nullable until user exists) · email · purpose enum · code_hash ·
@@ -210,7 +210,7 @@ Principle: auth data and profile data stay separate.
 
 - New `lib/api/client.ts` fetch wrapper (base URL from `NEXT_PUBLIC_API_URL`, sends
   cookies, retries once on 401 via `/auth/refresh`).
-- New `lib/api/auth.ts` — all auth calls.
+- New `lib/api/auth.ts` - all auth calls.
 - Rework `authSlice.js`: real `user` + `dashboard`, `setAuth` / `clearAuth`, no
   `dummyUser`.
 - Replace `/login/{role}` password forms with the 2-step OTP form (email → code →
@@ -222,7 +222,7 @@ Principle: auth data and profile data stay separate.
 - "Resend code" UI state + cooldown timer.
 - Per-role: on 401 from that dashboard's API, bounce to that role's `/login/{role}`.
 - **Heed `AGENTS.md`:** read `node_modules/next/dist/docs/` before writing Next 16
-  middleware / route code — the API may differ from training data.
+  middleware / route code - the API may differ from training data.
 
 ## 7) Security checklist (from day one)
 
@@ -265,7 +265,7 @@ backend/
     audit/
 ```
 
-## 10) API endpoints — first pass
+## 10) API endpoints - first pass
 
 ```
 POST /api/auth/:role/register          role ∈ customer|merchant|partner
@@ -285,7 +285,7 @@ GET  /api/users/profile
 
 ## 11) Sprint plan
 
-**Sprint 1 — auth foundation** ✅ complete
+**Sprint 1 - auth foundation** ✅ complete
 - [x] NestJS skeleton in `backend/`, Prisma + Postgres wired, `.env.example`
 - [x] First migration: users, otp_codes, sessions, audit_logs, *_profiles
 - [x] OTP service: generate, hash, expire, attempt-limit, rate-limit
@@ -293,7 +293,7 @@ GET  /api/users/profile
 - [x] `register` + `verify` (all 3 self-serve roles)
 - [x] `login` + `login/verify`
 - [x] Token service: access JWT + rotating refresh, dashboard-scoped, reuse detection
-- [x] Per-dashboard `DashboardGuard` factory (`CustomerGuard`/`MerchantGuard`/… ) — built,
+- [x] Per-dashboard `DashboardGuard` factory (`CustomerGuard`/`MerchantGuard`/… ) - built,
       mounted from Sprint 2 when role-specific routes land
 - [x] `resend-otp`, `refresh`, `logout`, `me`
 - [x] `@nestjs/throttler` global + tight per-route on `/auth/*`, audit logging
@@ -301,7 +301,7 @@ GET  /api/users/profile
 - [x] Admin OTP login (invite/seed only, no register route)
 - [x] Seed script (`npm run seed` → provisions `ADMIN_SEED_EMAIL`)
 
-**Sprint 2 — frontend wiring**
+**Sprint 2 - frontend wiring**
 - [ ] `lib/api/client.ts` + `lib/api/auth.ts`
 - [ ] Rework `authSlice`, drop `dummyUser` from auth
 - [ ] OTP onboarding flow UI (replace `/signup`)
@@ -310,7 +310,7 @@ GET  /api/users/profile
 - [ ] Replace `localStorage` auth guard with Next middleware
 - [ ] Per-role 401 → correct `/login/{role}`
 
-**Sprint 3 — deploy & harden**
+**Sprint 3 - deploy & harden**
 - [ ] VPS: Postgres install, DB + least-priv users, SSH-tunnel pgAdmin
 - [ ] Deploy API (PM2/systemd) + Nginx + Let's Encrypt
 - [ ] Frontend staging env → staging API
@@ -321,27 +321,27 @@ GET  /api/users/profile
 
 ---
 
-## 12) "Make the dummy real" backlog — condensed index
+## 12) "Make the dummy real" backlog - condensed index
 
 Full detail (4 rounds of PM feedback, per-feature "client now / backend needs") is in
 the Claude memory file. These come **after** auth, roughly in this order:
 
 | Area | What the backend must add |
 | --- | --- |
-| **Unified product catalog** | Customer catalog (`lib/dashboard-data.js` / `shop-data.js`) and merchant catalog (`state.merchant.products`) are **separate, unsynced datasets** — flagged 4× as the #1 architecture gap. One `products` table with real `merchant_id` / `partner_id`, `seller_type`. |
+| **Unified product catalog** | Customer catalog (`lib/dashboard-data.js` / `shop-data.js`) and merchant catalog (`state.merchant.products`) are **separate, unsynced datasets** - flagged 4× as the #1 architecture gap. One `products` table with real `merchant_id` / `partner_id`, `seller_type`. |
 | **Categories** | One `categories` table, admin-editable. Client taxonomy has churned 3× as hand-maintained constants. |
-| **Product media** | Object storage (S3/Cloudinary) + signed uploads + CDN URLs + image resize + video transcode. Currently base64 in `localStorage` (`lib/file-utils.js`) — does not scale. |
+| **Product media** | Object storage (S3/Cloudinary) + signed uploads + CDN URLs + image resize + video transcode. Currently base64 in `localStorage` (`lib/file-utils.js`) - does not scale. |
 | **Product types** | simple / variable / group(bundle) / digital. `product_variants` table with structured `{attribute_type, value}` (not one free-text label). Digital = secure gated signed download, not public CDN URL. Required-field set differs by `deliveryType`. |
 | **Partner program** | per-product `offerCommission` + `partnerProfitAmount` (flat ₦, min ₦1,000). Only enrolled products appear to partners. Server-enforce the minimum + the partner discount cap (≤ their own profit). |
-| **Partner attribution** | **not built at all** — `?ref=` / `?product=` links copy to clipboard but nothing reads them. Need capture (cookie/session) → persist through cart → write `referred_by_partner_id` on the order. Prereq for partner earnings. |
+| **Partner attribution** | **not built at all** - `?ref=` / `?product=` links copy to clipboard but nothing reads them. Need capture (cookie/session) → persist through cart → write `referred_by_partner_id` on the order. Prereq for partner earnings. |
 | **Orders** | One `orders` table + `order_status_history`. Customer and merchant currently read two unsynced dummy arrays. Status machine: placed → escrow_held → processing → shipped → delivered → escrow_released. |
 | **Escrow** | Holds funds until delivery confirmed. Release event fans out to merchant payout eligibility + partner earnings clearing. Refund request pauses release. |
 | **Payments** | Paystack Checkout for buyers; Paystack Transfers for merchant payouts (2.5% fee) + partner withdrawals. Multi-gateway selectable (Paystack/Flutterwave/OPay/Stripe) per admin settings. Nothing real exists yet. |
 | **Payouts / withdrawals** | Real bank rails + payout queue/worker + webhook-driven status (`processing → paid / failed`). |
-| **KYC** | Most obviously faked piece — `VerificationModal` auto-approves after 2.5s. Need real ID-verification provider (Smile Identity / Youverify) or admin review queue. Two ID images (front+back) + selfie. Gates payout/withdraw. |
+| **KYC** | Most obviously faked piece - `VerificationModal` auto-approves after 2.5s. Need real ID-verification provider (Smile Identity / Youverify) or admin review queue. Two ID images (front+back) + selfie. Gates payout/withdraw. |
 | **Confidentiality rule** | Merchants must never see AwaOwn's 20% cut of partner profit; partners must never see the merchant-side fee. Enforce **server-side** (field-level perms / per-role response shapes), not by UI omission. |
 | **Merchant/partner storefronts** | Real slugs, `storeBanner/storeLogo/storeBio` + (merchant only) `state/address/phone`. Partner-only customization suite: `storeTheme/storeAccent/storeFont/storeProfileImage` (9 accents, 12 font pairings). |
-| **Admin panel** | Almost entirely UI toggles with no effect: Automation Center (no engine), Team RBAC (cosmetic dropdown — needs real route/action perms), Settings toggles (maintenance mode, 2FA — inert), refund approval (doesn't move money), global search (client substring over seed arrays), homepage content editor (not wired to real homepage), audit log (hardcoded actor), email campaigns (no send). |
+| **Admin panel** | Almost entirely UI toggles with no effect: Automation Center (no engine), Team RBAC (cosmetic dropdown - needs real route/action perms), Settings toggles (maintenance mode, 2FA - inert), refund approval (doesn't move money), global search (client substring over seed arrays), homepage content editor (not wired to real homepage), audit log (hardcoded actor), email campaigns (no send). |
 | **Notifications** | Real-time notifications for all roles: orders, payments, verification, withdrawals, refunds, support. |
 | **Undo buffer** | The `useUndoBuffer()` 8s client `setTimeout` pattern (7+ admin actions) → real delayed/cancellable job type. |
 

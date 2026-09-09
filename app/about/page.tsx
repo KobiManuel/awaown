@@ -35,7 +35,7 @@ export default function AboutPage() {
           </Link>
         </section>
 
-        {/* Kept in place for the upcoming redesign — not final content. */}
+        {/* Kept in place for the upcoming redesign - not final content. */}
         <section className="mt-14 flex flex-col gap-6">
           <h2 className="text-[22px] font-semibold text-shop-heading md:text-[26px]">
             What holds the ecosystem together

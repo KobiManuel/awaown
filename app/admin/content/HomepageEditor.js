@@ -130,7 +130,7 @@ function DimensionHint({ text }) {
   return (
     <p className="text-[10.5px] leading-[15px] text-shop-text/50">
       Design at <span className="font-medium text-shop-text/70">{text}</span>. The
-      image fills this frame edge-to-edge — hold these exact proportions and it
+      image fills this frame edge-to-edge - hold these exact proportions and it
       scales cleanly on every screen (the width flexes with the device, the
       shape does not).
     </p>
@@ -608,7 +608,7 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
               className="text-[11px] text-white/70"
             />
           </div>
-          <DimensionHint text="1200 × 800 px (ratio 3:2) — it sits behind the text, so keep the focal point on the left" />
+          <DimensionHint text="1200 × 800 px (ratio 3:2) - it sits behind the text, so keep the focal point on the left" />
         </div>
 
         {/* Webinar */}

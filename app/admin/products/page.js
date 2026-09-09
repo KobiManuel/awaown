@@ -44,7 +44,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={images[activeImage]}
-              alt={`${product.title} — photo ${activeImage + 1}`}
+              alt={`${product.title} - photo ${activeImage + 1}`}
               className="h-auto w-full rounded-[8px] object-contain"
             />
           ) : (
@@ -54,7 +54,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         {images.length > 0 && (
           <div className="text-[11px] text-shop-text/60">
             Photo {activeImage + 1} of {images.length}
-            {activeImage === 0 ? " · cover" : ""} — shown at its uploaded
+            {activeImage === 0 ? " · cover" : ""} - shown at its uploaded
             proportions.
           </div>
         )}
@@ -112,7 +112,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
               <p className="mb-1.5 text-shop-text/60">
                 {product.variantAxes?.length
-                  ? `${product.variantAxes.map((a) => a.name).join(" × ")} — ${product.variants.length} combination${product.variants.length === 1 ? "" : "s"}`
+                  ? `${product.variantAxes.map((a) => a.name).join(" × ")} - ${product.variants.length} combination${product.variants.length === 1 ? "" : "s"}`
                   : `Varieties (${product.variants.length})`}
               </p>
               <div className="flex flex-col gap-1.5">

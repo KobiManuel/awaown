@@ -16,7 +16,7 @@ export default function NewMerchantProductPage() {
       await createProduct(body).unwrap();
       showToast(
         asDraft
-          ? "Draft saved — finish it any time from your products"
+          ? "Draft saved - finish it any time from your products"
           : `${body.title} submitted for admin review`,
       );
       router.push("/merchant/products");

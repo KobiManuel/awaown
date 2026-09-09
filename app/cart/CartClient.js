@@ -162,7 +162,7 @@ const CartClient = () => {
           </button>
           {!commerce.authed && (
             <p className="mt-2 text-center text-[11.5px] text-shop-text/60">
-              You&apos;ll sign in at checkout — your cart comes with you.
+              You&apos;ll sign in at checkout - your cart comes with you.
             </p>
           )}
         </div>

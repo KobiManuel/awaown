@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
     try {
       await checkCode({ email, code }).unwrap();
       setCodeVerified(true);
-      setNotice("Code confirmed — now set your password.");
+      setNotice("Code confirmed - now set your password.");
     } catch (err) {
       setFormError(errorMessage(err, "That code didn't work."));
     }
