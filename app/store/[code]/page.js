@@ -62,7 +62,7 @@ export default function PublicPartnerStorePage() {
         <StorePattern
           pattern={store.pattern}
           color={accent.value}
-          opacity={theme.id === "bold" ? 0.14 : 0.08}
+          opacity={theme.id === "bold" ? 0.26 : 0.17}
         />
       )}
       <div className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-4 py-8">

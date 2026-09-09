@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Banknote,
   User,
+  Palette,
 } from "lucide-react";
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
 import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
@@ -33,6 +34,12 @@ export default function PartnerLayout({
   const navItems = [
     { href: "/partner", label: "Home", icon: LayoutDashboard, exact: true },
     { href: "/partner/store", label: "My Store", icon: Store },
+    {
+      href: "/partner/customize",
+      label: "Customize Store",
+      icon: Palette,
+      desktopOnly: true,
+    },
     { href: "/partner/earnings", label: "Earnings", icon: TrendingUp },
     { href: "/partner/withdraw", label: "Withdraw", icon: Banknote },
     { href: "/partner/account", label: "Account", icon: User },

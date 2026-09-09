@@ -40,7 +40,7 @@ function seedFrom(str) {
 export default function StorePattern({
   pattern,
   color = "#6D28D9",
-  opacity = 0.09,
+  opacity = 0.16,
   className = "",
 }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");

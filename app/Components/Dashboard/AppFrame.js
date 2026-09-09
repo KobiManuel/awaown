@@ -90,7 +90,7 @@ const AppFrame = ({
                 <StorePattern
                   pattern={activePattern}
                   color={activePatternColor}
-                  opacity={0.06}
+                  opacity={0.11}
                 />
               )}
               <div className="relative z-10 flex-1 pb-[92px] lg:pb-0">

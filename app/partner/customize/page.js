@@ -19,6 +19,7 @@ import {
   STORE_FONTS,
   STORE_CUSTOMIZATION_DEFAULTS,
   getAccent,
+  getTheme,
 } from "@/lib/partner-store-options";
 import { STORE_PATTERNS } from "@/lib/partner-store-patterns";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
@@ -263,33 +264,79 @@ export default function PartnerCustomizePage() {
           </label>
         </div>
 
-        {/* Theme */}
+        {/* Theme (plain surfaces + category doodle backdrops in one list) */}
         <div className="flex flex-col gap-2.5">
           <p className="text-[13px] font-semibold text-shop-heading">Theme</p>
+          <p className="-mt-1 text-[11.5px] text-shop-text/70">
+            A plain surface, or a category doodle backdrop drawn in your accent
+            colour.
+          </p>
           <div className="grid grid-cols-3 gap-2.5">
             {STORE_THEMES.map((theme) => {
-              const active = storeTheme === theme.id;
+              const active = storePattern === "none" && storeTheme === theme.id;
               return (
                 <button
                   key={theme.id}
                   type="button"
-                  onClick={() => update({ storeTheme: theme.id })}
+                  onClick={() =>
+                    update({ storeTheme: theme.id, storePattern: "none" })
+                  }
                   className={`flex flex-col gap-2 rounded-[12px] border p-2.5 text-left transition-colors ${
                     active ? "border-shop-accent-1" : "border-shop-border"
                   }`}
                 >
                   <div
-                    className="flex h-10 w-full items-center justify-center rounded-[8px] border"
-                    style={{ backgroundColor: theme.pageBg, borderColor: theme.border }}
+                    className="flex h-14 w-full items-center justify-center rounded-[8px] border"
+                    style={{
+                      backgroundColor: theme.pageBg,
+                      borderColor: theme.border,
+                    }}
                   >
                     <div
                       className="h-5 w-5 rounded-full"
-                      style={{ backgroundColor: theme.cardBg, border: `1px solid ${theme.border}` }}
+                      style={{
+                        backgroundColor: theme.cardBg,
+                        border: `1px solid ${theme.border}`,
+                      }}
                     />
                   </div>
                   <span className="flex items-center gap-1 text-[11.5px] font-medium text-shop-heading">
                     {active && <Check className="h-3 w-3 text-shop-accent-1" />}
                     {theme.label}
+                  </span>
+                </button>
+              );
+            })}
+
+            {STORE_PATTERNS.filter((p) => p.id !== "none").map((pat) => {
+              const active = storePattern === pat.id;
+              return (
+                <button
+                  key={pat.id}
+                  type="button"
+                  onClick={() =>
+                    update({ storePattern: pat.id, storeTheme: "classic" })
+                  }
+                  className={`flex flex-col gap-2 rounded-[12px] border p-2.5 text-left transition-colors ${
+                    active ? "border-shop-accent-1" : "border-shop-border"
+                  }`}
+                >
+                  <span
+                    className="relative flex h-14 w-full items-center justify-center overflow-hidden rounded-[8px] border"
+                    style={{
+                      backgroundColor: getTheme("classic").pageBg,
+                      borderColor: getTheme("classic").border,
+                    }}
+                  >
+                    <StorePattern
+                      pattern={pat.id}
+                      color={accentHex}
+                      opacity={0.7}
+                    />
+                  </span>
+                  <span className="flex items-center gap-1 text-[11.5px] font-medium text-shop-heading">
+                    {active && <Check className="h-3 w-3 text-shop-accent-1" />}
+                    {pat.label}
                   </span>
                 </button>
               );
@@ -319,50 +366,6 @@ export default function PartnerCustomizePage() {
                     {active && <Check className="h-4 w-4 text-white" />}
                   </span>
                   <span className="text-[11px] text-shop-text">{accent.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Background pattern */}
-        <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] font-semibold text-shop-heading">
-            Background Pattern
-          </p>
-          <p className="-mt-1 text-[11.5px] text-shop-text/70">
-            A soft doodle backdrop for your store and dashboard, drawn in your
-            accent colour.
-          </p>
-          <div className="grid grid-cols-3 gap-2.5">
-            {STORE_PATTERNS.map((pat) => {
-              const active = storePattern === pat.id;
-              return (
-                <button
-                  key={pat.id}
-                  type="button"
-                  onClick={() => update({ storePattern: pat.id })}
-                  className={`relative flex flex-col gap-1.5 overflow-hidden rounded-[12px] border p-2 text-left transition-colors ${
-                    active ? "border-shop-accent-1" : "border-shop-border"
-                  }`}
-                >
-                  <span className="relative flex h-14 w-full items-center justify-center overflow-hidden rounded-[8px] bg-shop-bg">
-                    {pat.id === "none" ? (
-                      <span className="text-[10.5px] text-shop-text/50">
-                        Plain
-                      </span>
-                    ) : (
-                      <StorePattern
-                        pattern={pat.id}
-                        color={accentHex}
-                        opacity={0.5}
-                      />
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-shop-heading">
-                    {active && <Check className="h-3 w-3 text-shop-accent-1" />}
-                    {pat.label}
-                  </span>
                 </button>
               );
             })}
