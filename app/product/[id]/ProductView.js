@@ -24,6 +24,8 @@ import {
 } from "@/lib/dashboard-data";
 import { isColorAxis, colorHex } from "@/lib/variant-options";
 import { smartTitle, sentenceCase } from "@/lib/text-format";
+import { setBuyNow as setBuyNowItem } from "@/lib/express-checkout";
+import FullScreenLoader from "@/app/Components/Dashboard/FullScreenLoader";
 import { rememberRef, readRef } from "@/lib/partner-ref";
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
@@ -68,6 +70,7 @@ function ProductDetail() {
   const [activeImg, setActiveImg] = useState(null); // thumbnail the buyer tapped
   const [imgLoading, setImgLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [navigating, setNavigating] = useState(false);
 
   const commerce = useCommerce();
 
@@ -233,22 +236,30 @@ function ProductDetail() {
     }
   };
 
-  const buyNow = async () => {
-    if (!(await handleAddToCart())) return;
+  // Buy Now goes straight to checkout for THIS item only - it never touches the
+  // cart. The item is stashed for the checkout page (survives the login hop).
+  const buyNow = () => {
+    if (needsSelection || outOfStock) return;
+    setNavigating(true);
+    setBuyNowItem({
+      productId: product.productId,
+      slug: product.slug ?? id,
+      variantId: resolved.variantId ?? null,
+      qty,
+      ref: refCode ?? null,
+    });
     if (commerce.authed) {
-      router.push("/dashboard/checkout");
+      router.push("/dashboard/checkout?mode=buynow");
     } else {
-      try {
-        localStorage.setItem("awaown_merge_guest", "1");
-      } catch {
-        /* ignore */
-      }
-      router.push("/login/customer?next=/dashboard/checkout");
+      router.push(
+        `/login/customer?next=${encodeURIComponent("/dashboard/checkout?mode=buynow")}`,
+      );
     }
   };
 
   return (
     <PageShell>
+      {navigating && <FullScreenLoader label="Taking you to checkout" />}
       <div className="mx-auto w-full max-w-[1100px] px-4 py-6 font-shop lg:py-10">
         <Link
           href="/"

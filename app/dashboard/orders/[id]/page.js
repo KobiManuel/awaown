@@ -12,10 +12,14 @@ import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import {
   useGetOrderQuery,
   useConfirmDeliveryMutation,
+  useConfirmPaymentMutation,
   useRequestRefundMutation,
   useSimulateFulfilmentMutation,
+  useRetryPaymentMutation,
+  useCancelOrderMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { openPaystackPopup } from "@/lib/paystack";
 
 const DEV = process.env.NODE_ENV !== "production";
 
@@ -51,8 +55,12 @@ function OrderDetailContent() {
 
   const { data: order, isLoading, isError } = useGetOrderQuery(id);
   const [confirmDelivery, confirmState] = useConfirmDeliveryMutation();
+  const [confirmPayment] = useConfirmPaymentMutation();
   const [requestRefund, refundState] = useRequestRefundMutation();
   const [simulate, simState] = useSimulateFulfilmentMutation();
+  const [retryPayment] = useRetryPaymentMutation();
+  const [cancelOrder, cancelState] = useCancelOrderMutation();
+  const [payBusy, setPayBusy] = useState(false);
 
   if (isLoading) {
     return (
@@ -114,6 +122,68 @@ function OrderDetailContent() {
     try {
       await requestRefund({ reference: order.reference, reason }).unwrap();
       showToast("Refund requested. Our team will review it");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const doRetryPayment = async () => {
+    if (payBusy) return;
+    setPayBusy(true);
+    try {
+      const res = await retryPayment(order.reference).unwrap();
+      const pay = res?.payment;
+      if (!pay) {
+        showToast("Payment already confirmed");
+        setPayBusy(false);
+        return;
+      }
+      try {
+        sessionStorage.setItem("awaown_pending_order", order.reference);
+      } catch {
+        /* ignore */
+      }
+      if (pay.provider === "paystack" && pay.accessCode) {
+        await openPaystackPopup({
+          accessCode: pay.accessCode,
+          fallbackUrl: pay.authorizationUrl,
+          onSuccess: async () => {
+            try {
+              await confirmPayment(order.reference).unwrap();
+            } catch {
+              /* order page will reflect the real state */
+            }
+          },
+          onCancel: () => setPayBusy(false),
+          onError: (err) => {
+            showToast(err?.message || "Payment could not be completed");
+            setPayBusy(false);
+          },
+        });
+        return;
+      }
+      if (pay.authorizationUrl) {
+        window.location.href = pay.authorizationUrl;
+        return;
+      }
+      // mock gateway
+      try {
+        await confirmPayment(order.reference).unwrap();
+      } catch {
+        /* ignore */
+      }
+      setPayBusy(false);
+    } catch (err) {
+      showToast(errorMessage(err));
+      setPayBusy(false);
+    }
+  };
+
+  const doCancelOrder = async () => {
+    if (!window.confirm("Cancel this order? Nothing has been charged.")) return;
+    try {
+      await cancelOrder(order.reference).unwrap();
+      showToast("Order cancelled");
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -197,6 +267,44 @@ function OrderDetailContent() {
           })}
         </div>
       </div>
+
+      {order.status === "PENDING_PAYMENT" && (
+        <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-amber-300 bg-amber-50 p-4">
+          <p className="text-[13px] font-semibold text-amber-900">
+            Payment not completed
+          </p>
+          <p className="text-[12px] leading-[18px] text-amber-800">
+            This order is on hold and nothing has been charged. Finish paying to
+            send it to the merchant, or cancel it to release the items.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={doRetryPayment}
+              disabled={payBusy}
+              className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:opacity-70"
+            >
+              {payBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                `Complete payment · ${formatPrice(order.total)}`
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={doCancelOrder}
+              disabled={cancelState.isLoading || payBusy}
+              className="rounded-[10px] border border-amber-300 bg-white py-3 text-[13px] font-semibold text-amber-900 disabled:opacity-70 sm:px-5"
+            >
+              {cancelState.isLoading ? "Cancelling…" : "Cancel order"}
+            </button>
+          </div>
+          <p className="text-[10.5px] text-amber-700">
+            If you do nothing, this order is automatically cancelled about 45
+            minutes after it was placed.
+          </p>
+        </div>
+      )}
 
       {order.tracking && (
         <div className="mx-4 flex flex-col gap-1.5 rounded-[12px] border border-shop-border p-3.5">

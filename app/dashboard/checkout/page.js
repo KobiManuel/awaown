@@ -1,21 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Loader2, MapPin, Check, Wallet, Tag } from "lucide-react";
+import { ShieldCheck, Loader2, MapPin, Check, Wallet, Tag, Zap } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { PaystackLogo } from "@/app/Components/Icons/BrandLogos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetCartQuery, useGetAddressesQuery } from "@/lib/api/commerceApi";
 import { useGetWalletQuery } from "@/lib/api/walletApi";
+import { useGetProductQuery } from "@/lib/api/catalogApi";
 import {
   useCheckoutMutation,
   useConfirmPaymentMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
+import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
 
 const SHIPPING_FEE = 1500;
 
@@ -27,7 +29,18 @@ const METHODS = [
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { data: cart, isLoading: cartLoading } = useGetCartQuery();
+
+  // "Buy Now" mode: one item, read from the tab, never from the cart.
+  const [buyNow] = useState(() => readBuyNow());
+  const isBuyNow = !!buyNow;
+
+  const { data: cart, isLoading: cartLoading } = useGetCartQuery(undefined, {
+    skip: isBuyNow,
+  });
+  const { data: bnProduct, isLoading: bnLoading } = useGetProductQuery(
+    buyNow?.slug,
+    { skip: !isBuyNow },
+  );
   const { data: addresses, isLoading: addrLoading } = useGetAddressesQuery();
   const { data: wallet } = useGetWalletQuery();
 
@@ -40,8 +53,26 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const items = cart?.items ?? [];
-  const subtotal = cart?.subtotal ?? 0;
+  const buyNowLine = useMemo(() => {
+    if (!isBuyNow || !bnProduct) return null;
+    const variant = buyNow.variantId
+      ? (bnProduct.variants ?? []).find((v) => v.id === buyNow.variantId)
+      : null;
+    const unitPrice = variant?.price ?? bnProduct.price;
+    const qty = Math.max(1, buyNow.qty || 1);
+    return {
+      id: "buynow",
+      title: bnProduct.title,
+      qty,
+      lineTotal: unitPrice * qty,
+    };
+  }, [isBuyNow, bnProduct, buyNow]);
+
+  const loading = isBuyNow ? bnLoading : cartLoading;
+  const items = isBuyNow ? (buyNowLine ? [buyNowLine] : []) : (cart?.items ?? []);
+  const subtotal = isBuyNow
+    ? (buyNowLine?.lineTotal ?? 0)
+    : (cart?.subtotal ?? 0);
   const shipping = items.length ? SHIPPING_FEE : 0;
   const total = subtotal + shipping;
 
@@ -52,10 +83,17 @@ export default function CheckoutPage() {
   }, [addresses, addressId]);
 
   useEffect(() => {
-    if (!cartLoading && !busy && items.length === 0) {
-      router.replace("/dashboard/cart");
+    if (busy || loading) return;
+    if (isBuyNow) {
+      // buy-now item missing / expired: send them back to the product
+      if (!bnLoading && !bnProduct) {
+        clearBuyNow();
+        router.replace(buyNow?.slug ? `/product/${buyNow.slug}` : "/");
+      }
+      return;
     }
-  }, [cartLoading, busy, items.length, router]);
+    if (items.length === 0) router.replace("/dashboard/cart");
+  }, [busy, loading, isBuyNow, bnLoading, bnProduct, items.length, router, buyNow]);
 
   const walletShort =
     payment === "WALLET" && wallet && wallet.balance < total;
@@ -100,7 +138,16 @@ export default function CheckoutPage() {
         addressId,
         paymentMethod: payment,
         couponCode: coupon.trim() || undefined,
+        buyNow: isBuyNow
+          ? {
+              productId: buyNow.productId,
+              variantId: buyNow.variantId || undefined,
+              qty: Math.max(1, buyNow.qty || 1),
+              ref: buyNow.ref || undefined,
+            }
+          : undefined,
       }).unwrap();
+      if (isBuyNow) clearBuyNow();
 
       const reference = res.reference;
       const pay = res.payment;
@@ -130,7 +177,15 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Checkout" backHref="/dashboard/cart" showBackOnDesktop />
+      <AppHeader
+        title={isBuyNow ? "Express Checkout" : "Checkout"}
+        backHref={
+          isBuyNow && buyNow?.slug
+            ? `/product/${buyNow.slug}`
+            : "/dashboard/cart"
+        }
+        showBackOnDesktop
+      />
 
       <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-8 lg:px-8">
         <div className="flex flex-col gap-5 lg:col-span-2">
@@ -281,10 +336,16 @@ export default function CheckoutPage() {
           </div>
 
           <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border p-4">
-            <p className="mb-1 text-[13px] font-semibold text-shop-heading">
+            <p className="mb-1 flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+              {isBuyNow && <Zap className="h-3.5 w-3.5 text-shop-accent-1" />}
               Order Summary
             </p>
-            {cartLoading ? (
+            {isBuyNow && (
+              <p className="-mt-1 mb-1 text-[11px] text-shop-text/70">
+                Buying this item now - it is not added to your cart.
+              </p>
+            )}
+            {loading ? (
               <Skeleton className="h-16 w-full" />
             ) : (
               items.map((i) => (
