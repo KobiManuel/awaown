@@ -103,6 +103,7 @@ export default function OtpAuthFlow({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [codeVerified, setCodeVerified] = useState(false); // reset flow: code checked
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
@@ -191,7 +192,12 @@ export default function OtpAuthFlow({
     e.preventDefault();
     setFormError("");
     try {
-      const data = await loginPassword({ role, email, password }).unwrap();
+      const data = await loginPassword({
+        role,
+        email,
+        password,
+        rememberMe,
+      }).unwrap();
       finish(data);
     } catch (err) {
       if (err?.status === 409) {
@@ -277,8 +283,18 @@ export default function OtpAuthFlow({
     try {
       const data =
         view === "verify"
-          ? await verifyRegistration({ role, email, code: value }).unwrap()
-          : await verifyLogin({ role, email, code: value }).unwrap();
+          ? await verifyRegistration({
+              role,
+              email,
+              code: value,
+              rememberMe,
+            }).unwrap()
+          : await verifyLogin({
+              role,
+              email,
+              code: value,
+              rememberMe,
+            }).unwrap();
 
       // Accounts from before password sign-in existed have no password yet.
       // catch that here (only possible on an OTP login, never after signup,
@@ -394,6 +410,15 @@ export default function OtpAuthFlow({
               autoComplete="current-password"
               placeholder="Your password"
             />
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-shop-text">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 accent-[#6d28d9]"
+            />
+            Keep me signed in on this device
           </label>
           <Err />
           <button type="submit" disabled={busy} className={primaryBtn}>

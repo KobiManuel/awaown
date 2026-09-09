@@ -32,6 +32,7 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [codeVerified, setCodeVerified] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [formError, setFormError] = useState("");
@@ -69,7 +70,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setFormError("");
     try {
-      finish(await login({ email, password }).unwrap());
+      finish(await login({ email, password, rememberMe }).unwrap());
     } catch (err) {
       setFormError(errorMessage(err, "Incorrect email or password."));
     }
@@ -170,6 +171,15 @@ export default function AdminLoginPage() {
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-shop-text">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 accent-[#6d28d9]"
+            />
+            Keep me signed in on this device
           </label>
           {formError && <p className="text-[13px] font-medium text-red-600">{formError}</p>}
           <button type="submit" disabled={busy} className={btn}>
