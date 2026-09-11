@@ -5,22 +5,28 @@ import Image from "next/image";
 import { Camera, Loader2 } from "lucide-react";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useSaveAboutImageMutation } from "@/lib/api/adminApi";
-import { useIsAdminViewer } from "@/lib/useIsAdminViewer";
 
 /**
- * One placeholder section on the public About page. Shows the admin-uploaded
- * image for `sectionKey` when there is one, otherwise a plain grey box. When
- * the viewer is a signed-in admin, the box itself becomes clickable - pick,
- * crop and upload an image and it's saved immediately for every visitor.
+ * One placeholder section on the About page. Shows the admin-uploaded image
+ * for `sectionKey` when there is one, otherwise a plain grey box.
+ *
+ * `editable` must be passed explicitly by the caller (true only from inside
+ * the admin panel, where a single already-correct admin session already
+ * exists via AppFrame) - this component never runs its own auth check.
+ * Detecting "is this viewer an admin" from a public page would mean running
+ * a second, competing session bootstrap alongside the one every page's root
+ * layout already runs for guest cart/wishlist sync, and the two fight over
+ * the same shared auth state (this shipped once and caused an infinite
+ * render loop - see git history - don't reintroduce it).
  */
 export default function AboutImageSlot({
   sectionKey,
   value,
   alt = "",
   aspect,
+  editable = false,
   className = "",
 }) {
-  const isAdmin = useIsAdminViewer();
   const { pickAndCrop, uploading, modal } = useImageCropUpload("about");
   const [saveImage] = useSaveAboutImageMutation();
   const fileRef = useRef(null);
@@ -45,7 +51,7 @@ export default function AboutImageSlot({
           <Loader2 className="h-6 w-6 animate-spin text-white" />
         </span>
       )}
-      {isAdmin && !uploading && (
+      {editable && !uploading && (
         <span className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 text-transparent transition-colors hover:bg-black/40 hover:text-white">
           <Camera className="h-5 w-5" strokeWidth={1.75} />
           <span className="text-[12.5px] font-semibold">
@@ -56,7 +62,7 @@ export default function AboutImageSlot({
     </div>
   );
 
-  if (!isAdmin) return box;
+  if (!editable) return box;
 
   return (
     <button

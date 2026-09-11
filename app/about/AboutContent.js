@@ -61,7 +61,6 @@ export default function AboutContent() {
           sectionKey="hero"
           value={images.hero}
           alt="AwaOwn"
-          aspect={16 / 7}
           className="-mt-8 aspect-[16/9] w-full md:-mt-10 md:aspect-[16/7]"
         />
 
@@ -95,7 +94,6 @@ export default function AboutContent() {
                   sectionKey={a.key}
                   value={images[a.key]}
                   alt={a.title}
-                  aspect={4 / 3}
                   className="aspect-[16/9] w-full rounded-none md:aspect-auto md:w-[42%]"
                 />
                 <div className="flex flex-1 flex-col justify-center gap-3 p-6 md:p-10">
