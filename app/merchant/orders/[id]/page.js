@@ -2,17 +2,17 @@
 
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Check, CheckCircle2, MapPin, User, Loader2, Truck } from "lucide-react";
+import { Check, CheckCircle2, MapPin, User, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
 import { statusMeta, ORDER_STEPS } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import React, { useState } from "react";
+import React from "react";
 import {
   useGetMerchantOrderQuery,
   useConfirmOrderReadyMutation,
-  useSetMerchantOrderTrackingMutation,
 } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
@@ -22,8 +22,6 @@ export default function MerchantOrderDetailPage() {
   const { data: order, isLoading, isError } = useGetMerchantOrderQuery(id);
   const [confirmReady, { isLoading: confirming }] =
     useConfirmOrderReadyMutation();
-  const [setTracking, trackState] = useSetMerchantOrderTrackingMutation();
-  const [ship, setShip] = useState({ carrier: "", number: "", url: "" });
 
   if (isLoading) {
     return (
@@ -68,26 +66,6 @@ export default function MerchantOrderDetailPage() {
       showToast(errorMessage(err));
     }
   };
-
-  const markShipped = async () => {
-    if (!ship.carrier.trim()) {
-      showToast("Enter the carrier");
-      return;
-    }
-    try {
-      await setTracking({
-        reference: order.reference,
-        carrier: ship.carrier,
-        number: ship.number,
-        url: ship.url,
-        ship: true,
-      }).unwrap();
-      showToast("Order marked as shipped");
-    } catch (err) {
-      showToast(errorMessage(err));
-    }
-  };
-
 
   return (
     <div className="flex flex-col gap-5 pb-6 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
@@ -184,79 +162,17 @@ export default function MerchantOrderDetailPage() {
         )}
       </div>
 
-      {/* Shipment / tracking */}
+      {/* Delivery */}
       {["PROCESSING", "SHIPPED", "DELIVERED", "ESCROW_RELEASED"].includes(
         order.status,
       ) && (
-        <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <Truck className="h-4 w-4 text-shop-accent-1" /> Shipment
-          </p>
-          {order.status === "PROCESSING" ? (
-            <>
-              <p className="text-[12px] text-shop-text/70">
-                Add the carrier and tracking number, then mark the order shipped.
-                The customer is emailed the details.
-              </p>
-              <input
-                value={ship.carrier}
-                onChange={(e) => setShip((s) => ({ ...s, carrier: e.target.value }))}
-                placeholder="Carrier (e.g. GIG Logistics, DHL)"
-                className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-              />
-              <input
-                value={ship.number}
-                onChange={(e) => setShip((s) => ({ ...s, number: e.target.value }))}
-                placeholder="Tracking number (optional)"
-                className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-              />
-              <input
-                value={ship.url}
-                onChange={(e) => setShip((s) => ({ ...s, url: e.target.value }))}
-                placeholder="Tracking link (optional)"
-                className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-              />
-              <button
-                type="button"
-                onClick={markShipped}
-                disabled={trackState.isLoading}
-                className="flex items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:opacity-70"
-              >
-                {trackState.isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Truck className="h-4 w-4" />
-                )}
-                Mark as Shipped
-              </button>
-            </>
-          ) : order.tracking ? (
-            <div className="text-[12.5px] text-shop-text">
-              <p>
-                <span className="text-shop-text/60">Carrier: </span>
-                {order.tracking.carrier || "-"}
-              </p>
-              <p>
-                <span className="text-shop-text/60">Tracking #: </span>
-                {order.tracking.number || "-"}
-              </p>
-              {order.tracking.url && (
-                <a
-                  href={order.tracking.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-block font-semibold text-shop-accent-1"
-                >
-                  Open tracking page
-                </a>
-              )}
-            </div>
-          ) : (
-            <p className="text-[12.5px] text-shop-text/60">
-              No tracking added. AwaOwn logistics is handling this delivery.
-            </p>
-          )}
-        </div>
+        <FezDeliveryBanner
+          className="lg:mx-8"
+          status={
+            order.shipment?.status ??
+            (order.status === "PROCESSING" ? "pending" : undefined)
+          }
+        />
       )}
 
       <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">

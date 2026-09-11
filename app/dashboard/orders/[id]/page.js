@@ -8,7 +8,6 @@ import {
   Check,
   ShieldCheck,
   Loader2,
-  Truck,
   KeyRound,
   X,
   ImagePlus,
@@ -19,6 +18,7 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import {
   useGetOrderQuery,
   useConfirmDeliveryMutation,
@@ -120,6 +120,34 @@ function OrderDetailContent() {
   const autoReleaseAt = order.autoReleaseAt
     ? new Date(order.autoReleaseAt)
     : null;
+
+  // furthest-along shipment status, so a multi-merchant order shows one clean
+  // phrase instead of a per-leg technical list
+  const SHIPMENT_RANK = [
+    "pending",
+    "created",
+    "picked_up",
+    "dispatched",
+    "delivered",
+  ];
+  const shipments = order.shipments ?? [];
+  const troubledShipment = shipments.find((s) =>
+    ["returned", "failed", "cancelled"].includes(s.status),
+  );
+  const deliveryStatus =
+    troubledShipment?.status ??
+    (shipments.length
+      ? shipments.reduce((furthest, s) =>
+          SHIPMENT_RANK.indexOf(s.status) > SHIPMENT_RANK.indexOf(furthest)
+            ? s.status
+            : furthest,
+        shipments[0].status)
+      : null);
+  const showDeliveryBanner =
+    shipments.length > 0 ||
+    ["PROCESSING", "SHIPPED", "DELIVERED", "ESCROW_RELEASED"].includes(
+      order.status,
+    );
 
   const doConfirm = async () => {
     try {
@@ -339,39 +367,7 @@ function OrderDetailContent() {
           </div>
         )}
 
-      {(order.tracking || (order.shipments ?? []).length > 0) && (
-        <div className="mx-4 flex flex-col gap-1.5 rounded-[12px] border border-shop-border p-3.5">
-          <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-shop-heading">
-            <Truck className="h-4 w-4 text-shop-accent-1" /> Shipment tracking
-          </p>
-          {(order.shipments ?? []).length > 0 ? (
-            (order.shipments ?? []).map((s) => (
-              <div key={s.id} className="text-[12px] text-shop-text">
-                <span className="font-medium text-shop-heading">
-                  {s.carrier}
-                </span>
-                {s.waybill ? ` · ${s.waybill}` : ""} ·{" "}
-                {String(s.status).replace(/_/g, " ")}
-              </div>
-            ))
-          ) : (
-            <p className="text-[12px] text-shop-text">
-              {order.tracking.carrier || "Courier"}
-              {order.tracking.number ? ` · ${order.tracking.number}` : ""}
-            </p>
-          )}
-          {order.tracking?.url && (
-            <a
-              href={order.tracking.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[12px] font-semibold text-shop-accent-1"
-            >
-              Track your package →
-            </a>
-          )}
-        </div>
-      )}
+      {showDeliveryBanner && <FezDeliveryBanner status={deliveryStatus} />}
 
       <div className="mx-4 flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
         <ShieldCheck
