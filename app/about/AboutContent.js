@@ -7,21 +7,20 @@ import { useGetAboutImagesQuery } from "@/lib/api/storefrontApi";
 import AboutImageSlot from "./AboutImageSlot";
 import FlipCards from "./FlipCards";
 
-// Thick rounded border on a fully-rounded container, plus a matching bar
-// between cards for the connecting piece - not the brand purple, so it
-// doesn't repeat too loud down the whole page.
-const SNAKE_COLOR = "#0F766E";
+// Thick border on 3 sides only (top, bottom, and whichever side the photo
+// sits on) - the text side is left borderless so the line only wraps the
+// photo half of the card, not the whole thing.
+const SNAKE_COLOR = "#D8B4FE"; // a very light purple
 const SNAKE_WIDTH = 10;
 
-function Connector() {
-  return (
-    <div className="flex justify-center">
-      <div
-        className="w-[10px] rounded-full"
-        style={{ backgroundColor: SNAKE_COLOR, height: 56 }}
-      />
-    </div>
-  );
+function snakeBorder(capLeft) {
+  const side = `${SNAKE_WIDTH}px solid ${SNAKE_COLOR}`;
+  return {
+    borderTop: side,
+    borderBottom: side,
+    borderLeft: capLeft ? side : "none",
+    borderRight: capLeft ? "none" : side,
+  };
 }
 
 const AUDIENCES = [
@@ -98,41 +97,41 @@ export default function AboutContent() {
           </p>
         </section>
 
-        {/* Alternating audience cards. Each whole card (photo + text) sits
-            inside one thick, fully-rounded pill border; a matching bar
-            between cards bridges them into one continuous snaking line. */}
-        <section className="mt-10 pb-8">
-          {AUDIENCES.map((a, i) => {
+        {/* Alternating audience cards. The line only wraps the photo half -
+            top, bottom, and the outer edge; the text side is a plain 20px
+            corner with no border at all. */}
+        <section className="mt-10 flex flex-col gap-8 pb-8 md:gap-10">
+          {AUDIENCES.map((a) => {
             const Icon = a.icon;
             const capLeft = a.key === "merchants" || a.key === "investors";
             return (
-              <React.Fragment key={a.key}>
-                {i > 0 && <Connector />}
-                <div
-                  className={`flex items-stretch overflow-hidden rounded-full bg-white ${
-                    capLeft ? "flex-row" : "flex-row-reverse"
-                  }`}
-                  style={{ border: `${SNAKE_WIDTH}px solid ${SNAKE_COLOR}` }}
-                >
-                  <AboutImageSlot
-                    sectionKey={a.key}
-                    value={images[a.key]}
-                    alt={a.title}
-                    className="w-[36%] shrink-0 md:w-[40%]"
-                  />
-                  <div className="flex flex-1 flex-col justify-center gap-2 p-4 sm:gap-3 sm:p-6 md:p-12">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light md:h-11 md:w-11">
-                      <Icon className="h-4.5 w-4.5 text-shop-accent-1 md:h-5 md:w-5" strokeWidth={1.75} />
-                    </span>
-                    <h3 className="text-[16px] font-semibold text-shop-heading sm:text-[19px] md:text-[22px]">
-                      {a.title}
-                    </h3>
-                    <p className="text-[12px] leading-[19px] text-shop-text sm:text-[13.5px] sm:leading-[22px]">
-                      {a.body}
-                    </p>
-                  </div>
+              <div
+                key={a.key}
+                className={`flex items-stretch overflow-hidden bg-white ${
+                  capLeft
+                    ? "flex-row rounded-l-full rounded-r-[20px]"
+                    : "flex-row-reverse rounded-r-full rounded-l-[20px]"
+                }`}
+                style={snakeBorder(capLeft)}
+              >
+                <AboutImageSlot
+                  sectionKey={a.key}
+                  value={images[a.key]}
+                  alt={a.title}
+                  className="w-[36%] shrink-0 md:w-[40%]"
+                />
+                <div className="flex flex-1 flex-col justify-center gap-2 p-4 sm:gap-3 sm:p-6 md:p-12">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light md:h-11 md:w-11">
+                    <Icon className="h-4.5 w-4.5 text-shop-accent-1 md:h-5 md:w-5" strokeWidth={1.75} />
+                  </span>
+                  <h3 className="text-[16px] font-semibold text-shop-heading sm:text-[19px] md:text-[22px]">
+                    {a.title}
+                  </h3>
+                  <p className="text-[12px] leading-[19px] text-shop-text sm:text-[13.5px] sm:leading-[22px]">
+                    {a.body}
+                  </p>
                 </div>
-              </React.Fragment>
+              </div>
             );
           })}
         </section>
