@@ -39,7 +39,7 @@ export default function AboutEditor() {
               value={images[s.key]}
               alt={s.label}
               editable
-              className="aspect-square w-full"
+              className="aspect-square w-full rounded-[16px]"
             />
             <span className="text-center text-[11px] font-medium text-shop-text">
               {s.label}

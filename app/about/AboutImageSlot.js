@@ -26,6 +26,7 @@ export default function AboutImageSlot({
   aspect,
   editable = false,
   className = "",
+  style,
 }) {
   const { pickAndCrop, uploading, modal } = useImageCropUpload("about");
   const [saveImage] = useSaveAboutImageMutation();
@@ -41,7 +42,8 @@ export default function AboutImageSlot({
 
   const box = (
     <div
-      className={`relative overflow-hidden rounded-[16px] bg-gray-200 ${className}`}
+      className={`relative overflow-hidden bg-gray-200 ${className}`}
+      style={style}
     >
       {value && (
         <Image src={value} alt={alt} fill className="object-cover" sizes="600px" />

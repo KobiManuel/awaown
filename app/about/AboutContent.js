@@ -34,26 +34,26 @@ const AUDIENCES = [
   },
 ];
 
-// One "S" curve connecting the far edge of one card to the near edge of the
-// next. Coordinates are normalised (0-100) on both axes, so stretching the
-// SVG to whatever height the gap ends up being at runtime still reads as a
-// smooth ribbon. `flip` alternates which side it starts/ends on, so
-// consecutive connectors continue from where the last one left off - one
-// unbroken line snaking down the whole list.
-function Connector({ flip }) {
-  const [x1, x2] = flip ? [82, 18] : [18, 82];
+// Dark neutral "ink" the whole snaking line is drawn in - deliberately not
+// the brand purple, which reads too loud repeated down the whole page.
+const SNAKE = "#23262B";
+
+// Each card's border wraps its photo into a full loop - a complete
+// semicircle on the side the photo sits on, a small rounded corner on the
+// other. Two adjacent cards always have that semicircle on opposite sides,
+// so a card's *flat* side lines up exactly with the next card's *curved*
+// side - dropping a same-colour bar flush against that shared edge (zero
+// gap, no margin) reads as the loop necking down and continuing straight
+// into the next one, one unbroken line.
+function Connector({ onRight }) {
   return (
-    <div className="mx-auto h-10 w-full max-w-[220px] md:h-14">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
-        <path
-          d={`M ${x1} 0 C ${x1} 50 ${x2} 50 ${x2} 100`}
-          fill="none"
-          stroke="#6D28D9"
-          strokeOpacity="0.35"
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-      </svg>
+    <div className="relative h-12 md:h-16">
+      <div
+        className={`absolute top-0 h-full w-[6px] rounded-full ${
+          onRight ? "right-0" : "left-0"
+        }`}
+        style={{ backgroundColor: SNAKE }}
+      />
     </div>
   );
 }
@@ -88,7 +88,7 @@ export default function AboutContent() {
           sectionKey="hero"
           value={images.hero}
           alt="AwaOwn"
-          className="aspect-[16/9] w-full md:aspect-[16/7]"
+          className="aspect-[16/9] w-full rounded-[16px] md:aspect-[16/7]"
         />
 
         {/* Ecosystem intro */}
@@ -105,33 +105,42 @@ export default function AboutContent() {
           </p>
         </section>
 
-        {/* Alternating audience cards, threaded together by one snaking line */}
+        {/* Alternating audience cards, threaded together by one snaking line.
+            Only the photo carries a border - looped into a stadium shape, a
+            full semicircle on the outer side, a small rounded corner facing
+            the text - matching the reference, where the text sits free of
+            any border. */}
         <section className="mt-10 pb-8">
           {AUDIENCES.map((a, i) => {
             const Icon = a.icon;
-            const reversed = i % 2 === 1;
+            const capLeft = i % 2 === 0;
             return (
               <React.Fragment key={a.key}>
-                {i > 0 && <Connector flip={i % 2 === 1} />}
+                {i > 0 && <Connector onRight={i % 2 === 1} />}
                 <div
-                  className={`flex flex-col overflow-hidden rounded-[42px] border border-shop-border bg-white md:flex-row md:rounded-[64px] ${
-                    reversed ? "md:flex-row-reverse" : ""
+                  className={`flex items-stretch bg-white ${
+                    capLeft ? "flex-row" : "flex-row-reverse"
                   }`}
                 >
                   <AboutImageSlot
                     sectionKey={a.key}
                     value={images[a.key]}
                     alt={a.title}
-                    className="aspect-[16/9] w-full rounded-none md:aspect-auto md:w-[42%]"
+                    className={`w-[36%] shrink-0 border-[6px] md:w-[40%] ${
+                      capLeft
+                        ? "rounded-l-full rounded-r-[18px]"
+                        : "rounded-r-full rounded-l-[18px]"
+                    }`}
+                    style={{ borderColor: SNAKE }}
                   />
-                  <div className="flex flex-1 flex-col justify-center gap-3 p-6 md:p-12">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-shop-accent-1-light">
-                      <Icon className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
+                  <div className="flex flex-1 flex-col justify-center gap-2 p-4 sm:gap-3 sm:p-6 md:p-12">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-shop-accent-1-light md:h-11 md:w-11">
+                      <Icon className="h-4.5 w-4.5 text-shop-accent-1 md:h-5 md:w-5" strokeWidth={1.75} />
                     </span>
-                    <h3 className="text-[19px] font-semibold text-shop-heading md:text-[22px]">
+                    <h3 className="text-[16px] font-semibold text-shop-heading sm:text-[19px] md:text-[22px]">
                       {a.title}
                     </h3>
-                    <p className="text-[13.5px] leading-[22px] text-shop-text">
+                    <p className="text-[12px] leading-[19px] text-shop-text sm:text-[13.5px] sm:leading-[22px]">
                       {a.body}
                     </p>
                   </div>
