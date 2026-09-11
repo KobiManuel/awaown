@@ -149,7 +149,7 @@ export default function AdminLoginPage() {
               />
             </div>
           </label>
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-shop-heading">Password</span>
             <div className={wrap}>
               <Lock className="h-4 w-4 shrink-0 text-shop-text/50" />
@@ -171,7 +171,7 @@ export default function AdminLoginPage() {
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-          </label>
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-[13px] text-shop-text">
             <input
               type="checkbox"
@@ -260,7 +260,7 @@ export default function AdminLoginPage() {
             </button>
           ) : (
             <>
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-shop-heading">
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Check className="h-3 w-3" />
@@ -288,7 +288,7 @@ export default function AdminLoginPage() {
                   </button>
                 </div>
                 <PasswordChecklist value={password} className="mt-1" />
-              </label>
+              </div>
               <button
                 type="submit"
                 disabled={busy || !passwordOk(password)}

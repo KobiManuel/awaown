@@ -393,7 +393,11 @@ export default function OtpAuthFlow({
               />
             </div>
           </label>
-          <label className="flex flex-col gap-1.5">
+          {/* A plain div, not a <label> - a label wrapping two separate
+              interactive controls (this button + the eye-toggle button
+              inside PasswordInput) can make mobile browsers forward a tap
+              on one to the other. */}
+          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-medium text-shop-heading">Password</span>
               <button
@@ -410,7 +414,7 @@ export default function OtpAuthFlow({
               autoComplete="current-password"
               placeholder="Your password"
             />
-          </label>
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-[13px] text-shop-text">
             <input
               type="checkbox"
@@ -472,7 +476,7 @@ export default function OtpAuthFlow({
               />
             </div>
           </label>
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-shop-heading">Password</span>
             <PasswordInput
               value={password}
@@ -481,7 +485,7 @@ export default function OtpAuthFlow({
               placeholder="Create a password"
             />
             <PasswordChecklist value={password} className="mt-1" />
-          </label>
+          </div>
           <Err />
           <button
             type="submit"
@@ -540,7 +544,7 @@ export default function OtpAuthFlow({
       {/* ── set a password (legacy code-only accounts, on their way in) ── */}
       {view === "setpw" && (
         <form className="flex flex-col gap-4" onSubmit={submitSetPassword}>
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-shop-heading">Password</span>
             <PasswordInput
               value={password}
@@ -549,7 +553,7 @@ export default function OtpAuthFlow({
               placeholder="Create a password"
             />
             <PasswordChecklist value={password} className="mt-1" />
-          </label>
+          </div>
           <Err />
           <button
             type="submit"
@@ -638,7 +642,7 @@ export default function OtpAuthFlow({
             </button>
           ) : (
             <>
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-shop-heading">
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Check className="h-3 w-3" />
@@ -652,7 +656,7 @@ export default function OtpAuthFlow({
                   placeholder="Create a new password"
                 />
                 <PasswordChecklist value={password} className="mt-1" />
-              </label>
+              </div>
               <button
                 type="submit"
                 disabled={busy || !passwordOk(password)}
