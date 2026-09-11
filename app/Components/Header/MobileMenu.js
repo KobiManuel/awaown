@@ -56,7 +56,7 @@ const MobileMenu = ({ open, onClose }) => {
                 </Link>
               ))}
               <Link
-                href="/dashboard/help"
+                href="/help"
                 onClick={onClose}
                 className="border-b border-shop-border/60 py-3 text-[15px] font-medium text-shop-heading"
               >

@@ -53,8 +53,14 @@ const AppFrame = ({
   const onOnboardingRoute = pathname?.startsWith("/onboarding");
 
   useEffect(() => {
-    if (unauth) router.replace(loginHref);
-  }, [unauth, router, loginHref]);
+    // Carry the page a guest was actually trying to reach (e.g. a "Track an
+    // Order" link from the homepage) through login so they land back on it
+    // instead of just the dashboard home.
+    if (unauth) {
+      const dest = pathname && pathname !== loginHref ? pathname : null;
+      router.replace(dest ? `${loginHref}?next=${encodeURIComponent(dest)}` : loginHref);
+    }
+  }, [unauth, router, loginHref, pathname]);
 
   useEffect(() => {
     if (authed && !onboardingComplete && !onOnboardingRoute) {

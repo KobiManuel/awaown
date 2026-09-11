@@ -54,7 +54,7 @@ const HomeFaqs = () => {
       </div>
       <p className="mt-4 text-center text-[13px] text-shop-text/70">
         Still have a question?{" "}
-        <Link href="/dashboard/help" className="font-semibold text-shop-accent-1">
+        <Link href="/help" className="font-semibold text-shop-accent-1">
           Visit the Help Centre
         </Link>
       </p>

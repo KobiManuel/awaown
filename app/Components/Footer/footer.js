@@ -48,10 +48,10 @@ const columns = [
   {
     title: "Support",
     links: [
-      { label: "Help Centre", href: "/dashboard/help" },
+      { label: "Help Centre", href: "/help" },
       { label: "Track an Order", href: "/dashboard/orders" },
       { label: "Contact Support", href: "mailto:support@awaown.com" },
-      { label: "How Escrow Works", href: "/dashboard/help" },
+      { label: "How Escrow Works", href: "/help" },
     ],
   },
 ];

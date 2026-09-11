@@ -35,14 +35,20 @@ function FaqItem({ q, a, open, onToggle }) {
   );
 }
 
-export default function HelpCentre({ backHref, supportHref }) {
+export default function HelpCentre({ backHref, supportHref, showHeader = true }) {
   const { data, isLoading } = useGetPublicFaqsQuery();
   const faqs = data?.items ?? [];
   const [openId, setOpenId] = useState(null);
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
-      <AppHeader title="Help Centre" backHref={backHref} showBackOnDesktop />
+      {showHeader ? (
+        <AppHeader title="Help Centre" backHref={backHref} showBackOnDesktop />
+      ) : (
+        <h1 className="px-4 text-[22px] font-bold text-shop-heading lg:px-0">
+          Help Centre
+        </h1>
+      )}
 
       <div className="flex flex-col gap-2.5 px-4 lg:px-0">
         <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">

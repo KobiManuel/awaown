@@ -186,6 +186,9 @@ function OnboardingForm() {
                     {c.label}
                   </option>
                 ))}
+                {/* Not a real product category - just so a store selling
+                    across many categories isn't forced to pick one. */}
+                <option value="general">General (multiple categories)</option>
               </select>
             </Field>
             <p className="text-[12px] text-shop-text/70">
