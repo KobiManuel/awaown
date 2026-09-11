@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Loader2,
   Ban,
+  Tag,
 } from "lucide-react";
 import {
   formatPrice,
@@ -21,12 +22,14 @@ import {
   PROCESSING_TIME_OPTIONS,
 } from "@/lib/merchant-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetMerchantProductsQuery,
   useUpdateMerchantProductMutation,
   useDeleteMerchantProductMutation,
+  useSetMerchantDiscountMutation,
 } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
@@ -154,9 +157,11 @@ export default function MerchantProductsPage() {
   const { data, isLoading, isError } = useGetMerchantProductsQuery();
   const [updateProduct, { isLoading: updating }] = useUpdateMerchantProductMutation();
   const [deleteProduct, deleteState] = useDeleteMerchantProductMutation();
+  const [setDiscount, discountState] = useSetMerchantDiscountMutation();
 
   const products = data?.items ?? [];
   const [openStockId, setOpenStockId] = useState(null);
+  const [discountDrafts, setDiscountDrafts] = useState({});
 
   const saveStock = async (body) => {
     try {
@@ -171,6 +176,38 @@ export default function MerchantProductsPage() {
   const toggleHideStock = async (p) => {
     try {
       await updateProduct({ id: p.productId, hideStock: !p.hideStock }).unwrap();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const applyDiscount = async (p) => {
+    const raw = Number(
+      discountDrafts[p.productId] ??
+        (p.compareAt ? p.compareAt - p.price : 0),
+    );
+    try {
+      await setDiscount({ productId: p.productId, discountAmount: raw }).unwrap();
+      showToast(raw > 0 ? "Discount applied" : "Discount removed");
+      setDiscountDrafts((d) => {
+        const next = { ...d };
+        delete next[p.productId];
+        return next;
+      });
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const removeDiscount = async (p) => {
+    try {
+      await setDiscount({ productId: p.productId, discountAmount: 0 }).unwrap();
+      showToast("Discount removed");
+      setDiscountDrafts((d) => {
+        const next = { ...d };
+        delete next[p.productId];
+        return next;
+      });
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -253,10 +290,15 @@ export default function MerchantProductsPage() {
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">
                     {product.title}
                   </p>
-                  <p className="text-[13px] font-semibold text-shop-heading">
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
                     {product.hasVariants
                       ? `From ${formatPrice(product.price)}`
                       : formatPrice(product.price)}
+                    {product.compareAt && (
+                      <span className="text-[11px] font-normal text-shop-text/50 line-through">
+                        {formatPrice(product.compareAt)}
+                      </span>
+                    )}
                   </p>
                   <button
                     type="button"
@@ -381,6 +423,51 @@ export default function MerchantProductsPage() {
                   saving={updating}
                 />
               )}
+
+              <div className="flex flex-col gap-1.5 border-t border-shop-border pt-3">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-shop-text">
+                  <Tag className="h-3.5 w-3.5" />
+                  {product.compareAt
+                    ? `On sale - was ${formatPrice(product.compareAt)}`
+                    : "Run a sale on this item"}
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <MoneyInput
+                    value={
+                      discountDrafts[product.productId] ??
+                      (product.compareAt
+                        ? product.compareAt - product.price
+                        : "")
+                    }
+                    onChange={(v) =>
+                      setDiscountDrafts((prev) => ({
+                        ...prev,
+                        [product.productId]: v,
+                      }))
+                    }
+                    placeholder="0"
+                    className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => applyDiscount(product)}
+                    disabled={discountState.isLoading}
+                    className="rounded-[6px] bg-shop-accent-1 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-70"
+                  >
+                    Apply
+                  </button>
+                  {product.compareAt && (
+                    <button
+                      type="button"
+                      onClick={() => removeDiscount(product)}
+                      disabled={discountState.isLoading}
+                      className="rounded-[6px] border border-shop-border px-3 py-1.5 text-[11.5px] font-semibold text-shop-text hover:bg-shop-bg disabled:opacity-70"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>

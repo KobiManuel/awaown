@@ -15,6 +15,7 @@ import {
   Truck,
   Info,
   Loader2,
+  Tag,
 } from "lucide-react";
 import {
   formatPrice,
@@ -115,6 +116,8 @@ function seed(product) {
       video: null,
       productType: "simple",
       price: "",
+      onSale: false,
+      discountAmount: "",
       stock: "",
       weight: "",
       axes: [newAxis()],
@@ -137,7 +140,18 @@ function seed(product) {
     images: product.images ?? [],
     video: product.video ?? null,
     productType: type === "group" || type === "variable" ? type : "simple",
-    price: product.price ? String(product.price) : "",
+    // The "Price" field always holds the sticker price - when a discount is
+    // already live, that's compareAt (the price before it), not the
+    // already-discounted `price` the storefront shows.
+    price: product.compareAt
+      ? String(product.compareAt)
+      : product.price
+        ? String(product.price)
+        : "",
+    onSale: !!product.compareAt,
+    discountAmount: product.compareAt
+      ? String(product.compareAt - product.price)
+      : "",
     stock: product.stock != null ? String(product.stock) : "",
     weight: product.weightKg != null ? String(product.weightKg) : "",
     axes: product.variantAxes?.length
@@ -188,6 +202,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const hasVariants = productType === "variable";
   const isGroup = productType === "group";
   const [price, setPrice] = useState(init.price);
+  const [onSale, setOnSale] = useState(init.onSale);
+  const [discountAmount, setDiscountAmount] = useState(init.discountAmount);
   const [stock, setStock] = useState(init.stock);
   const [weight, setWeight] = useState(init.weight);
   const [uploadingSlot, setUploadingSlot] = useState(null);
@@ -385,6 +401,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     problems.push(
       `Partner profit must be at least ${formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.`,
     );
+  const discountValid =
+    !onSale ||
+    (Number(discountAmount) > 0 && Number(discountAmount) < basePrice);
+  if (onSale && !discountValid)
+    problems.push("Set a discount amount less than the price.");
   const isValid = problems.length === 0;
 
   const isCreate = !product;
@@ -413,6 +434,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       images: images.filter(Boolean),
       productType,
       price: basePrice,
+      discountAmount: onSale ? Number(discountAmount) || 0 : 0,
       stock: deliveryType === "digital" ? undefined : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
@@ -1025,6 +1047,68 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
             )}
           </div>
         )}
+
+        {/* Sale / discount - available for every product type */}
+        <div className="flex flex-col gap-2.5">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <Tag className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+            Are you running a sale on this item?
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <TypeCard
+              selected={!onSale}
+              onClick={() => setOnSale(false)}
+              icon={Tag}
+              title="No"
+              description="Sell at the regular price."
+            />
+            <TypeCard
+              selected={onSale}
+              onClick={() => setOnSale(true)}
+              icon={Tag}
+              title="Yes"
+              description="Add a discount off the price above."
+            />
+          </div>
+          {onSale && (
+            <div className="flex flex-col gap-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-shop-heading">
+                  Discount amount (₦)
+                </span>
+                <MoneyInput
+                  value={discountAmount}
+                  onChange={setDiscountAmount}
+                  placeholder="e.g. 2,000"
+                  className={FIELD}
+                />
+              </label>
+              {basePrice > 0 &&
+                Number(discountAmount) > 0 &&
+                Number(discountAmount) < basePrice && (
+                  <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
+                    Was{" "}
+                    <span className="font-semibold text-shop-heading line-through">
+                      {formatPrice(basePrice)}
+                    </span>
+                    , now{" "}
+                    <span className="font-semibold text-shop-accent-1">
+                      {formatPrice(basePrice - Number(discountAmount))}
+                    </span>
+                    .
+                  </p>
+                )}
+              {Number(discountAmount) >= basePrice && basePrice > 0 && (
+                <p className="text-[11.5px] text-shop-accent-3">
+                  The discount must be less than the price.
+                </p>
+              )}
+              <p className="text-[10.5px] text-shop-text/60">
+                You can remove this discount any time from your products list.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Partner enrollment - available for every product type */}
         <>
