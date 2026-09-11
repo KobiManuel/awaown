@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Check, ShoppingCart, Star } from "lucide-react";
+import { Heart, Check, ShoppingCart, Star, MapPin } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { smartTitle } from "@/lib/text-format";
 import { getProductId } from "@/lib/product-id";
@@ -68,6 +68,7 @@ function normalise(product) {
     productId: product.productId || null,
     title: smartTitle(product.title),
     vendor: product.vendor,
+    location: product.location || null,
     price: product.price,
     priceFrom: !!product.hasVariants,
     compareAt,
@@ -212,7 +213,7 @@ const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
             {p.vendor}
           </span>
         )}
-        <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
+        <h3 className="truncate text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
           <Link href={productHref}>{p.title}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
@@ -227,6 +228,12 @@ const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
             />
           ))}
         </div>
+        {p.location && (
+          <div className="flex items-center gap-[3px] text-[11px] text-shop-text/60">
+            <MapPin className="h-[11px] w-[11px] shrink-0" strokeWidth={1.75} />
+            <span className="truncate">{p.location}</span>
+          </div>
+        )}
         <div className="flex items-center gap-[8px]">
           <span className="text-[15px] font-semibold text-shop-heading">
             {p.priceFrom ? `From ${formatPrice(p.price)}` : formatPrice(p.price)}

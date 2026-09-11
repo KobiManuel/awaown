@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   Loader2,
   BellRing,
+  MapPin,
 } from "lucide-react";
 import {
   resolveVariant,
@@ -390,6 +391,12 @@ function ProductDetail() {
                   </span>
                 );
               })()}
+              {product.location && (
+                <div className="flex items-center gap-1 text-[12px] text-shop-text/70">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Ships from {product.location}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

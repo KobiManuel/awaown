@@ -64,6 +64,7 @@ export default function CheckoutPage() {
     return {
       id: "buynow",
       title: bnProduct.title,
+      location: bnProduct.location,
       qty,
       lineTotal: unitPrice * qty,
     };
@@ -355,8 +356,16 @@ export default function CheckoutPage() {
                   key={i.id}
                   className="flex items-center justify-between text-[12.5px] text-shop-text"
                 >
-                  <span className="line-clamp-1 pr-2">
-                    {i.title} × {i.qty}
+                  <span className="pr-2">
+                    <span className="line-clamp-1">
+                      {i.title} × {i.qty}
+                    </span>
+                    {i.location && (
+                      <span className="flex items-center gap-1 text-[11px] text-shop-text/60">
+                        <MapPin className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+                        {i.location}
+                      </span>
+                    )}
                   </span>
                   <span className="shrink-0 font-medium text-shop-heading">
                     {formatPrice(i.lineTotal)}

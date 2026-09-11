@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Check, ShoppingCart, Star } from "lucide-react";
+import { Heart, Check, ShoppingCart, Star, MapPin } from "lucide-react";
 import { formatPrice } from "@/lib/merchant-data";
 import { smartTitle } from "@/lib/text-format";
 import { useCommerce } from "@/lib/useCommerce";
@@ -156,7 +156,7 @@ const StorefrontProductCard = ({ product, accentColor }) => {
 
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
-        <h3 className="line-clamp-2 text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
+        <h3 className="truncate text-[14px] font-medium leading-[20px] text-shop-heading hover:underline">
           <Link href={href}>{smartTitle(product.title)}</Link>
         </h3>
         <div className="flex items-center gap-[2px]">
@@ -164,6 +164,12 @@ const StorefrontProductCard = ({ product, accentColor }) => {
             <Star key={i} className="h-[13px] w-[13px] fill-[#e5e5e5] text-[#e5e5e5]" />
           ))}
         </div>
+        {product.location && (
+          <div className="flex items-center gap-[3px] text-[11px] text-shop-text/60">
+            <MapPin className="h-[11px] w-[11px] shrink-0" strokeWidth={1.75} />
+            <span className="truncate">{product.location}</span>
+          </div>
+        )}
         <span className="text-[15px] font-semibold" style={{ color: accentColor }}>
           {product.hasVariants
             ? `From ${formatPrice(product.price)}`
