@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
 import PublicCommerceGate from "@/app/Components/Providers/PublicCommerceGate";
+import PublicWhatsAppButton from "@/app/Components/Providers/PublicWhatsAppButton";
 import StoreContextTracker from "@/app/Components/Providers/StoreContextTracker";
 import ModalRoot from "@/app/Components/Modals/ModalRoot";
 import { SITE_URL } from "@/lib/site-config";
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <StoreContextTracker />
           </Suspense>
           {children}
+          <PublicWhatsAppButton />
           <ModalRoot />
         </ReduxProvider>
       </body>

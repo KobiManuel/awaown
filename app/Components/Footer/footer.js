@@ -1,6 +1,13 @@
 import React from "react";
 import Link from "next/link";
 import ThemedLogo from "@/app/Components/Header/ThemedLogo";
+import { SUPPORT_PHONE_DISPLAY } from "@/lib/site-config";
+import {
+  VisaLogo,
+  MastercardLogo,
+  VerveLogo,
+  PaystackLogo,
+} from "@/app/Components/Icons/BrandLogos";
 
 const Facebook = (props) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
@@ -78,7 +85,7 @@ const Footer = () => {
             <p>AwaOwn Marketplace</p>
             <p>12 Gwarinpa Estate, Abuja, Nigeria</p>
             <p>hello@awaown.com</p>
-            <p>+234 803 210 5000</p>
+            <p>{SUPPORT_PHONE_DISPLAY}</p>
           </div>
           <a
             href="mailto:support@awaown.com"
@@ -124,14 +131,22 @@ const Footer = () => {
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {["Visa", "Mastercard", "Verve", "Bank Transfer", "Secured by Paystack"].map((p) => (
-              <span
-                key={p}
-                className="rounded-[4px] border border-shop-border px-2.5 py-1 text-[11px] font-medium text-shop-text"
-              >
-                {p}
-              </span>
-            ))}
+            <span className="flex h-7 w-11 items-center justify-center rounded-[4px] border border-shop-border bg-white">
+              <VisaLogo className="h-4.5 w-8" />
+            </span>
+            <span className="flex h-7 w-11 items-center justify-center rounded-[4px] border border-shop-border bg-white">
+              <MastercardLogo className="h-5 w-8" />
+            </span>
+            <span className="flex h-7 w-11 items-center justify-center overflow-hidden rounded-[4px] border border-shop-border">
+              <VerveLogo className="h-7 w-11" />
+            </span>
+            <span className="rounded-[4px] border border-shop-border px-2.5 py-1 text-[11px] font-medium text-shop-text">
+              Bank Transfer
+            </span>
+            <span className="flex h-7 items-center gap-1 rounded-[4px] border border-shop-border px-2 text-[11px] font-medium text-shop-text">
+              <PaystackLogo className="h-4 w-4" />
+              Secured by Paystack
+            </span>
           </div>
         </div>
       </div>

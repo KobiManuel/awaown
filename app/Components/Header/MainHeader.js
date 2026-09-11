@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { Search, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 import ThemedLogo from "@/app/Components/Header/ThemedLogo";
+import { SUPPORT_PHONE_DISPLAY } from "@/lib/site-config";
 
 const MainHeader = ({ onMenuClick }) => {
   const router = useRouter();
@@ -71,7 +72,7 @@ const MainHeader = ({ onMenuClick }) => {
             <div className="leading-tight">
               <p className="text-[12px] text-shop-text">Need Help?</p>
               <p className="text-[14px] font-semibold text-shop-accent-1">
-                +234 803 210 5000
+                {SUPPORT_PHONE_DISPLAY}
               </p>
             </div>
           </div>

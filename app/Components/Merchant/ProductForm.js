@@ -661,7 +661,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               Product Photos
             </p>
 
-            <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
+            {/* <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
               <span>
                 The <span className="font-semibold">main cover image</span>{" "}
@@ -669,7 +669,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 uniform look across the site. Buyers can still see your other
                 background shots on the product page.
               </span>
-            </div>
+            </div> */}
 
             <div className="flex flex-col gap-1.5">
               <span className="text-[12px] font-semibold text-shop-heading">

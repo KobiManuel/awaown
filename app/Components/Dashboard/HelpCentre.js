@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useGetPublicFaqsQuery } from "@/lib/api/storefrontApi";
+import { WHATSAPP_URL } from "@/lib/site-config";
 
 function FaqItem({ q, a, open, onToggle }) {
   return (
@@ -107,7 +108,7 @@ export default function HelpCentre({ backHref, supportHref, showHeader = true })
           </div>
         </a>
         <a
-          href="https://wa.me/2348032105000"
+          href={WHATSAPP_URL}
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-3 rounded-[10px] bg-white p-3 hover:bg-shop-accent-1-light"
