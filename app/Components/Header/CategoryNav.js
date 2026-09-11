@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, ChevronDown, Percent } from "lucide-react";
 import { navLinks } from "@/lib/shop-data";
 import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
@@ -10,6 +11,15 @@ const CategoryNav = () => {
   const { data: categories } = useGetCategoriesQuery();
   const catList = categories ?? [];
   const [open, setOpen] = useState(null);
+  const pathname = usePathname() || "/";
+
+  // Hash links (Contact/Community both jump to a section on the homepage)
+  // have no distinct route to be "active" on - only real pages light up.
+  const isActive = (href) => {
+    if (href.includes("#")) return false;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <div className="hidden border-b border-shop-border bg-white font-shop lg:block">
@@ -41,7 +51,7 @@ const CategoryNav = () => {
                 <Link
                   href={link.href}
                   className={`flex items-center gap-1 py-2 text-[14px] font-medium hover:text-shop-accent-1 ${
-                    link.title === "Home" ? "text-shop-accent-1" : "text-shop-heading"
+                    isActive(link.href) ? "text-shop-accent-1" : "text-shop-heading"
                   }`}
                 >
                   {link.title}
