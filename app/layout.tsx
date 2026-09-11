@@ -5,6 +5,7 @@ import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
 import PublicCommerceGate from "@/app/Components/Providers/PublicCommerceGate";
 import PublicWhatsAppButton from "@/app/Components/Providers/PublicWhatsAppButton";
 import StoreContextTracker from "@/app/Components/Providers/StoreContextTracker";
+import PageViewTracker from "@/app/Components/Providers/PageViewTracker";
 import ModalRoot from "@/app/Components/Modals/ModalRoot";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <PublicCommerceGate />
           <Suspense fallback={null}>
             <StoreContextTracker />
+            <PageViewTracker />
           </Suspense>
           {children}
           <PublicWhatsAppButton />

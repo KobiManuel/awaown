@@ -59,6 +59,7 @@ const columns = [
       { label: "Track an Order", href: "/dashboard/orders" },
       { label: "Contact Support", href: "mailto:support@awaown.com" },
       { label: "How Escrow Works", href: "/help" },
+      { label: "Refund Policy", href: "/refund-policy" },
     ],
   },
 ];

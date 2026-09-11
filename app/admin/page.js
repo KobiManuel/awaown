@@ -71,6 +71,7 @@ const MANAGE_LINKS = [
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone, tone: "bg-shop-accent-1-light text-shop-accent-1" },
   { href: "/admin/emails", label: "Email Templates", icon: Mail, tone: "bg-blue-100 text-blue-700" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, tone: "bg-blue-100 text-blue-700" },
+  { href: "/admin/analytics", label: "Analytics", icon: Activity, tone: "bg-emerald-100 text-emerald-700" },
   { href: "/admin/team", label: "Access Control", icon: UserCog, tone: "bg-amber-100 text-amber-700" },
   { href: "/admin/settings", label: "Settings", icon: Settings, tone: "bg-shop-bg text-shop-heading" },
   { href: "/admin/automations", label: "Automations", icon: Zap, tone: "bg-emerald-100 text-emerald-700" },

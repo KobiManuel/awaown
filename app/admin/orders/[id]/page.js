@@ -35,7 +35,10 @@ export default function AdminOrderDetailPage() {
   const confirm = useConfirm();
   const { data: order, isLoading, isError } = useGetAdminOrderQuery(id);
   const [advance, advanceState] = useAdvanceAdminOrderMutation();
-  const [track, setTrack] = useState({ carrier: "", number: "", url: "" });
+  // Manual carrier/tracking-number/tracking-link entry is retired now that
+  // Fez books and tracks every shipment itself - see the commented-out
+  // "Shipment" block below.
+  // const [track, setTrack] = useState({ carrier: "", number: "", url: "" });
 
   const step = async (to, tracking) => {
     const res = await confirm({
@@ -150,7 +153,8 @@ export default function AdminOrderDetailPage() {
         )}
       </div>
 
-      {/* Shipment tracking (set/edit any time before delivery) */}
+      {/* Shipment tracking (set/edit any time before delivery) - retired,
+          Fez now books and tracks every shipment itself.
       {["PROCESSING", "SHIPPED"].includes(order.status) && (
         <div className="mx-4 flex flex-col gap-2 rounded-[14px] border border-shop-border p-4 lg:mx-8">
           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
@@ -182,6 +186,7 @@ export default function AdminOrderDetailPage() {
           />
         </div>
       )}
+      */}
 
       {/* Advance status */}
       {next && (
