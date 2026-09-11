@@ -34,6 +34,30 @@ const AUDIENCES = [
   },
 ];
 
+// One "S" curve connecting the far edge of one card to the near edge of the
+// next. Coordinates are normalised (0-100) on both axes, so stretching the
+// SVG to whatever height the gap ends up being at runtime still reads as a
+// smooth ribbon. `flip` alternates which side it starts/ends on, so
+// consecutive connectors continue from where the last one left off - one
+// unbroken line snaking down the whole list.
+function Connector({ flip }) {
+  const [x1, x2] = flip ? [82, 18] : [18, 82];
+  return (
+    <div className="mx-auto h-10 w-full max-w-[220px] md:h-14">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
+        <path
+          d={`M ${x1} 0 C ${x1} 50 ${x2} 50 ${x2} 100`}
+          fill="none"
+          stroke="#6D28D9"
+          strokeOpacity="0.35"
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export default function AboutContent() {
   const { data } = useGetAboutImagesQuery();
   const images = data?.images ?? {};
@@ -41,14 +65,17 @@ export default function AboutContent() {
   return (
     <main className="flex-1 font-shop">
       {/* Hero */}
-      <section className="bg-shop-accent-1 px-4 py-14 text-center text-white md:py-20">
-        <p className="text-[12.5px] font-semibold uppercase tracking-[0.15em] text-white/70">
+      <section className="flex items-center justify-center bg-shop-accent-1 px-4 py-10">
+        <h1 className="text-[13px] font-semibold uppercase tracking-[0.2em] text-white">
           About Us
-        </p>
-        <h1 className="mx-auto mt-3 max-w-[640px] text-[26px] font-bold leading-[34px] md:text-[36px] md:leading-[44px]">
-          Discover AwaOwn - Where Commerce Meets Community
         </h1>
-        <p className="mx-auto mt-4 max-w-[560px] text-[14px] leading-[22px] text-white/85">
+      </section>
+
+      <section className="flex flex-col items-center gap-3 px-4 py-12 text-center md:py-16">
+        <h2 className="max-w-[640px] text-[24px] font-bold leading-[32px] text-shop-heading md:text-[34px] md:leading-[42px]">
+          Discover AwaOwn - Where Commerce Meets Community
+        </h2>
+        <p className="max-w-[560px] text-[13.5px] leading-[21px] text-shop-text">
           AwaOwn is a digital marketplace connecting Merchants, Partners,
           Inventory Investors and everyday Shoppers into a single ecosystem,
           creating more ways for people to participate in commerce and build
@@ -61,7 +88,7 @@ export default function AboutContent() {
           sectionKey="hero"
           value={images.hero}
           alt="AwaOwn"
-          className="-mt-8 aspect-[16/9] w-full md:-mt-10 md:aspect-[16/7]"
+          className="aspect-[16/9] w-full md:aspect-[16/7]"
         />
 
         {/* Ecosystem intro */}
@@ -78,36 +105,38 @@ export default function AboutContent() {
           </p>
         </section>
 
-        {/* Alternating audience cards */}
-        <section className="mt-10 flex flex-col gap-6 pb-8 md:gap-8">
+        {/* Alternating audience cards, threaded together by one snaking line */}
+        <section className="mt-10 pb-8">
           {AUDIENCES.map((a, i) => {
             const Icon = a.icon;
             const reversed = i % 2 === 1;
             return (
-              <div
-                key={a.key}
-                className={`flex flex-col overflow-hidden rounded-[28px] border border-shop-border bg-white md:flex-row ${
-                  reversed ? "md:flex-row-reverse" : ""
-                }`}
-              >
-                <AboutImageSlot
-                  sectionKey={a.key}
-                  value={images[a.key]}
-                  alt={a.title}
-                  className="aspect-[16/9] w-full rounded-none md:aspect-auto md:w-[42%]"
-                />
-                <div className="flex flex-1 flex-col justify-center gap-3 p-6 md:p-10">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-shop-accent-1-light">
-                    <Icon className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
-                  </span>
-                  <h3 className="text-[19px] font-semibold text-shop-heading md:text-[22px]">
-                    {a.title}
-                  </h3>
-                  <p className="text-[13.5px] leading-[22px] text-shop-text">
-                    {a.body}
-                  </p>
+              <React.Fragment key={a.key}>
+                {i > 0 && <Connector flip={i % 2 === 1} />}
+                <div
+                  className={`flex flex-col overflow-hidden rounded-[42px] border border-shop-border bg-white md:flex-row md:rounded-[64px] ${
+                    reversed ? "md:flex-row-reverse" : ""
+                  }`}
+                >
+                  <AboutImageSlot
+                    sectionKey={a.key}
+                    value={images[a.key]}
+                    alt={a.title}
+                    className="aspect-[16/9] w-full rounded-none md:aspect-auto md:w-[42%]"
+                  />
+                  <div className="flex flex-1 flex-col justify-center gap-3 p-6 md:p-12">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-shop-accent-1-light">
+                      <Icon className="h-5 w-5 text-shop-accent-1" strokeWidth={1.75} />
+                    </span>
+                    <h3 className="text-[19px] font-semibold text-shop-heading md:text-[22px]">
+                      {a.title}
+                    </h3>
+                    <p className="text-[13.5px] leading-[22px] text-shop-text">
+                      {a.body}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })}
         </section>
