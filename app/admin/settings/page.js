@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
               Shipping Provider
             </span>
             <span className="text-[12.5px] capitalize text-shop-text">
-              {String(settings?.shippingProvider ?? "gig_logistics").replace(/_/g, " ")}
+              {String(settings?.shippingProvider ?? "fez_delivery").replace(/_/g, " ")}
             </span>
           </div>
 

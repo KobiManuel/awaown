@@ -51,7 +51,7 @@ payments, verification, withdrawals, refunds and support.
 
 ## 12. Marketing & Communication
 Built-in campaign management, coupon creation, promotional banners, push notifications,
-email broadcasts and SMS broadcasts directly from the admin panel — reducing dependence
+email broadcasts and SMS broadcasts directly from the admin panel - reducing dependence
 on third-party email marketing tools for standard campaigns.
 
 ## 13. AI & Customer Support
@@ -101,20 +101,20 @@ Responsibilities:
 All widgets: clean, modern, clickable cards/widgets, minimal clutter, intuitive
 navigation.
 
-- **Action Required** — top-priority clickable cards: pending verifications,
+- **Action Required** - top-priority clickable cards: pending verifications,
   withdrawals, refunds, complaints, failed payments, escrow releases.
-- **Business Overview** — KPI cards: Revenue Today, Orders Today, Customers, Merchants,
+- **Business Overview** - KPI cards: Revenue Today, Orders Today, Customers, Merchants,
   Affiliates, Escrow Balance.
-- **Global Search** — universal search: orders, customers, merchants, affiliates,
+- **Global Search** - universal search: orders, customers, merchants, affiliates,
   products, emails, phone numbers, tracking IDs.
-- **Notifications** — verification requests, withdrawals, refunds, payment failures,
+- **Notifications** - verification requests, withdrawals, refunds, payment failures,
   critical alerts.
-- **Recent Activity** — live timeline of platform activities with timestamps.
-- **Platform Health** — status cards for Website, Payment Gateway, Escrow, Email/SMS,
-  Integrations — green/amber/red indicators.
-- **Today's Snapshot** — today's revenue, orders, new customers, merchants, affiliates.
-- **Campaign Calendar** — upcoming campaigns, coupon expiry dates, scheduled promotions.
-- **Automation Center** — no-code trigger→action automations instead of manual staff
+- **Recent Activity** - live timeline of platform activities with timestamps.
+- **Platform Health** - status cards for Website, Payment Gateway, Escrow, Email/SMS,
+  Integrations - green/amber/red indicators.
+- **Today's Snapshot** - today's revenue, orders, new customers, merchants, affiliates.
+- **Campaign Calendar** - upcoming campaigns, coupon expiry dates, scheduled promotions.
+- **Automation Center** - no-code trigger→action automations instead of manual staff
   work, e.g.:
   - Merchant verified → send welcome email automatically.
   - Affiliate ("Partner") joins → send onboarding resources automatically.
@@ -128,7 +128,7 @@ navigation.
 
 - When an order is placed, the vendor must confirm it's ready for pickup. AwaOwn's own
   orders (and any readily-available products) can skip this and auto-confirm.
-- Vendors don't distinguish between simple, variable, and group products — the merchant
+- Vendors don't distinguish between simple, variable, and group products - the merchant
   UX needs to make this distinction easy/obvious.
 - Processing-time / agentic AI or bot to communicate delivery timelines and status to
   shoppers.
@@ -137,7 +137,7 @@ navigation.
   back in stock.
 - A vendor can toggle "offer commission" per product. **Only products with commission
   enabled appear in the add-product list for Partners.**
-- **Terminology change — no more "affiliate"/"commission":**
+- **Terminology change - no more "affiliate"/"commission":**
   - "Affiliates" → **"Partners"**
   - They "earn commission" → they **"make profit from reselling"**
   - Example: Public/Customer Price: ₦30,000 · Partner Discount: ₦25,500 · Partner Profit:
@@ -151,11 +151,11 @@ navigation.
 ## Current Build Scope
 
 Per the project owner, **only the customer dashboard + customer flow is being built for
-now** (not merchant, affiliate/partner, or admin panels — those come later but should
+now** (not merchant, affiliate/partner, or admin panels - those come later but should
 follow this same terminology and business-rule set when built).
 
 The customer dashboard/app is **mobile-first and app-like**: its own `layout.tsx` with
 app-style bottom tab navigation, distinct from the marketing site's desktop-first layout.
 Design inspiration lives at `public/images/landing-banner-01.png` and
-`landing-banner-02.png` (layout/UX reference only — actual colors follow the AwaOwn brand
+`landing-banner-02.png` (layout/UX reference only - actual colors follow the AwaOwn brand
 purple `#6D28D9` + Bai Jamjuree, not the green shown in those references).
