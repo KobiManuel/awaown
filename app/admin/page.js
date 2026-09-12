@@ -25,6 +25,7 @@ import {
   History,
   Mail,
   LifeBuoy,
+  MessageCircle,
   ImagePlus,
   Loader2,
 } from "lucide-react";
@@ -76,6 +77,13 @@ const MANAGE_LINKS = [
   { href: "/admin/settings", label: "Settings", icon: Settings, tone: "bg-shop-bg text-shop-heading" },
   { href: "/admin/automations", label: "Automations", icon: Zap, tone: "bg-emerald-100 text-emerald-700" },
   { href: "/admin/audit-log", label: "Audit Log", icon: History, tone: "bg-shop-accent-1-light text-shop-accent-1" },
+  {
+    href: "https://support.awaown.com",
+    label: "WhatsApp Support",
+    icon: MessageCircle,
+    tone: "bg-emerald-100 text-emerald-700",
+    external: true,
+  },
 ];
 
 const ACTION_LABELS = {
@@ -239,7 +247,7 @@ export default function AdminHome() {
       {/* Business Overview */}
       <div className="flex flex-col gap-3 px-4 lg:px-8">
         <p className="text-[14px] font-semibold text-shop-heading">Business Overview</p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {isLoading || !kpis ? (
             Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-[14px]" />
@@ -364,18 +372,22 @@ export default function AdminHome() {
       <div className="flex flex-col gap-3 px-4 pb-6 lg:px-8">
         <p className="text-[14px] font-semibold text-shop-heading">Manage Platform</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {MANAGE_LINKS.map(({ href, label, icon: Icon, tone }) => (
-            <Link
+          {MANAGE_LINKS.map(({ href, label, icon: Icon, tone, external }) => {
+            const Tile = external ? "a" : Link;
+            return (
+            <Tile
               key={href}
               href={href}
+              {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
               className="flex flex-col items-center gap-2 rounded-[12px] border border-shop-border bg-white p-4 text-center hover:border-shop-accent-1"
             >
               <span className={`flex h-9 w-9 items-center justify-center rounded-full ${tone}`}>
                 <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
               </span>
               <span className="text-[11.5px] font-medium text-shop-heading">{label}</span>
-            </Link>
-          ))}
+            </Tile>
+            );
+          })}
         </div>
       </div>
     </div>
