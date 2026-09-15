@@ -37,6 +37,9 @@ yarn-error.log*
 # backend (NestJS API): lives in its own repo, Rheel-Git/awaown-be
 /backend/
 
+# legacy DB dumps - real customer PII, never commit regardless of location
+*.sql
+
 # local agent config
 /.claude/
 

@@ -9,11 +9,16 @@ import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { useCommerce } from "@/lib/useCommerce";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
+import { useStoreTheme } from "@/lib/useStoreTheme";
 
 const CartClient = () => {
   const items = useSelector((state) => state.cart.items);
   const router = useRouter();
   const commerce = useCommerce();
+  // Inside a partner's storefront, "continue shopping" must stay inside that
+  // store, never bounce out to the main site's homepage.
+  const storeTheme = useStoreTheme();
+  const continueShoppingHref = storeTheme ? storeTheme.storeHref : "/";
 
   const goToCheckout = () => {
     if (commerce.authed) {
@@ -44,7 +49,7 @@ const CartClient = () => {
           products and find something you&apos;ll love.
         </p>
         <Link
-          href="/"
+          href={continueShoppingHref}
           className="mt-2 rounded-[8px] bg-shop-accent-1 px-7 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark"
         >
           Continue Shopping
@@ -126,7 +131,7 @@ const CartClient = () => {
           ))}
 
           <Link
-            href="/"
+            href={continueShoppingHref}
             className="mt-2 w-fit text-[13px] font-semibold text-shop-accent-1 hover:underline"
           >
             &larr; Continue shopping

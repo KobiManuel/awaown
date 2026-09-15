@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { ShieldCheck, User, Clock, Loader2 } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
@@ -9,10 +8,18 @@ import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import ProductCard from "@/app/Components/Product/ProductCard";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
 import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
+import { rememberRef } from "@/lib/partner-ref";
 
 export default function PublicPartnerStorePage() {
   const { code } = useParams();
   const { data: store, isLoading, isError } = useGetPartnerStorefrontQuery(code);
+
+  // Set the attribution cookie as soon as the store loads - a buyer can quick-add
+  // straight from a card here without ever opening a product detail page, so the
+  // cookie can't wait until then to exist.
+  useEffect(() => {
+    if (store?.code) rememberRef(store.code);
+  }, [store?.code]);
 
   const theme = getTheme(store?.theme);
   const accent = getAccent(store?.accent);
@@ -37,12 +44,6 @@ export default function PublicPartnerStorePage() {
         <p className="text-[13px] text-shop-text">
           This partner store link may be inactive.
         </p>
-        <Link
-          href="/"
-          className="mt-2 rounded-full bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
-        >
-          Go to AwaOwn
-        </Link>
       </div>
     );
   }
@@ -156,6 +157,8 @@ export default function PublicPartnerStorePage() {
                   product={product}
                   bordered
                   hrefExtra={`?ref=${store.code}`}
+                  refCode={store.code}
+                  hideVendor
                 />
               ))}
             </div>

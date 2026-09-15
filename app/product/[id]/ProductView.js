@@ -56,6 +56,9 @@ function ProductDetail() {
   const showToast = useToast();
 
   const { authed } = useAuthBootstrap("customer");
+  // A partner's storefront presents the partner as the seller, not the
+  // underlying merchant - hide anything that would reveal or link to them.
+  const storeThemed = !!useStoreTheme();
 
   // Partner attribution: capture ?ref= into a cookie so it survives login/signup.
   const refFromUrl = search.get("ref");
@@ -330,9 +333,11 @@ function ProductDetail() {
 
           <div className="mt-5 flex flex-col gap-4 lg:mt-0">
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-medium uppercase tracking-wide text-shop-accent-1">
-                {product.vendor}
-              </span>
+              {!storeThemed && (
+                <span className="text-[11.5px] font-medium uppercase tracking-wide text-shop-accent-1">
+                  {product.vendor}
+                </span>
+              )}
               <h1 className="text-[20px] font-semibold leading-[26px] text-shop-heading">
                 {smartTitle(product.title)}
               </h1>
@@ -353,7 +358,7 @@ function ProductDetail() {
                   {product.rating} ({product.reviewCount} reviews)
                 </span>
               </div>
-              {(() => {
+              {!storeThemed && (() => {
                 const seller = product.seller ?? {
                   name: product.vendor,
                   href: null,
@@ -639,7 +644,10 @@ function ProductDetail() {
           </div>
         </div>
 
-        {related && related.length > 0 && (
+        {/* "You may also like" pulls from the whole marketplace, across other
+            merchants - exactly the kind of thing that must not surface inside
+            a partner's storefront. */}
+        {!storeThemed && related && related.length > 0 && (
           <div className="mt-10 flex flex-col gap-3 border-t border-shop-border pt-6">
             <p className="text-[15px] font-semibold text-shop-heading">You may also like</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
@@ -756,7 +764,9 @@ function ReviewsBlock({ slug, reviews, authed, onRequireLogin }) {
 function PageShell({ children }) {
   // When a store theme is active, StoreThemeShell paints the page background and
   // draws the doodle backdrop - so the inner wrapper must stay transparent or it
-  // covers the pattern.
+  // covers the pattern. A partner's storefront must also have no way back to the
+  // main site from inside it, so the shared site Header/Footer (nav, logo-home
+  // link, category links, footer links...) are dropped entirely in that case.
   const storeThemed = !!useStoreTheme();
   return (
     <StoreThemeShell>
@@ -765,9 +775,9 @@ function PageShell({ children }) {
           storeThemed ? "" : "bg-shop-bg"
         }`}
       >
-        <Header />
+        {!storeThemed && <Header />}
         <main className="flex-1">{children}</main>
-        <Footer />
+        {!storeThemed && <Footer />}
       </div>
     </StoreThemeShell>
   );

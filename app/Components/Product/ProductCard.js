@@ -9,6 +9,7 @@ import { smartTitle } from "@/lib/text-format";
 import { getProductId } from "@/lib/product-id";
 import { useCommerce } from "@/lib/useCommerce";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { readRef } from "@/lib/partner-ref";
 
 // Rough colour-name → hex map so a "Color" variant group renders as swatches.
 const COLOR_HEX = {
@@ -83,9 +84,16 @@ function normalise(product) {
   };
 }
 
-const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
+const ProductCard = ({
+  product,
+  bordered = false,
+  hrefExtra = "",
+  hrefBase = "/product",
+  hideVendor = false,
+  refCode = null,
+}) => {
   const p = normalise(product);
-  const productHref = `/product/${p.id}${hrefExtra}`;
+  const productHref = `${hrefBase}/${p.id}${hrefExtra}`;
   const showToast = useToast();
 
   const commerce = useCommerce();
@@ -110,7 +118,11 @@ const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
     if (busy || !p.productId) return;
     setBusy(true);
     try {
-      await commerce.addToCart(p, { qty: 1 });
+      // A quick-add from the card skips the product page entirely, so referral
+      // attribution has to be threaded through here too - otherwise a partner's
+      // sale silently loses its commission whenever the buyer never opens the
+      // product detail page (the only other place this used to be attached).
+      await commerce.addToCart(p, { qty: 1, ref: refCode || readRef() || undefined });
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
@@ -208,7 +220,7 @@ const ProductCard = ({ product, bordered = false, hrefExtra = "" }) => {
 
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
-        {p.vendor && (
+        {p.vendor && !hideVendor && (
           <span className="text-[11px] uppercase tracking-wide text-shop-text/70">
             {p.vendor}
           </span>
