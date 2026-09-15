@@ -86,6 +86,7 @@ const ACTION_LABELS = {
   openComplaints: { label: "Open complaints", href: "/admin/support" },
   failedPayments: { label: "Failed payments", href: "/admin/finance" },
   pendingProducts: { label: "Products awaiting approval", href: "/admin/products" },
+  pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/finance" },
 };
 
 export default function AdminHome() {

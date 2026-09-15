@@ -174,6 +174,12 @@ export default function AdminAnalyticsPage() {
   const { data, isLoading } = useGetAdminAnalyticsQuery(undefined, {
     pollingInterval: 60_000,
   });
+  // Wired but not surfaced in the UI - the one-time cleanup after the
+  // PageViewTracker fix (removing staff-navigation noise from Visits/Unique
+  // Visitors) was run directly against staging/production once. Uncomment
+  // the button below (and the mutation import) if a reset is ever needed
+  // again, e.g. after a future tracking bug or a load-test traffic burst.
+  // const [resetPageViews, { isLoading: resetting }] = useResetPageViewsMutation();
 
   const maxPageVisits = Math.max(1, ...(data?.topPages ?? []).map((p) => p.visits));
 
@@ -183,6 +189,18 @@ export default function AdminAnalyticsPage() {
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Website visits, top pages, and live platform health.
       </p>
+      {/*
+      <div className="px-4 lg:px-8">
+        <button
+          type="button"
+          onClick={() => resetPageViews()}
+          disabled={resetting}
+          className="rounded-full border border-shop-border px-3 py-1.5 text-[11.5px] font-semibold text-shop-text hover:border-shop-accent-1 hover:text-shop-accent-1 disabled:opacity-60"
+        >
+          Reset page view analytics
+        </button>
+      </div>
+      */}
 
       <div className="grid grid-cols-2 gap-3 px-4 lg:px-8">
         {isLoading || !data ? (

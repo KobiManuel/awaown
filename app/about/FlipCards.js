@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   ShieldCheck,
   BadgeCheck,
@@ -43,9 +43,22 @@ const CARDS = [
 ];
 
 function FlipCard({ icon: Icon, title, description }) {
+  // Hover flips it for a mouse; touch devices have no hover, so tapping
+  // toggles the same flip via this state instead.
+  const [flipped, setFlipped] = useState(false);
+
   return (
-    <div className="group h-[300px] [perspective:1400px]">
-      <div className="relative h-full w-full rounded-[18px] transition-transform duration-[600ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-focus-within:[transform:rotateY(180deg)]">
+    <button
+      type="button"
+      onClick={() => setFlipped((f) => !f)}
+      aria-label={`${title} - tap for details`}
+      className="group h-[300px] w-full text-left [perspective:1400px]"
+    >
+      <div
+        className={`relative h-full w-full rounded-[18px] transition-transform duration-[600ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-focus-within:[transform:rotateY(180deg)] ${
+          flipped ? "[transform:rotateY(180deg)]" : ""
+        }`}
+      >
         {/* Front - purple, just the title as the display text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[18px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-6 text-center text-white [backface-visibility:hidden]">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15">
@@ -53,7 +66,7 @@ function FlipCard({ icon: Icon, title, description }) {
           </span>
           <h3 className="text-[19px] font-semibold">{title}</h3>
           <span className="mt-auto text-[11.5px] font-medium uppercase tracking-wide text-white/70">
-            Hover to flip
+            Tap to flip
           </span>
         </div>
         {/* Back - the description */}
@@ -65,7 +78,7 @@ function FlipCard({ icon: Icon, title, description }) {
           <p className="text-[13.5px] leading-[21px] text-shop-text">{description}</p>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

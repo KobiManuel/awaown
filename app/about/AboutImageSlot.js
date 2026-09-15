@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import { Camera, Loader2 } from "lucide-react";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 
 /**
  * One placeholder section on the About page. Shows the admin-uploaded image
@@ -32,6 +33,7 @@ export default function AboutImageSlot({
   style,
 }) {
   const { pickAndCrop, uploading, modal } = useImageCropUpload("about");
+  const showToast = useToast();
   const fileRef = useRef(null);
 
   const pick = async (e) => {
@@ -39,7 +41,10 @@ export default function AboutImageSlot({
     e.target.value = "";
     if (!file) return;
     const url = await pickAndCrop(file, { aspect, title: "Crop the photo" });
+    // Also resolves null if the admin cancels the cropper, so this wording
+    // has to be accurate for both that and a genuine upload failure.
     if (url) onPick?.(url);
+    else showToast("No image was saved");
   };
 
   const box = (

@@ -278,7 +278,7 @@ function ProductDetail() {
       {navigating && <FullScreenLoader label="Taking you to checkout" />}
       <div className="mx-auto w-full max-w-[1100px] px-4 py-6 font-shop lg:py-10">
         <Link
-          href="/"
+          href={storeTheme ? storeTheme.storeHref : "/"}
           className="mb-4 inline-flex items-center gap-1 text-[12.5px] text-shop-text/70 hover:text-shop-accent-1"
         >
           <ChevronLeft className="h-3.5 w-3.5" /> Continue shopping

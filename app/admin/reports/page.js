@@ -33,15 +33,23 @@ const PerformerCard = ({ icon: Icon, label, name, sub, value, valueLabel, href }
   </Link>
 );
 
+const RANGE_OPTIONS = [
+  { days: 7, label: "Last 7 days" },
+  { days: 14, label: "Last 14 days" },
+  { days: 30, label: "Last 30 days" },
+];
+
 export default function AdminReportsPage() {
   const { data, isLoading } = useGetAdminReportsQuery();
+  const [rangeDays, setRangeDays] = React.useState(7);
 
   const t = data?.totals;
   const topMerchant = data?.topMerchants?.[0];
   const topPartner = data?.topPartners?.[0];
   const topCustomer = data?.topCustomers?.[0];
-  // last 10 days for a compact table
-  const recentDays = (data?.salesByDay ?? []).slice(-10).reverse();
+  // The backend only ever computes a 30-day window, so this picks how much of
+  // it to show - it can't go further back than that without a backend change.
+  const recentDays = (data?.salesByDay ?? []).slice(-rangeDays).reverse();
   const maxRev = Math.max(1, ...recentDays.map((d) => d.revenue));
 
   return (
@@ -115,10 +123,23 @@ export default function AdminReportsPage() {
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
-        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-          <BarChart3 className="h-4 w-4 text-shop-accent-1" />
-          Sales · last 10 days
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <BarChart3 className="h-4 w-4 text-shop-accent-1" />
+            Sales
+          </p>
+          <select
+            value={rangeDays}
+            onChange={(e) => setRangeDays(Number(e.target.value))}
+            className="rounded-[8px] border border-shop-border px-2.5 py-1.5 text-[12px] font-medium text-shop-heading outline-none focus:border-shop-accent-1"
+          >
+            {RANGE_OPTIONS.map((o) => (
+              <option key={o.days} value={o.days}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
         {isLoading ? (
           <SkeletonRows count={5} />
         ) : (
