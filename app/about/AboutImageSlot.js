@@ -69,22 +69,28 @@ export default function AboutImageSlot({
   if (!editable) return box;
 
   return (
-    <button
-      type="button"
-      onClick={() => fileRef.current?.click()}
-      disabled={uploading}
-      className="block w-full text-left"
-      aria-label={value ? "Replace image" : "Upload image"}
-    >
-      {box}
+    <>
+      {/* The crop modal must be a sibling of this button, never a child of it -
+          any click inside the cropper (dragging the crop area, hitting Apply)
+          would otherwise bubble up to this button's onClick and reopen the
+          native file picker mid-crop. */}
       {modal}
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileRef}
-        className="hidden"
-        onChange={pick}
-      />
-    </button>
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="block w-full text-left"
+        aria-label={value ? "Replace image" : "Upload image"}
+      >
+        {box}
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileRef}
+          className="hidden"
+          onChange={pick}
+        />
+      </button>
+    </>
   );
 }

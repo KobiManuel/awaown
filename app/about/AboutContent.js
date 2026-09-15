@@ -89,7 +89,7 @@ export default function AboutContent() {
             One Ecosystem
           </p>
           <h2 className="text-[24px] font-bold text-shop-heading md:text-[30px]">
-            Who AwaOwn Is Built For
+            Find Your Place in Commerce
           </h2>
           <p className="max-w-[560px] text-[13.5px] leading-[21px] text-shop-text">
             Four kinds of people make the AwaOwn marketplace work - each

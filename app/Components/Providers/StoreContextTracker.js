@@ -12,7 +12,8 @@ import { setActiveStore, clearActiveStore } from "@/lib/store-context";
  *  - /store/<code>              -> that store
  *  - /product/<id>?ref=<code>   -> that store
  *  - /product/<id> (no ref),
- *    /cart, /dashboard/checkout -> keep whatever's active (mid-flow)
+ *    /cart, /dashboard/cart,
+ *    /dashboard/checkout        -> keep whatever's active (mid-flow)
  *  - anywhere else              -> leave the store (clear)
  */
 export default function StoreContextTracker() {
@@ -30,7 +31,11 @@ export default function StoreContextTracker() {
       if (ref) setActiveStore(ref.toUpperCase());
       return; // no ref -> stay with the current flow's store
     }
-    if (pathname === "/cart" || pathname.startsWith("/dashboard/checkout")) {
+    if (
+      pathname === "/cart" ||
+      pathname === "/dashboard/cart" ||
+      pathname.startsWith("/dashboard/checkout")
+    ) {
       return; // carry the store through the buying flow
     }
     clearActiveStore();

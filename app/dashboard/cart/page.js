@@ -13,18 +13,32 @@ import {
   useUpdateCartQtyMutation,
   useRemoveCartItemMutation,
 } from "@/lib/api/commerceApi";
+import { useGetShippingQuoteQuery } from "@/lib/api/ordersApi";
+import { useGetAddressesQuery } from "@/lib/api/commerceApi";
+import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import { useStoreTheme } from "@/lib/useStoreTheme";
 
-const SHIPPING_FEE = 1500;
+// Shown only while the real quote is loading, or if it fails - the actual
+// charge always comes from the backend's own computeShipping() at checkout.
+const SHIPPING_FEE_FALLBACK = 1500;
 
 export default function CartPage() {
   const showToast = useToast();
+  const storeTheme = useStoreTheme();
   const { data, isLoading, isError } = useGetCartQuery();
   const [updateQty] = useUpdateCartQtyMutation();
   const [removeItem, removeState] = useRemoveCartItemMutation();
+  const { data: addresses } = useGetAddressesQuery();
 
   const items = data?.items ?? [];
   const subtotal = data?.subtotal ?? 0;
-  const shipping = items.length === 0 ? 0 : SHIPPING_FEE;
+  const defaultAddressId =
+    addresses?.find((a) => a.isDefault)?.id || addresses?.[0]?.id;
+  const { data: shippingQuote } = useGetShippingQuoteQuery(
+    { addressId: defaultAddressId },
+    { skip: !defaultAddressId || !items.length },
+  );
+  const shipping = items.length === 0 ? 0 : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
   const total = subtotal + shipping;
 
   const handleRemove = async (id, title) => {
@@ -37,6 +51,7 @@ export default function CartPage() {
   };
 
   return (
+    <StoreThemeShell>
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
       <AppHeader title="My Cart" />
 
@@ -62,10 +77,10 @@ export default function CartPage() {
             </p>
           </div>
           <Link
-            href="/dashboard/shop"
+            href={storeTheme ? storeTheme.storeHref : "/dashboard/shop"}
             className="rounded-full bg-shop-accent-1 px-6 py-2.5 text-[13px] font-semibold text-white"
           >
-            Start Shopping
+            {storeTheme ? "Continue Shopping" : "Start Shopping"}
           </Link>
         </div>
       ) : (
@@ -187,5 +202,6 @@ export default function CartPage() {
         </div>
       )}
     </div>
+    </StoreThemeShell>
   );
 }

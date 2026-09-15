@@ -153,10 +153,10 @@ export default function PartnerStorePage() {
               <div className="grid grid-cols-2 gap-2 rounded-[10px] bg-shop-bg p-3">
                 <div>
                   <p className="text-[10.5px] uppercase tracking-wide text-shop-text/60">
-                    Buyer Price
+                    Partner Price
                   </p>
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    {formatPrice(product.buyerPrice)}
+                    {formatPrice(product.price - product.maxDiscount)}
                   </p>
                 </div>
                 <div>

@@ -41,6 +41,7 @@ import {
   useGetRelatedProductsQuery,
   useCreateReviewMutation,
 } from "@/lib/api/catalogApi";
+import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
 import {
   useGetStockAlertQuery,
   useSubscribeStockAlertMutation,
@@ -58,7 +59,8 @@ function ProductDetail() {
   const { authed } = useAuthBootstrap("customer");
   // A partner's storefront presents the partner as the seller, not the
   // underlying merchant - hide anything that would reveal or link to them.
-  const storeThemed = !!useStoreTheme();
+  const storeTheme = useStoreTheme();
+  const storeThemed = !!storeTheme;
 
   // Partner attribution: capture ?ref= into a cookie so it survives login/signup.
   const refFromUrl = search.get("ref");
@@ -69,6 +71,14 @@ function ProductDetail() {
 
   const { data: product, isLoading, isError } = useGetProductQuery(id);
   const { data: related } = useGetRelatedProductsQuery(id, { skip: !product });
+  // Inside a partner's storefront, "more like this" must stay inside that same
+  // store - never surface other merchants' products the way the marketplace-wide
+  // "You may also like" does. Reuses useStoreTheme()'s own cached storefront
+  // fetch, so this costs no extra request.
+  const { data: partnerStore } = useGetPartnerStorefrontQuery(storeTheme?.code, {
+    skip: !storeTheme,
+  });
+  const moreFromStore = (partnerStore?.products ?? []).filter((p) => p.id !== id);
 
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
@@ -646,16 +656,36 @@ function ProductDetail() {
 
         {/* "You may also like" pulls from the whole marketplace, across other
             merchants - exactly the kind of thing that must not surface inside
-            a partner's storefront. */}
-        {!storeThemed && related && related.length > 0 && (
-          <div className="mt-10 flex flex-col gap-3 border-t border-shop-border pt-6">
-            <p className="text-[15px] font-semibold text-shop-heading">You may also like</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-              {related.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+            a partner's storefront. Inside one, "More from this store" takes its
+            place, scoped to only that partner's own listed products. */}
+        {storeThemed ? (
+          moreFromStore.length > 0 && (
+            <div className="mt-10 flex flex-col gap-3 border-t border-shop-border pt-6">
+              <p className="text-[15px] font-semibold text-shop-heading">More from this store</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+                {moreFromStore.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    hrefExtra={`?ref=${storeTheme.code}`}
+                    refCode={storeTheme.code}
+                    hideVendor
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          )
+        ) : (
+          related && related.length > 0 && (
+            <div className="mt-10 flex flex-col gap-3 border-t border-shop-border pt-6">
+              <p className="text-[15px] font-semibold text-shop-heading">You may also like</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+                {related.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            </div>
+          )
         )}
       </div>
     </PageShell>

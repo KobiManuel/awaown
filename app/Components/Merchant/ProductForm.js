@@ -203,7 +203,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const isGroup = productType === "group";
   const [price, setPrice] = useState(init.price);
   const [onSale, setOnSale] = useState(init.onSale);
+  const [discountType, setDiscountType] = useState("flat"); // flat | percent
   const [discountAmount, setDiscountAmount] = useState(init.discountAmount);
+  const [discountPercent, setDiscountPercent] = useState("");
   const [stock, setStock] = useState(init.stock);
   const [weight, setWeight] = useState(init.weight);
   const [uploadingSlot, setUploadingSlot] = useState(null);
@@ -347,6 +349,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const basePrice = Number(price) || 0;
   const payoutSuggestion =
     basePrice > 0 ? partnerPayoutSuggestion(basePrice) : null;
+  // Merchants can set the sale discount as a flat naira amount or a percentage
+  // of the price - either way it's converted to a flat amount before it's sent
+  // to the backend, which only ever stores/compares an absolute naira discount.
+  const effectiveDiscountAmount =
+    discountType === "percent"
+      ? Math.round((Number(discountPercent) / 100) * basePrice) || 0
+      : Number(discountAmount) || 0;
 
   // ── what's blocking "Submit for Review" / "Publish" ──────────────────
   const problems = [];
@@ -403,7 +412,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     );
   const discountValid =
     !onSale ||
-    (Number(discountAmount) > 0 && Number(discountAmount) < basePrice);
+    (effectiveDiscountAmount > 0 && effectiveDiscountAmount < basePrice);
   if (onSale && !discountValid)
     problems.push("Set a discount amount less than the price.");
   const isValid = problems.length === 0;
@@ -434,7 +443,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       images: images.filter(Boolean),
       productType,
       price: basePrice,
-      discountAmount: onSale ? Number(discountAmount) || 0 : 0,
+      discountAmount: onSale ? effectiveDiscountAmount : 0,
       stock: deliveryType === "digital" ? undefined : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
@@ -839,7 +848,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                   )
                 }
                 inputMode="decimal"
-                placeholder="e.g. 0.5"
+                placeholder="e.g. 0.05"
                 className={`w-full max-w-[180px] ${FIELD}`}
               />
             </label>
@@ -1072,20 +1081,70 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           </div>
           {onSale && (
             <div className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-shop-heading">
-                  Discount amount (₦)
-                </span>
-                <MoneyInput
-                  value={discountAmount}
-                  onChange={setDiscountAmount}
-                  placeholder="e.g. 2,000"
-                  className={FIELD}
-                />
-              </label>
+              <span className="text-[13px] font-semibold text-shop-heading">
+                Discount type
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDiscountType("flat")}
+                  className={`flex-1 rounded-[8px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
+                    discountType === "flat"
+                      ? "border-shop-accent-1 bg-shop-accent-1-light text-shop-accent-1"
+                      : "border-shop-border text-shop-text"
+                  }`}
+                >
+                  Flat amount (₦)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiscountType("percent")}
+                  className={`flex-1 rounded-[8px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
+                    discountType === "percent"
+                      ? "border-shop-accent-1 bg-shop-accent-1-light text-shop-accent-1"
+                      : "border-shop-border text-shop-text"
+                  }`}
+                >
+                  Percentage (%)
+                </button>
+              </div>
+
+              {discountType === "flat" ? (
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">
+                    Discount amount (₦)
+                  </span>
+                  <MoneyInput
+                    value={discountAmount}
+                    onChange={setDiscountAmount}
+                    placeholder="e.g. 2,000"
+                    className={FIELD}
+                  />
+                </label>
+              ) : (
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">
+                    Discount percentage (%)
+                  </span>
+                  <input
+                    value={discountPercent}
+                    onChange={(e) =>
+                      setDiscountPercent(
+                        e.target.value
+                          .replace(/[^0-9.]/g, "")
+                          .replace(/(\..*)\./g, "$1"),
+                      )
+                    }
+                    inputMode="decimal"
+                    placeholder="e.g. 15"
+                    className={FIELD}
+                  />
+                </label>
+              )}
+
               {basePrice > 0 &&
-                Number(discountAmount) > 0 &&
-                Number(discountAmount) < basePrice && (
+                effectiveDiscountAmount > 0 &&
+                effectiveDiscountAmount < basePrice && (
                   <p className="rounded-[8px] bg-shop-bg p-3 text-[11.5px] leading-[17px] text-shop-text">
                     Was{" "}
                     <span className="font-semibold text-shop-heading line-through">
@@ -1093,12 +1152,14 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                     </span>
                     , now{" "}
                     <span className="font-semibold text-shop-accent-1">
-                      {formatPrice(basePrice - Number(discountAmount))}
+                      {formatPrice(basePrice - effectiveDiscountAmount)}
                     </span>
+                    {discountType === "percent" &&
+                      ` (${formatPrice(effectiveDiscountAmount)} off)`}
                     .
                   </p>
                 )}
-              {Number(discountAmount) >= basePrice && basePrice > 0 && (
+              {effectiveDiscountAmount >= basePrice && basePrice > 0 && (
                 <p className="text-[11.5px] text-shop-accent-3">
                   The discount must be less than the price.
                 </p>
