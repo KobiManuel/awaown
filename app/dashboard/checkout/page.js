@@ -14,13 +14,18 @@ import { useGetProductQuery } from "@/lib/api/catalogApi";
 import {
   useCheckoutMutation,
   useConfirmPaymentMutation,
+  useGetShippingQuoteQuery,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 
-const SHIPPING_FEE = 1500;
+// Shown only while the real quote is loading, or if it fails - the actual
+// charge always comes from the backend's own computeShipping() at order
+// creation (Fez quote when enabled, this same flat fee as its fallback).
+const SHIPPING_FEE_FALLBACK = 1500;
 
 const METHODS = [
   { id: "CARD", label: "Debit / Credit Card", description: "Visa, Mastercard, Verve. Secured by Paystack" },
@@ -75,7 +80,20 @@ export default function CheckoutPage() {
   const subtotal = isBuyNow
     ? (buyNowLine?.lineTotal ?? 0)
     : (cart?.subtotal ?? 0);
-  const shipping = items.length ? SHIPPING_FEE : 0;
+
+  const { data: shippingQuote, isFetching: shippingLoading } =
+    useGetShippingQuoteQuery(
+      {
+        addressId,
+        buyNow: isBuyNow
+          ? { productId: buyNow.productId, qty: Math.max(1, buyNow.qty || 1) }
+          : undefined,
+      },
+      { skip: !addressId || !items.length },
+    );
+  const shipping = !items.length
+    ? 0
+    : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
   const total = subtotal + shipping;
 
   useEffect(() => {
@@ -382,13 +400,30 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between text-[13px] text-shop-text">
               <span>Shipping</span>
               <span className="font-medium text-shop-heading">
-                {formatPrice(shipping)}
+                {shippingLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-shop-text/50" />
+                ) : (
+                  formatPrice(shipping)
+                )}
               </span>
             </div>
             <div className="flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">
               <span>Total</span>
               <span>{formatPrice(total)}</span>
             </div>
+          </div>
+
+          {/* The banner carries its own mx-4 (for pages with no parent padding);
+              this sidebar column already has px-4, so cancel it out here rather
+              than leave the banner more indented than the cards around it. */}
+          <div className="-mx-4">
+            <FezDeliveryBanner
+              status={
+                shippingQuote?.eta
+                  ? `Estimated delivery: ${shippingQuote.eta}`
+                  : "Nationwide tracked delivery"
+              }
+            />
           </div>
 
           {error && (
@@ -401,6 +436,7 @@ export default function CheckoutPage() {
             disabled={
               busy ||
               checkoutState.isLoading ||
+              shippingLoading ||
               !items.length ||
               !addressId ||
               walletShort

@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Store, Package, ShoppingBag, IdCard } from "lucide-react";
+import { Store, Package, ShoppingBag, IdCard, Phone, MapPin, Home } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import { statusMeta } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -35,6 +35,18 @@ const Stat = ({ label, value }) => (
   <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3.5">
     <p className="text-[15px] font-bold text-shop-heading">{value}</p>
     <p className="text-[11px] text-shop-text/70">{label}</p>
+  </div>
+);
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-3 p-3.5">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-shop-accent-1-light">
+      <Icon className="h-3.5 w-3.5 text-shop-accent-1" strokeWidth={1.75} />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] text-shop-text/60">{label}</p>
+      <p className="text-[12.5px] font-medium text-shop-heading">{value}</p>
+    </div>
   </div>
 );
 
@@ -113,9 +125,17 @@ export default function AdminMerchantDetailPage() {
       </div>
 
       {(m.phone || m.state || m.address) && (
-        <p className="mx-4 text-[12px] text-shop-text lg:mx-8">
-          {[m.phone, m.state, m.address].filter(Boolean).join(" · ")}
-        </p>
+        <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+            <MapPin className="h-4 w-4 text-shop-accent-1" />
+            Contact &amp; Location
+          </p>
+          <div className="flex flex-col divide-y divide-shop-border rounded-[12px] border border-shop-border bg-white">
+            {m.phone && <InfoRow icon={Phone} label="Phone" value={m.phone} />}
+            {m.state && <InfoRow icon={MapPin} label="State" value={m.state} />}
+            {m.address && <InfoRow icon={Home} label="Address" value={m.address} />}
+          </div>
+        </div>
       )}
 
       {v && (
