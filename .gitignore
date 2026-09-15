@@ -40,6 +40,9 @@ yarn-error.log*
 # legacy DB dumps - real customer PII, never commit regardless of location
 *.sql
 
+# draft legal docs at repo root - not site assets, address separately
+/*.docx
+
 # local agent config
 /.claude/
 

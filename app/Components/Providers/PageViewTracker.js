@@ -6,6 +6,17 @@ import { API_URL } from "@/lib/api/baseApi";
 
 const VISITOR_KEY = "awaown_visitor_id";
 
+// Internal/staff-only areas - a person managing the platform is not "traffic",
+// so counting these here would inflate Visits/Unique Visitors with our own
+// admin, merchant and partner dashboard usage instead of real shopper activity.
+const EXCLUDED_PREFIXES = ["/admin", "/dashboard", "/merchant", "/partner", "/login"];
+
+function isExcludedPath(pathname) {
+  return EXCLUDED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 function getVisitorId() {
   try {
     let id = localStorage.getItem(VISITOR_KEY);
@@ -32,6 +43,7 @@ export default function PageViewTracker() {
   const visitorIdRef = useRef(null);
 
   useEffect(() => {
+    if (isExcludedPath(pathname)) return;
     if (!visitorIdRef.current) visitorIdRef.current = getVisitorId();
     const qs = searchParams?.toString();
     const path = qs ? `${pathname}?${qs}` : pathname;
@@ -45,7 +57,6 @@ export default function PageViewTracker() {
       }),
       keepalive: true,
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
   return null;

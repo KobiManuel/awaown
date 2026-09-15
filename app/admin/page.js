@@ -29,13 +29,7 @@ import {
   ImagePlus,
   Loader2,
 } from "lucide-react";
-import {
-  todaysSnapshot,
-  platformHealth,
-  campaignCalendar,
-  formatPrice,
-  HEALTH_TONE,
-} from "@/lib/admin-data";
+import { formatPrice, HEALTH_TONE } from "@/lib/admin-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import {
@@ -109,6 +103,9 @@ export default function AdminHome() {
 
   const kpis = data?.kpis;
   const action = data?.actionRequired ?? {};
+  const todaysSnapshot = data?.todaysSnapshot ?? null;
+  const platformHealth = data?.platformHealth ?? [];
+  const campaignCalendar = data?.campaignCalendar ?? [];
   const dashboardBanner = settings?.dashboardBanner || null;
 
   const handleBannerChange = async (e) => {
@@ -273,26 +270,26 @@ export default function AdminHome() {
             <div>
               <p className="text-shop-text/60">Revenue</p>
               <p className="font-semibold text-shop-heading">
-                {formatPrice(kpis?.revenueToday ?? todaysSnapshot.revenue)}
+                {formatPrice(todaysSnapshot?.revenue ?? kpis?.revenueToday ?? 0)}
               </p>
             </div>
             <div>
               <p className="text-shop-text/60">Orders</p>
               <p className="font-semibold text-shop-heading">
-                {kpis?.ordersToday ?? todaysSnapshot.orders}
+                {todaysSnapshot?.orders ?? kpis?.ordersToday ?? 0}
               </p>
             </div>
             <div>
               <p className="text-shop-text/60">New Customers</p>
-              <p className="font-semibold text-shop-heading">{todaysSnapshot.newCustomers}</p>
+              <p className="font-semibold text-shop-heading">{todaysSnapshot?.newCustomers ?? 0}</p>
             </div>
             <div>
               <p className="text-shop-text/60">New Merchants</p>
-              <p className="font-semibold text-shop-heading">{todaysSnapshot.newMerchants}</p>
+              <p className="font-semibold text-shop-heading">{todaysSnapshot?.newMerchants ?? 0}</p>
             </div>
             <div>
               <p className="text-shop-text/60">New Partners</p>
-              <p className="font-semibold text-shop-heading">{todaysSnapshot.newPartners}</p>
+              <p className="font-semibold text-shop-heading">{todaysSnapshot?.newPartners ?? 0}</p>
             </div>
           </div>
         </div>
@@ -301,6 +298,9 @@ export default function AdminHome() {
         <div className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4">
           <p className="text-[13px] font-semibold text-shop-heading">Platform Health</p>
           <div className="flex flex-col gap-2">
+            {platformHealth.length === 0 && (
+              <p className="text-[12px] text-shop-text/60">Checking systems...</p>
+            )}
             {platformHealth.map((h) => (
               <div key={h.id} className="flex items-center justify-between text-[12.5px]">
                 <span className="text-shop-text">{h.label}</span>
@@ -356,6 +356,11 @@ export default function AdminHome() {
             Campaign Calendar
           </p>
           <div className="flex flex-col gap-2.5">
+            {campaignCalendar.length === 0 && (
+              <p className="text-[12px] text-shop-text/60">
+                No coupon expiries or scheduled campaigns coming up.
+              </p>
+            )}
             {campaignCalendar.map((c) => (
               <div key={c.id} className="flex items-center justify-between text-[12px]">
                 <span className="text-shop-heading">{c.title}</span>

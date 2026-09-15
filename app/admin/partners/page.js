@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, Play, ChevronRight, Trash2 } from "lucide-react";
+import { BadgeCheck, Ban, Play, ChevronRight, Trash2, Search } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -28,8 +28,15 @@ export default function AdminPartnersPage() {
   const { data, isLoading } = useGetAdminPartnersQuery();
   const [setStatus] = useSetAdminPartnerStatusMutation();
   const [reviewKyc] = useReviewAdminPartnerKycMutation();
+  const [q, setQ] = useState("");
 
-  const partners = data?.items ?? [];
+  const allPartners = data?.items ?? [];
+  const partners = allPartners.filter(
+    (p) =>
+      !q ||
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      (p.storeName || "").toLowerCase().includes(q.toLowerCase()),
+  );
 
   const act = async (fn, ok) => {
     try {
@@ -107,12 +114,28 @@ export default function AdminPartnersPage() {
         Onboarding, verification, profit, withdrawals, referrals and performance.
       </p>
 
+      <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:mx-8">
+        <Search className="h-4 w-4 text-shop-text/50" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by name or store name"
+          className="w-full bg-transparent text-[13px] outline-none placeholder:text-shop-text/50"
+        />
+      </div>
+
       {isLoading ? (
         <div className="px-4 lg:px-8">
           <SkeletonRows count={4} />
         </div>
       ) : (
         <div className="flex flex-col gap-2 px-4 lg:px-8">
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-semibold text-shop-heading">Partners</p>
+            <p className="text-[12px] font-medium text-shop-text/60">
+              {q ? `${partners.length} of ${allPartners.length}` : `${allPartners.length} total`}
+            </p>
+          </div>
           {partners.map((p) => (
             <div
               key={p.id}
@@ -215,7 +238,9 @@ export default function AdminPartnersPage() {
             </div>
           ))}
           {partners.length === 0 && (
-            <p className="py-10 text-center text-[13px] text-shop-text">No partners yet.</p>
+            <p className="py-10 text-center text-[13px] text-shop-text">
+              {q ? "No partners found." : "No partners yet."}
+            </p>
           )}
         </div>
       )}

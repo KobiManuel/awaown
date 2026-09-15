@@ -221,7 +221,7 @@ const ProductCard = ({
       {/* Content */}
       <div className="flex flex-col gap-[4px] pt-3">
         {p.vendor && !hideVendor && (
-          <span className="text-[11px] uppercase tracking-wide text-shop-text/70">
+          <span className="truncate text-[11px] uppercase tracking-wide text-shop-text/70">
             {p.vendor}
           </span>
         )}

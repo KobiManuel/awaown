@@ -206,6 +206,9 @@ export default function AdminProductsPage() {
 
   const products = data?.items ?? [];
   const filtered = products.filter((p) => (p.approvalStatus || "APPROVED") === tab);
+  const liveCount = products.filter(
+    (p) => p.status === "ACTIVE" && (p.approvalStatus || "APPROVED") === "APPROVED",
+  ).length;
 
   const act = async (id, action, reason, ok) => {
     try {
@@ -256,6 +259,16 @@ export default function AdminProductsPage() {
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Approve products before they go live, reject with a reason, or remove fraudulent listings.
       </p>
+
+      <div className="flex items-center justify-between px-4 lg:px-8">
+        <p className="text-[13px] font-semibold text-shop-heading">
+          {products.length} total
+        </p>
+        <p className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {liveCount} live on the marketplace
+        </p>
+      </div>
 
       <div className="flex gap-2 px-4 lg:px-8">
         {TABS.map((t) => (

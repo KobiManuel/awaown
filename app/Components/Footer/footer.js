@@ -84,7 +84,7 @@ const Footer = () => {
           </p>
           <div className="flex flex-col gap-1 text-[13px] text-shop-text">
             <p>AwaOwn Marketplace</p>
-            <p>12 Gwarinpa Estate, Abuja, Nigeria</p>
+            <p>Abuja, Nigeria</p>
             <p>hello@awaown.com</p>
             <p>{SUPPORT_PHONE_DISPLAY}</p>
           </div>

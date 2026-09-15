@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, Play, ChevronRight, Trash2, MapPin } from "lucide-react";
+import { BadgeCheck, Ban, Play, ChevronRight, Trash2, MapPin, Search } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -27,8 +27,15 @@ export default function AdminMerchantsPage() {
   const { data, isLoading } = useGetAdminMerchantsQuery();
   const [setStatus] = useSetAdminMerchantStatusMutation();
   const [reviewKyc] = useReviewAdminMerchantKycMutation();
+  const [q, setQ] = useState("");
 
-  const merchants = data?.items ?? [];
+  const allMerchants = data?.items ?? [];
+  const merchants = allMerchants.filter(
+    (m) =>
+      !q ||
+      m.storeName.toLowerCase().includes(q.toLowerCase()) ||
+      m.owner.toLowerCase().includes(q.toLowerCase()),
+  );
 
   const act = async (fn, ok) => {
     try {
@@ -112,12 +119,28 @@ export default function AdminMerchantsPage() {
         Onboarding, verification, performance, payouts, products and account status.
       </p>
 
+      <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:mx-8">
+        <Search className="h-4 w-4 text-shop-text/50" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by store name or owner"
+          className="w-full bg-transparent text-[13px] outline-none placeholder:text-shop-text/50"
+        />
+      </div>
+
       {isLoading ? (
         <div className="px-4 lg:px-8">
           <SkeletonRows count={4} />
         </div>
       ) : (
         <div className="flex flex-col gap-2 px-4 lg:px-8">
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-semibold text-shop-heading">Merchants</p>
+            <p className="text-[12px] font-medium text-shop-text/60">
+              {q ? `${merchants.length} of ${allMerchants.length}` : `${allMerchants.length} total`}
+            </p>
+          </div>
           {merchants.map((m) => (
             <div
               key={m.id}
@@ -227,7 +250,9 @@ export default function AdminMerchantsPage() {
             </div>
           ))}
           {merchants.length === 0 && (
-            <p className="py-10 text-center text-[13px] text-shop-text">No merchants yet.</p>
+            <p className="py-10 text-center text-[13px] text-shop-text">
+              {q ? "No merchants found." : "No merchants yet."}
+            </p>
           )}
         </div>
       )}

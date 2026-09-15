@@ -16,7 +16,8 @@ export default function AdminCustomersPage() {
   const { data: complaintsData } = useGetAdminComplaintsQuery();
   const [q, setQ] = useState("");
 
-  const customers = (data?.items ?? []).filter(
+  const allCustomers = data?.items ?? [];
+  const customers = allCustomers.filter(
     (c) =>
       !q ||
       c.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -39,7 +40,12 @@ export default function AdminCustomersPage() {
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 lg:px-8">
-        <p className="text-[13px] font-semibold text-shop-heading">Customer Profiles</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-shop-heading">Customer Profiles</p>
+          <p className="text-[12px] font-medium text-shop-text/60">
+            {q ? `${customers.length} of ${allCustomers.length}` : `${allCustomers.length} total`}
+          </p>
+        </div>
         {isLoading ? (
           <SkeletonRows count={4} />
         ) : (
