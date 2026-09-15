@@ -113,6 +113,11 @@ function ImageEditButton({ onPick, label = "Change image", aspect }) {
     <>
       {modal}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
+      {uploading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/45">
+          <Loader2 className="h-6 w-6 animate-spin text-white" />
+        </div>
+      )}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -733,17 +738,35 @@ export default function HomepageEditor() {
   const [draft, setDraft] = useState(null);
   const [visibility, setVisibility] = useState(null);
   const [community, setCommunity] = useState(null);
+  const [baseline, setBaseline] = useState(null);
   const ready = draft !== null;
 
-  // Seed local editing state once the server payload has arrived.
+  // Seed local editing state once the server payload has arrived. The baseline
+  // snapshot is what "dirty" is measured against, so the Save button only
+  // appears once something actually changed from what loaded.
   useEffect(() => {
     if (draft === null && cms) {
-      setDraft(JSON.parse(JSON.stringify(mergedContent)));
-      setVisibility({ ...mergedVisibility });
-      setCommunity(JSON.parse(JSON.stringify(mergedCommunity)));
+      const seededDraft = JSON.parse(JSON.stringify(mergedContent));
+      const seededVisibility = { ...mergedVisibility };
+      const seededCommunity = JSON.parse(JSON.stringify(mergedCommunity));
+      setDraft(seededDraft);
+      setVisibility(seededVisibility);
+      setCommunity(seededCommunity);
+      setBaseline(
+        JSON.stringify({
+          draft: seededDraft,
+          visibility: seededVisibility,
+          community: seededCommunity,
+        }),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cms]);
+
+  const isDirty =
+    ready &&
+    baseline !== null &&
+    JSON.stringify({ draft, visibility, community }) !== baseline;
 
   const updateSection = (key, patch) => {
     setDraft((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
@@ -769,6 +792,7 @@ export default function HomepageEditor() {
         sectionVisibility: visibility,
         community,
       }).unwrap();
+      setBaseline(JSON.stringify({ draft, visibility, community }));
       showToast("Homepage content saved");
     } catch {
       showToast("Could not save homepage content");
@@ -841,17 +865,19 @@ export default function HomepageEditor() {
         }
       />
 
-      <div className="sticky bottom-4 z-30 flex justify-end">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 rounded-full bg-shop-accent-1 px-6 py-3 text-[13px] font-semibold text-white shadow-lg hover:bg-shop-accent-1-dark disabled:opacity-60"
-        >
-          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Save Changes
-        </button>
-      </div>
+      {isDirty && (
+        <div className="sticky bottom-4 z-30 flex justify-end">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-full bg-shop-accent-1 px-6 py-3 text-[13px] font-semibold text-white shadow-lg hover:bg-shop-accent-1-dark disabled:opacity-60"
+          >
+            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Save Changes
+          </button>
+        </div>
+      )}
     </div>
   );
 }

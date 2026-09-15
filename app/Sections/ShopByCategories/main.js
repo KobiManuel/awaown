@@ -1,22 +1,51 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
 
 const ShopByCategories = () => {
+  const trackRef = useRef(null);
   const { data: categories, isLoading } = useGetCategoriesQuery();
   const list = categories ?? [];
+
+  const scrollByCards = (dir) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const card = track.querySelector("[data-card]");
+    const w = card ? card.getBoundingClientRect().width + 20 : 150;
+    track.scrollBy({ left: dir * w * 2, behavior: "smooth" });
+  };
 
   if (!isLoading && list.length === 0) return null;
 
   return (
     <div className="mx-auto mt-12 w-full max-w-[1460px] px-4 font-shop md:mt-16 md:px-8">
-      <SectionHeader title="Shop By Categories" />
-      <div className="hide-scrollbar flex gap-5 overflow-x-auto pb-2">
+      <SectionHeader title="Shop By Categories">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            aria-label="Previous"
+            onClick={() => scrollByCards(-1)}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-shop-border text-shop-heading transition-colors hover:border-shop-accent-1 hover:bg-shop-accent-1 hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next"
+            onClick={() => scrollByCards(1)}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-shop-border text-shop-heading transition-colors hover:border-shop-accent-1 hover:bg-shop-accent-1 hover:text-white"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </SectionHeader>
+      <div ref={trackRef} className="hide-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-2">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex w-[130px] shrink-0 flex-col items-center gap-3 md:w-[150px]">
@@ -28,6 +57,7 @@ const ShopByCategories = () => {
               <Link
                 href={`/shop?category=${cat.slug}`}
                 key={cat.slug}
+                data-card
                 className="group flex w-[130px] shrink-0 flex-col items-center gap-3 text-center md:w-[150px]"
               >
                 <div className="relative flex h-[110px] w-[110px] items-center justify-center overflow-hidden rounded-full bg-shop-accent-1-light text-[32px] font-bold text-shop-accent-1 transition-transform group-hover:scale-105 md:h-[130px] md:w-[130px]">

@@ -4,7 +4,6 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import { Camera, Loader2 } from "lucide-react";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
-import { useSaveAboutImageMutation } from "@/lib/api/adminApi";
 
 /**
  * One placeholder section on the About page. Shows the admin-uploaded image
@@ -18,18 +17,21 @@ import { useSaveAboutImageMutation } from "@/lib/api/adminApi";
  * layout already runs for guest cart/wishlist sync, and the two fight over
  * the same shared auth state (this shipped once and caused an infinite
  * render loop - see git history - don't reintroduce it).
+ *
+ * In editable mode this only uploads the file and hands the resulting URL to
+ * `onPick` - it does not save anything itself. The admin page owns the draft
+ * and its own Save Changes button, same as every other content section.
  */
 export default function AboutImageSlot({
-  sectionKey,
   value,
   alt = "",
   aspect,
   editable = false,
+  onPick,
   className = "",
   style,
 }) {
   const { pickAndCrop, uploading, modal } = useImageCropUpload("about");
-  const [saveImage] = useSaveAboutImageMutation();
   const fileRef = useRef(null);
 
   const pick = async (e) => {
@@ -37,7 +39,7 @@ export default function AboutImageSlot({
     e.target.value = "";
     if (!file) return;
     const url = await pickAndCrop(file, { aspect, title: "Crop the photo" });
-    if (url) saveImage({ key: sectionKey, url });
+    if (url) onPick?.(url);
   };
 
   const box = (
