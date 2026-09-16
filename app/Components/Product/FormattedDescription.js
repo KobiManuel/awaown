@@ -17,15 +17,20 @@ export default function FormattedDescription({ html, className = "" }) {
   return (
     <>
       <div
-        className={`awaown-description whitespace-pre-line text-[13px] leading-[21px] text-shop-text ${className}`}
+        className={`awaown-description min-w-0 max-w-full whitespace-pre-line text-[13px] leading-[21px] text-shop-text ${className}`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <style jsx global>{`
+        .awaown-description {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
         .awaown-description :is(h1, h2, h3, h4) {
           font-weight: 600;
           color: var(--shop-heading, #1a1a1a);
           margin: 14px 0 6px;
           line-height: 1.35;
+          overflow-wrap: anywhere;
         }
         .awaown-description h1 {
           font-size: 18px;
@@ -65,6 +70,10 @@ export default function FormattedDescription({ html, className = "" }) {
         }
         .awaown-description strong {
           font-weight: 600;
+        }
+        .awaown-description img {
+          max-width: 100%;
+          height: auto;
         }
       `}</style>
     </>
