@@ -9,6 +9,7 @@ import {
   User,
 } from "lucide-react";
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
+import PartnerProgramComplianceGate from "@/app/Components/Merchant/PartnerProgramComplianceGate";
 import { useGetMerchantOverviewQuery } from "@/lib/api/merchantApi";
 
 export default function MerchantLayout({
@@ -34,6 +35,7 @@ export default function MerchantLayout({
 
   return (
     <AppFrame navItems={navItems} loginHref="/login/merchant" roleLabel="Merchant">
+      <PartnerProgramComplianceGate />
       {children}
     </AppFrame>
   );
