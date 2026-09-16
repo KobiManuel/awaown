@@ -11,18 +11,30 @@ import {
   useGetAdminComplaintsQuery,
 } from "@/lib/api/adminApi";
 
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "registered", label: "Registered" },
+  { id: "guest", label: "Partner Store Guests" },
+];
+
 export default function AdminCustomersPage() {
   const { data, isLoading } = useGetAdminCustomersQuery();
   const { data: complaintsData } = useGetAdminComplaintsQuery();
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const allCustomers = data?.items ?? [];
-  const customers = allCustomers.filter(
+  const byFilter =
+    filter === "all"
+      ? allCustomers
+      : allCustomers.filter((c) => (filter === "guest" ? c.isGuest : !c.isGuest));
+  const customers = byFilter.filter(
     (c) =>
       !q ||
       c.name.toLowerCase().includes(q.toLowerCase()) ||
       c.email.toLowerCase().includes(q.toLowerCase()),
   );
+  const guestCount = allCustomers.filter((c) => c.isGuest).length;
   const complaints = (complaintsData?.items ?? []).slice(0, 6);
 
   return (
@@ -43,8 +55,25 @@ export default function AdminCustomersPage() {
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold text-shop-heading">Customer Profiles</p>
           <p className="text-[12px] font-medium text-shop-text/60">
-            {q ? `${customers.length} of ${allCustomers.length}` : `${allCustomers.length} total`}
+            {q ? `${customers.length} of ${byFilter.length}` : `${byFilter.length} total`}
           </p>
+        </div>
+        <div className="flex gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilter(f.id)}
+              className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors ${
+                filter === f.id
+                  ? "bg-shop-accent-1 text-white"
+                  : "bg-shop-bg text-shop-text hover:bg-shop-border"
+              }`}
+            >
+              {f.label}
+              {f.id === "guest" && guestCount > 0 ? ` (${guestCount})` : ""}
+            </button>
+          ))}
         </div>
         {isLoading ? (
           <SkeletonRows count={4} />
@@ -55,14 +84,30 @@ export default function AdminCustomersPage() {
                 key={c.id}
                 className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5"
               >
-                <div>
-                  <p className="text-[13px] font-semibold text-shop-heading">{c.name}</p>
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+                    {c.name}
+                    {c.isGuest && (
+                      <span
+                        className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10px] font-semibold text-shop-accent-1"
+                        title="No AwaOwn account - checked out as a guest through a partner store"
+                      >
+                        Guest{c.guestStoreName ? ` · ${c.guestStoreName}` : ""}
+                      </span>
+                    )}
+                  </p>
                   <p className="text-[11.5px] text-shop-text/70">{c.email}</p>
+                  {c.phone && (
+                    <p className="text-[11.5px] text-shop-text/70">{c.phone}</p>
+                  )}
+                  {c.isGuest && c.address && (
+                    <p className="line-clamp-1 text-[11px] text-shop-text/60">{c.address}</p>
+                  )}
                   <p className="text-[11px] text-shop-text/60">
                     {c.orders} orders · wallet {formatPrice(c.walletBalance)}
                   </p>
                 </div>
-                <span className="text-[13px] font-semibold text-shop-heading">
+                <span className="shrink-0 text-[13px] font-semibold text-shop-heading">
                   {formatPrice(c.totalSpend)}
                 </span>
               </div>

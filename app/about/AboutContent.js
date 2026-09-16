@@ -76,11 +76,20 @@ export default function AboutContent() {
       </section>
 
       <div className="mx-auto w-full max-w-[1100px] px-4 md:px-8">
+        {/* A wide desktop crop looks cramped/awkward on a narrow phone screen,
+            so the admin can upload a separate, more upright crop just for
+            mobile - falls back to the desktop image if none was set. */}
+        <AboutImageSlot
+          sectionKey="hero"
+          value={images.heroMobile || images.hero}
+          alt="AwaOwn"
+          className="aspect-[4/5] w-full rounded-[16px] md:hidden"
+        />
         <AboutImageSlot
           sectionKey="hero"
           value={images.hero}
           alt="AwaOwn"
-          className="aspect-[16/9] w-full rounded-[16px] md:aspect-[16/7]"
+          className="hidden aspect-[16/7] w-full rounded-[16px] md:block"
         />
 
         {/* Ecosystem intro */}
