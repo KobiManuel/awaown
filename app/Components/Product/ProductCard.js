@@ -259,12 +259,12 @@ const ProductCard = ({
             <span className="truncate">{p.location}</span>
           </div>
         )}
-        <div className="flex items-center gap-[8px]">
-          <span className="text-[15px] font-semibold text-shop-heading">
+        <div className="flex flex-wrap items-baseline gap-x-[6px] gap-y-0">
+          <span className="text-[12.5px] font-semibold text-shop-heading sm:text-[15px]">
             {p.priceFrom ? `From ${formatPrice(p.price)}` : formatPrice(p.price)}
           </span>
           {p.compareAt && (
-            <span className="text-[13px] text-shop-text/60 line-through">
+            <span className="text-[10.5px] text-shop-text/60 line-through sm:text-[13px]">
               {formatPrice(p.compareAt)}
             </span>
           )}
