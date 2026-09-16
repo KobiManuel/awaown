@@ -24,7 +24,8 @@ import {
   formatPrice,
 } from "@/lib/dashboard-data";
 import { isColorAxis, colorHex } from "@/lib/variant-options";
-import { smartTitle, sentenceCase } from "@/lib/text-format";
+import { smartTitle } from "@/lib/text-format";
+import FormattedDescription from "@/app/Components/Product/FormattedDescription";
 import { setBuyNow as setBuyNowItem } from "@/lib/express-checkout";
 import FullScreenLoader from "@/app/Components/Dashboard/FullScreenLoader";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
@@ -672,12 +673,12 @@ function ProductDetail() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-shop-border pt-4">
-              <p className="text-[13px] font-semibold text-shop-heading">Description</p>
-              <p className="whitespace-pre-line text-[13px] leading-[21px] text-shop-text">
-                {sentenceCase(product.description)}
-              </p>
-            </div>
+            {product.description && (
+              <div className="flex flex-col gap-2 border-t border-shop-border pt-4">
+                <p className="text-[13px] font-semibold text-shop-heading">Description</p>
+                <FormattedDescription html={product.description} />
+              </div>
+            )}
 
             <ReviewsBlock
               slug={id}

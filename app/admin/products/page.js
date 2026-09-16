@@ -6,6 +6,8 @@ import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2 } fr
 import { formatPrice } from "@/lib/admin-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
+import DescriptionEditor from "@/app/Components/Merchant/DescriptionEditor";
+import FormattedDescription from "@/app/Components/Product/FormattedDescription";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -38,12 +40,12 @@ function EditProductForm({ product, onSaved, onCancel }) {
       await editProduct({
         id: product.id,
         title: title.trim(),
-        description: description.trim(),
+        description,
         price: Number(price) || 0,
         ...(product.variants?.length ? {} : { stock: Number(stock) || 0 }),
         category,
       }).unwrap();
-      showToast(`"${title.trim()}" updated - the merchant has been notified`);
+      showToast(`"${title.trim()}" updated`);
       onSaved();
     } catch (err) {
       showToast(errorMessage(err));
@@ -62,12 +64,7 @@ function EditProductForm({ product, onSaved, onCancel }) {
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="text-[12px] font-semibold text-shop-heading">Description</span>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          className="resize-none rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
-        />
+        <DescriptionEditor value={description} onChange={setDescription} />
       </label>
       <div className="flex gap-2.5">
         <label className="flex flex-1 flex-col gap-1.5">
@@ -222,7 +219,11 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-[16px] font-semibold text-shop-heading">{product.title}</p>
-          <p className="text-[13px] text-shop-text">{product.description || "No description provided."}</p>
+          {product.description ? (
+            <FormattedDescription html={product.description} />
+          ) : (
+            <p className="text-[13px] text-shop-text">No description provided.</p>
+          )}
         </div>
 
         <div className="flex items-center gap-3 rounded-[10px] bg-shop-bg p-3">

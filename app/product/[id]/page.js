@@ -1,4 +1,5 @@
 import { SITE_URL } from "@/lib/site-config";
+import { stripHtml } from "@/lib/text-format";
 import ProductView from "./ProductView";
 
 const API =
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }) {
     maximumFractionDigits: 0,
   }).format(p.price);
   const description = (
-    p.description ||
+    stripHtml(p.description) ||
     `${p.title} from ${p.vendor} on AwaOwn. Escrow-protected checkout.`
   ).slice(0, 160);
   const image = p.images?.[0]?.startsWith("http")

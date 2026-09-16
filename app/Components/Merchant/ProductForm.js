@@ -34,6 +34,7 @@ import VariantAxisEditor, {
 } from "@/app/Components/Merchant/VariantAxisEditor";
 import VariantMatrix from "@/app/Components/Merchant/VariantMatrix";
 import ImagePickerSlot from "@/app/Components/Merchant/ImagePickerSlot";
+import DescriptionEditor from "@/app/Components/Merchant/DescriptionEditor";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import {
   VARIANT_TYPE_PRESETS,
@@ -535,12 +536,10 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               Description{" "}
               <span className="font-normal text-shop-text">(optional)</span>
             </span>
-            <textarea
+            <DescriptionEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              onChange={setDescription}
               placeholder="Tell shoppers what makes this product great"
-              className={`${FIELD} resize-none`}
             />
           </label>
           <label className="flex flex-col gap-1.5">
