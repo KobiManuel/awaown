@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Package, Star, BadgeCheck, X, Trash2, Store, User } from "lucide-react";
+import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
+import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -11,11 +13,131 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetAdminProductsQuery,
   useSetAdminProductApprovalMutation,
+  useEditAdminProductMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
+function EditProductForm({ product, onSaved, onCancel }) {
+  const showToast = useToast();
+  const [editProduct, editState] = useEditAdminProductMutation();
+  const [title, setTitle] = useState(product.title ?? "");
+  const [description, setDescription] = useState(product.description ?? "");
+  const [price, setPrice] = useState(String(product.price ?? ""));
+  const [stock, setStock] = useState(String(product.stock ?? ""));
+  const [category, setCategory] = useState(
+    PRODUCT_CATEGORIES.find((c) => c.label === product.category)?.slug ??
+      PRODUCT_CATEGORIES[0].slug,
+  );
+
+  const save = async () => {
+    if (!title.trim()) {
+      showToast("Title can't be empty");
+      return;
+    }
+    try {
+      await editProduct({
+        id: product.id,
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price) || 0,
+        ...(product.variants?.length ? {} : { stock: Number(stock) || 0 }),
+        category,
+      }).unwrap();
+      showToast(`"${title.trim()}" updated - the merchant has been notified`);
+      onSaved();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[12px] font-semibold text-shop-heading">Title</span>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[12px] font-semibold text-shop-heading">Description</span>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="resize-none rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+        />
+      </label>
+      <div className="flex gap-2.5">
+        <label className="flex flex-1 flex-col gap-1.5">
+          <span className="text-[12px] font-semibold text-shop-heading">Price</span>
+          <MoneyInput
+            value={price}
+            onChange={setPrice}
+            className="rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+          />
+        </label>
+        {!product.variants?.length && (
+          <label className="flex flex-1 flex-col gap-1.5">
+            <span className="text-[12px] font-semibold text-shop-heading">Stock</span>
+            <input
+              type="number"
+              min="0"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              className="rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+            />
+          </label>
+        )}
+      </div>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[12px] font-semibold text-shop-heading">Category</span>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+        >
+          {PRODUCT_CATEGORIES.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {product.variants?.length > 0 && (
+        <p className="text-[11px] text-shop-text/50">
+          This product has variant combinations (colour, size, etc.) - those
+          are only editable by the merchant, not from here.
+        </p>
+      )}
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-[8px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          disabled={editState.isLoading}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-shop-accent-1 py-2.5 text-[12.5px] font-semibold text-white disabled:opacity-70"
+        >
+          {editState.isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          Save &amp; Notify Merchant
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Keyed by product.id from the parent, so switching products remounts this
+// with fresh state instead of needing an effect to reset it.
 function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, tab }) {
   const [activeImage, setActiveImage] = useState(0);
+  const [editing, setEditing] = useState(false);
   if (!product) return null;
   const images = product.images?.length ? product.images : [];
 
@@ -26,17 +148,38 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <p className="text-[14px] font-semibold text-shop-heading">Product Details</p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
-          >
-            <X className="h-4 w-4 text-shop-heading" />
-          </button>
+          <p className="text-[14px] font-semibold text-shop-heading">
+            {editing ? "Edit Product" : "Product Details"}
+          </p>
+          <div className="flex items-center gap-1.5">
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                aria-label="Edit product"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-shop-accent-1 hover:bg-shop-accent-1-light"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
+            >
+              <X className="h-4 w-4 text-shop-heading" />
+            </button>
+          </div>
         </div>
 
+        {editing ? (
+          <EditProductForm
+            product={product}
+            onCancel={() => setEditing(false)}
+            onSaved={() => setEditing(false)}
+          />
+        ) : (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
         <div className="flex flex-col gap-3 lg:w-[46%] lg:shrink-0">
         <div className="flex min-h-[180px] w-full items-center justify-center rounded-[12px] bg-shop-bg p-2">
@@ -185,6 +328,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         </div>
         </div>
         </div>
+        )}
       </div>
     </div>
   );
@@ -373,6 +517,7 @@ export default function AdminProductsPage() {
         </div>
       )}
       <ProductDetailModal
+        key={detailProduct?.id}
         product={detailProduct}
         tab={tab}
         onClose={() => setDetailProduct(null)}

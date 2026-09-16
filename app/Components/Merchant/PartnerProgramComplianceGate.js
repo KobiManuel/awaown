@@ -28,6 +28,11 @@ export default function PartnerProgramComplianceGate() {
     () =>
       (data?.items ?? []).filter(
         (p) =>
+          // A draft or removed/archived product isn't being sold to anyone
+          // right now - it shouldn't be able to lock a merchant out of their
+          // own dashboard. If they ever republish it, the normal save-time
+          // check (same ₦1,000 minimum) catches it before it can go live.
+          p.status === "ACTIVE" &&
           p.offerCommission &&
           (p.partnerProfitAmount ?? 0) < PARTNER_PROGRAM_MIN_PROFIT,
       ),
@@ -82,13 +87,17 @@ export default function PartnerProgramComplianceGate() {
         <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={1.75} />
         <div>
           <p className="text-[14px] font-semibold text-shop-heading">
-            Update your Partner Program profit shares
+            Raise your Partner profit share to the new minimum
           </p>
           <p className="text-[11.5px] text-shop-text/60">
-            AwaOwn&apos;s minimum Partner profit is now{" "}
-            {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}. Update the{" "}
-            {flagged.length === 1 ? "product below" : `${flagged.length} products below`}{" "}
-            before continuing.
+            AwaOwn&apos;s minimum <strong>Partner profit share</strong> - the
+            amount a Partner earns for reselling your product - is now{" "}
+            {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}.{" "}
+            {flagged.length === 1
+              ? "The product below is"
+              : `The ${flagged.length} products below are`}{" "}
+            still set under that. Raise each one to at least{" "}
+            {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} to continue.
           </p>
         </div>
       </div>
@@ -97,8 +106,9 @@ export default function PartnerProgramComplianceGate() {
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-3">
           <p className="flex items-center gap-1.5 text-[12px] text-shop-text/70">
             <Users2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Customers still see your normal price - this only changes what
-            Partners earn per sale.
+            This does not change your product&apos;s selling price - customers
+            pay the same either way. It only changes how much of that price
+            goes to the Partner who resold it.
           </p>
           {flagged.map((p) => {
             const valid = isValid(p);
@@ -113,35 +123,43 @@ export default function PartnerProgramComplianceGate() {
                     {p.title}
                   </p>
                   <p className="text-[11.5px] text-shop-text/60">
-                    Current profit: {formatPrice(p.partnerProfitAmount ?? 0)} ·
-                    Price: {formatPrice(p.price)}
+                    Your selling price: {formatPrice(p.price)}
+                  </p>
+                  <p className="text-[11.5px] text-shop-accent-3">
+                    Current Partner profit share: {formatPrice(p.partnerProfitAmount ?? 0)}{" "}
+                    (below the {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} minimum)
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <MoneyInput
-                    value={draftFor(p)}
-                    onChange={(v) =>
-                      setDrafts((d) => ({ ...d, [p.id]: v }))
-                    }
-                    placeholder={String(PARTNER_PROGRAM_MIN_PROFIT)}
-                    className={`w-[120px] rounded-[10px] border px-3 py-2 text-[13px] outline-none ${
-                      valid
-                        ? "border-shop-border"
-                        : "border-shop-accent-3 bg-shop-accent-3/5"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => saveOne(p)}
-                    disabled={!valid || saving}
-                    className="rounded-[10px] bg-shop-accent-1-light px-3 py-2 text-[12px] font-semibold text-shop-accent-1 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {savingId === p.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      "Save"
-                    )}
-                  </button>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <span className="text-[10.5px] font-medium text-shop-text/60">
+                    New Partner profit share
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <MoneyInput
+                      value={draftFor(p)}
+                      onChange={(v) =>
+                        setDrafts((d) => ({ ...d, [p.id]: v }))
+                      }
+                      placeholder={String(PARTNER_PROGRAM_MIN_PROFIT)}
+                      className={`w-[120px] rounded-[10px] border px-3 py-2 text-[13px] outline-none ${
+                        valid
+                          ? "border-shop-border"
+                          : "border-shop-accent-3 bg-shop-accent-3/5"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveOne(p)}
+                      disabled={!valid || saving}
+                      className="rounded-[10px] bg-shop-accent-1-light px-3 py-2 text-[12px] font-semibold text-shop-accent-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingId === p.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "Save"
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -153,8 +171,8 @@ export default function PartnerProgramComplianceGate() {
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-2">
           {!allValid && (
             <p className="text-[11.5px] text-shop-accent-3">
-              Every product must be at least {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)}{" "}
-              before you can continue.
+              Every product&apos;s Partner profit share must be at least{" "}
+              {formatPrice(PARTNER_PROGRAM_MIN_PROFIT)} before you can continue.
             </p>
           )}
           <button
@@ -166,7 +184,7 @@ export default function PartnerProgramComplianceGate() {
             {savingId === "__all__" && (
               <Loader2 className="h-4 w-4 animate-spin" />
             )}
-            Save All &amp; Continue
+            Save All Profit Shares &amp; Continue
           </button>
         </div>
       </div>
