@@ -47,6 +47,7 @@ import {
   useSubscribeStockAlertMutation,
 } from "@/lib/api/catalogApi";
 import { useCommerce } from "@/lib/useCommerce";
+import { usePartnerCart } from "@/lib/usePartnerCart";
 import { errorMessage } from "@/lib/api/errorMessage";
 
 function ProductDetail() {
@@ -89,6 +90,7 @@ function ProductDetail() {
   const [navigating, setNavigating] = useState(false);
 
   const commerce = useCommerce();
+  const partnerCart = usePartnerCart(storeTheme?.code);
 
   useEffect(() => {
     if (product?.hasVariants && selected == null) {
@@ -231,15 +233,28 @@ function ProductDetail() {
     if (adding) return false;
     setAdding(true);
     try {
-      await commerce.addToCart(
-        { ...product, price: resolved.price, image: resolved.image },
-        {
-          qty,
-          variantId: resolved.variantId ?? null,
-          variantLabel: resolved.variantLabel ?? null,
-          ref: refCode ?? undefined,
-        },
-      );
+      // A partner store's cart is its own thing, kept apart from AwaOwn's own
+      // cart/account system - see lib/usePartnerCart.js.
+      if (storeThemed && storeTheme) {
+        partnerCart.add(
+          { ...product, price: resolved.price, image: resolved.image },
+          {
+            qty,
+            variantId: resolved.variantId ?? null,
+            variantLabel: resolved.variantLabel ?? null,
+          },
+        );
+      } else {
+        await commerce.addToCart(
+          { ...product, price: resolved.price, image: resolved.image },
+          {
+            qty,
+            variantId: resolved.variantId ?? null,
+            variantLabel: resolved.variantLabel ?? null,
+            ref: refCode ?? undefined,
+          },
+        );
+      }
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
@@ -254,9 +269,23 @@ function ProductDetail() {
 
   // Buy Now goes straight to checkout for THIS item only - it never touches the
   // cart. The item is stashed for the checkout page (survives the login hop).
+  // Inside a partner store there's no login hop to survive - it's simplest to
+  // add the one item to that store's own cart and go straight to its checkout.
   const buyNow = () => {
     if (needsSelection || outOfStock) return;
     setNavigating(true);
+    if (storeThemed && storeTheme) {
+      partnerCart.add(
+        { ...product, price: resolved.price, image: resolved.image },
+        {
+          qty,
+          variantId: resolved.variantId ?? null,
+          variantLabel: resolved.variantLabel ?? null,
+        },
+      );
+      router.push(`/store/${storeTheme.code}/checkout`);
+      return;
+    }
     setBuyNowItem({
       productId: product.productId,
       slug: product.slug ?? id,

@@ -3,6 +3,7 @@
 import React from "react";
 import { useStoreTheme } from "@/lib/useStoreTheme";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
+import PartnerCartButton from "@/app/Components/PartnerStore/PartnerCartButton";
 
 /**
  * Wraps a public shopping-flow page (product detail, cart, checkout) so it
@@ -12,11 +13,15 @@ import StorePattern from "@/app/Components/PartnerStore/StorePattern";
  *
  * @param {boolean} [paint=true]     apply the store's page background + text colour
  * @param {boolean} [backdrop=true]  draw the doodle pattern behind the content
+ * @param {boolean} [cartButton=true] show the floating cart button - the shared
+ *   header's cart icon is hidden on these pages, so this is the only way back
+ *   to it. Turn off on the cart/checkout pages themselves.
  */
 export default function StoreThemeShell({
   children,
   paint = true,
   backdrop = true,
+  cartButton = true,
   className = "",
 }) {
   const st = useStoreTheme();
@@ -41,6 +46,7 @@ export default function StoreThemeShell({
         />
       )}
       <div className="relative z-10">{children}</div>
+      {cartButton && <PartnerCartButton code={st.code} />}
     </div>
   );
 }

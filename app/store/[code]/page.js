@@ -2,11 +2,13 @@
 
 import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, User, Clock, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ShieldCheck, User, Clock, Loader2, PackageSearch } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import ProductCard from "@/app/Components/Product/ProductCard";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
+import PartnerCartButton from "@/app/Components/PartnerStore/PartnerCartButton";
 import { useGetPartnerStorefrontQuery } from "@/lib/api/storefrontApi";
 import { rememberRef } from "@/lib/partner-ref";
 
@@ -128,6 +130,10 @@ export default function PublicPartnerStorePage() {
                 <Clock className="h-3.5 w-3.5" />
                 Powered by AwaOwn
               </span>
+              <Link href={`/store/${store.code}/orders`} className="flex items-center gap-1 hover:underline">
+                <PackageSearch className="h-3.5 w-3.5" />
+                Track an order
+              </Link>
             </div>
           </div>
         </div>
@@ -175,6 +181,7 @@ export default function PublicPartnerStorePage() {
           </p>
         </div>
       </div>
+      <PartnerCartButton code={store.code} />
     </div>
   );
 }

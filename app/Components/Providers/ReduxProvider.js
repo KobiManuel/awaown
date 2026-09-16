@@ -5,13 +5,15 @@ import { Provider } from "react-redux";
 import { makeStore } from "@/lib/store/store";
 import { hydrateCart } from "@/lib/store/cartSlice";
 import { hydrateWishlist } from "@/lib/store/wishlistSlice";
+import { hydratePartnerCart } from "@/lib/store/partnerCartSlice";
 
 const CART_KEY = "awaown_cart";
 const WISHLIST_KEY = "awaown_wishlist";
+const PARTNER_CART_KEY = "awaown_partner_cart";
 // Auth is re-established from the httpOnly refresh cookie (see AppFrame / AuthGate).
 // Cart + wishlist are the only client-persisted slices left; everything else
 // (orders, merchant, partner, admin) is served by the API.
-const ALL_KEYS = [CART_KEY, WISHLIST_KEY];
+const ALL_KEYS = [CART_KEY, WISHLIST_KEY, PARTNER_CART_KEY];
 
 const SCHEMA_KEY = "awaown_schema_version";
 const SCHEMA_VERSION = "2026-09-02.api-only";
@@ -46,8 +48,10 @@ const ReduxProvider = ({ children }) => {
     try {
       const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
       const wishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
+      const partnerCart = JSON.parse(localStorage.getItem(PARTNER_CART_KEY) || "{}");
       store.dispatch(hydrateCart(cart));
       store.dispatch(hydrateWishlist(wishlist));
+      store.dispatch(hydratePartnerCart(partnerCart));
     } catch {
       // ignore malformed storage
     }
@@ -64,6 +68,7 @@ const ReduxProvider = ({ children }) => {
       const state = store.getState();
       persist(CART_KEY, state.cart.items);
       persist(WISHLIST_KEY, state.wishlist.items);
+      persist(PARTNER_CART_KEY, state.partnerCart.byStore);
     });
 
     return unsubscribe;

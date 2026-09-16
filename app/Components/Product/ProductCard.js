@@ -8,6 +8,7 @@ import { formatPrice } from "@/lib/shop-data";
 import { smartTitle } from "@/lib/text-format";
 import { getProductId } from "@/lib/product-id";
 import { useCommerce } from "@/lib/useCommerce";
+import { usePartnerCart } from "@/lib/usePartnerCart";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { readRef } from "@/lib/partner-ref";
 
@@ -98,6 +99,9 @@ const ProductCard = ({
 
   const commerce = useCommerce();
   const isWishlisted = commerce.isWishlisted(p);
+  // refCode is only ever passed by a partner store's own pages - that's the
+  // signal to use that store's own cart instead of AwaOwn's shared one.
+  const partnerCart = usePartnerCart(refCode);
 
   const [justAdded, setJustAdded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -118,11 +122,16 @@ const ProductCard = ({
     if (busy || !p.productId) return;
     setBusy(true);
     try {
-      // A quick-add from the card skips the product page entirely, so referral
-      // attribution has to be threaded through here too - otherwise a partner's
-      // sale silently loses its commission whenever the buyer never opens the
-      // product detail page (the only other place this used to be attached).
-      await commerce.addToCart(p, { qty: 1, ref: refCode || readRef() || undefined });
+      if (refCode) {
+        // Inside a partner store - its own cart, never AwaOwn's shared one.
+        partnerCart.add(p, { qty: 1 });
+      } else {
+        // A quick-add from the card skips the product page entirely, so referral
+        // attribution has to be threaded through here too - otherwise a partner's
+        // sale silently loses its commission whenever the buyer never opens the
+        // product detail page (the only other place this used to be attached).
+        await commerce.addToCart(p, { qty: 1, ref: readRef() || undefined });
+      }
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
