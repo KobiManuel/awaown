@@ -133,10 +133,34 @@ function EditProductForm({ product, onSaved, onCancel }) {
 // Keyed by product.id from the parent, so switching products remounts this
 // with fresh state instead of needing an effect to reset it.
 function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, tab }) {
+  const showToast = useToast();
+  const confirm = useConfirm();
+  const [editProduct, editState] = useEditAdminProductMutation();
   const [activeImage, setActiveImage] = useState(0);
   const [editing, setEditing] = useState(false);
   if (!product) return null;
   const images = product.images?.length ? product.images : [];
+
+  const deleteImage = async (index) => {
+    const res = await confirm({
+      title: "Delete this photo?",
+      message:
+        images.length === 1
+          ? "This is the listing's only photo - removing it leaves the product with no image."
+          : "This removes it from the listing immediately.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (!res) return;
+    const nextImages = images.filter((_, i) => i !== index);
+    try {
+      await editProduct({ id: product.id, images: nextImages }).unwrap();
+      setActiveImage((cur) => Math.min(cur, Math.max(0, nextImages.length - 1)));
+      showToast("Photo deleted");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 lg:items-center" onClick={onClose}>
@@ -179,14 +203,25 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         ) : (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
         <div className="flex flex-col gap-3 lg:w-[46%] lg:shrink-0">
-        <div className="flex min-h-[180px] w-full items-center justify-center rounded-[12px] bg-shop-bg p-2">
+        <div className="relative flex min-h-[180px] w-full items-center justify-center rounded-[12px] bg-shop-bg p-2">
           {images[activeImage] ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={images[activeImage]}
-              alt={`${product.title} - photo ${activeImage + 1}`}
-              className="h-auto w-full rounded-[8px] object-contain"
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={images[activeImage]}
+                alt={`${product.title} - photo ${activeImage + 1}`}
+                className="h-auto w-full rounded-[8px] object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => deleteImage(activeImage)}
+                disabled={editState.isLoading}
+                aria-label="Delete this photo"
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-red-600 disabled:opacity-60"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
           ) : (
             <Package className="h-10 w-10 text-shop-text/40" strokeWidth={1.5} />
           )}
@@ -201,16 +236,29 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
         {images.length > 1 && (
           <div className="flex flex-wrap gap-2">
             {images.map((img, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setActiveImage(i)}
-                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] border-2 bg-shop-bg ${
-                  i === activeImage ? "border-shop-accent-1" : "border-transparent"
-                }`}
-              >
-                <Image src={img} alt="" fill className="object-cover" sizes="56px" />
-              </button>
+              <div key={i} className="relative h-14 w-14 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] border-2 bg-shop-bg ${
+                    i === activeImage ? "border-shop-accent-1" : "border-transparent"
+                  }`}
+                >
+                  <Image src={img} alt="" fill className="object-cover" sizes="56px" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteImage(i);
+                  }}
+                  disabled={editState.isLoading}
+                  aria-label={`Delete photo ${i + 1}`}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-600 disabled:opacity-60"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             ))}
           </div>
         )}
