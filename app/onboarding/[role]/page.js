@@ -11,6 +11,7 @@ import { useCompleteOnboardingMutation } from "@/lib/api/authApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
+import MerchantTermsGate from "@/app/Components/Legal/MerchantTermsGate";
 
 const DASHBOARD_HOME = {
   customer: "/dashboard",
@@ -69,6 +70,7 @@ function OnboardingForm() {
   const [form, setForm] = useState({});
   const [formError, setFormError] = useState("");
   const [complete, completeState] = useCompleteOnboardingMutation();
+  const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(false);
 
   const set = (k) => (e) => {
     const raw = e.target.value;
@@ -94,6 +96,10 @@ function OnboardingForm() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-shop-accent-1 border-t-transparent" />
       </div>
     );
+  }
+
+  if (role === "merchant" && !merchantTermsAccepted) {
+    return <MerchantTermsGate onAccept={() => setMerchantTermsAccepted(true)} />;
   }
 
   const submit = async (e) => {

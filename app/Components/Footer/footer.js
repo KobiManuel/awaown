@@ -60,6 +60,7 @@ const columns = [
       { label: "Contact Support", href: "mailto:support@awaown.com" },
       { label: "How Escrow Works", href: "/help" },
       { label: "Refund Policy", href: "/refund-policy" },
+      { label: "Terms of Use & Legal", href: "/legal" },
     ],
   },
 ];

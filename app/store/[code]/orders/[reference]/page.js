@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, PackageCheck } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { statusMeta } from "@/lib/order-status";
-import { useGetGuestOrderDetailQuery } from "@/lib/api/ordersApi";
+import { useGetGuestOrderDetailQuery, useGuestConfirmDeliveryMutation } from "@/lib/api/ordersApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 
 export default function PartnerStoreOrderDetailPage() {
@@ -15,11 +16,24 @@ export default function PartnerStoreOrderDetailPage() {
   const search = useSearchParams();
   const phone = search.get("phone") || "";
   const justPlaced = search.get("placed") === "true";
+  const [confirmDelivery, confirmState] = useGuestConfirmDeliveryMutation();
+  const [confirmMsg, setConfirmMsg] = useState("");
 
-  const { data: order, isLoading, isError } = useGetGuestOrderDetailQuery(
+  const { data: order, isLoading, isError, refetch } = useGetGuestOrderDetailQuery(
     { reference, phone },
     { skip: !phone },
   );
+
+  const handleConfirmDelivery = async () => {
+    setConfirmMsg("");
+    try {
+      await confirmDelivery({ reference, phone }).unwrap();
+      setConfirmMsg("Thanks! Delivery confirmed and the seller has been paid.");
+      refetch();
+    } catch (err) {
+      setConfirmMsg(errorMessage(err));
+    }
+  };
 
   if (!phone) {
     return (
@@ -138,6 +152,30 @@ export default function PartnerStoreOrderDetailPage() {
             <p className="opacity-70">
               {order.tracking.carrier} {order.tracking.number ? `· ${order.tracking.number}` : ""}
             </p>
+          </div>
+        )}
+
+        {order.status === "SHIPPED" && (
+          <div className="mt-4 flex flex-col items-center gap-2.5 rounded-[12px] bg-shop-surface p-5 text-center">
+            <p className="text-[13px] font-medium">Received your order?</p>
+            <p className="max-w-[380px] text-[11.5px] opacity-70">
+              Confirming releases your payment to the seller. Only confirm once the
+              item has actually arrived.
+            </p>
+            <button
+              type="button"
+              onClick={handleConfirmDelivery}
+              disabled={confirmState.isLoading}
+              className="mt-1 flex items-center gap-2 rounded-[10px] bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:opacity-70"
+            >
+              {confirmState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PackageCheck className="h-4 w-4" />
+              )}
+              Confirm Delivery
+            </button>
+            {confirmMsg && <p className="text-[11.5px] opacity-80">{confirmMsg}</p>}
           </div>
         )}
 
