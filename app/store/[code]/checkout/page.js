@@ -3,14 +3,20 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, X, Minus, Plus } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { NIGERIAN_STATES } from "@/lib/merchant-data";
+import { isValidNigerianPhone } from "@/lib/phone";
 import { usePartnerCart } from "@/lib/usePartnerCart";
-import { useGuestCheckoutMutation, useGuestConfirmPaymentMutation } from "@/lib/api/ordersApi";
+import {
+  useGuestCheckoutMutation,
+  useGuestConfirmPaymentMutation,
+  useGetGuestShippingQuoteQuery,
+} from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 
 const FIELD =
   "w-full rounded-[8px] border border-shop-border bg-shop-surface px-3 py-2.5 text-[13.5px] outline-none focus:border-shop-accent-1";
@@ -19,6 +25,10 @@ const METHODS = [
   { id: "CARD", label: "Debit / Credit Card" },
   { id: "TRANSFER", label: "Bank Transfer" },
 ];
+
+// Shown only while the real quote is loading, or if it fails - the actual
+// charge always comes from the backend's own computeShipping() at checkout.
+const SHIPPING_FEE_FALLBACK = 1500;
 
 export default function PartnerStoreCheckoutPage() {
   const { code } = useParams();
@@ -41,12 +51,29 @@ export default function PartnerStoreCheckoutPage() {
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const phoneValid = isValidNigerianPhone(form.phone);
   const isValid =
     form.name.trim().length > 1 &&
-    form.phone.trim().length >= 7 &&
+    phoneValid &&
     /\S+@\S+\.\S+/.test(form.email) &&
     form.line1.trim().length > 3 &&
     form.city.trim().length > 1;
+
+  const { data: shippingQuote, isFetching: shippingLoading } = useGetGuestShippingQuoteQuery(
+    {
+      items: cart.items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId || undefined,
+        qty: i.qty,
+      })),
+      state: form.state,
+    },
+    { skip: !cart.items.length },
+  );
+  const shipping = cart.items.length
+    ? (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK)
+    : 0;
+  const total = cart.subtotal + shipping;
 
   const finishOrder = async (reference) => {
     try {
@@ -59,7 +86,7 @@ export default function PartnerStoreCheckoutPage() {
   };
 
   const placeOrder = async () => {
-    if (busy || !isValid || !cart.items.length) return;
+    if (busy || !isValid || !cart.items.length || shippingLoading) return;
     setError("");
     setBusy(true);
     try {
@@ -105,6 +132,8 @@ export default function PartnerStoreCheckoutPage() {
         return;
       }
 
+      // Only reachable if the gateway isn't configured server-side (mock
+      // mode) - still a completed order, just never actually charged.
       cart.clear();
       router.push(`/store/${code}/orders/${reference}?phone=${encodeURIComponent(form.phone)}&placed=true`);
     } catch (err) {
@@ -126,8 +155,6 @@ export default function PartnerStoreCheckoutPage() {
     );
   }
 
-  const total = cart.subtotal;
-
   return (
     <StoreThemeShell cartButton={false}>
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 font-shop md:py-12">
@@ -144,10 +171,15 @@ export default function PartnerStoreCheckoutPage() {
               <input
                 value={form.phone}
                 onChange={set("phone")}
-                placeholder="Phone number"
+                placeholder="Phone number (e.g. 0803 123 4567)"
                 inputMode="tel"
                 className={FIELD}
               />
+              {form.phone.length > 0 && !phoneValid && (
+                <p className="-mt-1.5 text-[11.5px] text-red-500">
+                  Enter a valid Nigerian phone number.
+                </p>
+              )}
               <input
                 value={form.email}
                 onChange={set("email")}
@@ -194,6 +226,8 @@ export default function PartnerStoreCheckoutPage() {
                 </button>
               ))}
             </div>
+
+            <FezDeliveryBanner status="Nationwide tracked delivery" />
           </div>
 
           <div className="mt-4 flex flex-col gap-4 lg:mt-0">
@@ -208,20 +242,61 @@ export default function PartnerStoreCheckoutPage() {
             <div className="flex flex-col gap-2 rounded-[10px] bg-shop-surface p-4">
               <p className="mb-1 text-[13px] font-semibold">Order Summary</p>
               {cart.items.map((i) => (
-                <div key={i.id} className="flex items-center justify-between text-[12.5px]">
-                  <span className="line-clamp-1 pr-2">
-                    {i.title} &times; {i.qty}
+                <div key={i.id} className="flex items-center gap-2 text-[12.5px]">
+                  <span className="line-clamp-1 flex-1 pr-2">{i.title}</span>
+                  <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-shop-border px-1.5 py-0.5">
+                    <button
+                      type="button"
+                      aria-label="Decrease quantity"
+                      onClick={() => cart.updateQty(i.id, i.qty - 1)}
+                      className="flex h-5 w-5 items-center justify-center hover:text-shop-accent-1"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-4 text-center">{i.qty}</span>
+                    <button
+                      type="button"
+                      aria-label="Increase quantity"
+                      disabled={i.maxQty != null && i.qty >= i.maxQty}
+                      onClick={() => cart.updateQty(i.id, i.qty + 1)}
+                      className="flex h-5 w-5 items-center justify-center hover:text-shop-accent-1 disabled:opacity-40"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="w-[72px] shrink-0 text-right font-medium">
+                    {formatPrice(i.price * i.qty)}
                   </span>
-                  <span className="shrink-0 font-medium">{formatPrice(i.price * i.qty)}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${i.title}`}
+                    onClick={() => cart.remove(i.id)}
+                    className="shrink-0 opacity-50 hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               ))}
-              <div className="mt-1 flex items-center justify-between border-t border-shop-border pt-2 text-[13px]">
-                <span>Subtotal</span>
-                <span className="font-medium">{formatPrice(cart.subtotal)}</span>
+              <div className="mt-1 flex flex-col gap-1 border-t border-shop-border pt-2 text-[13px]">
+                <div className="flex items-center justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-medium">{formatPrice(cart.subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Shipping</span>
+                  <span className="font-medium">
+                    {shippingLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin opacity-60" />
+                    ) : (
+                      formatPrice(shipping)
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-shop-border pt-1.5 text-[14px] font-semibold">
+                  <span>Total</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
               </div>
-              <p className="text-[10.5px] opacity-60">
-                Shipping is calculated on the next step, based on your address.
-              </p>
             </div>
 
             {error && <p className="text-[13px] font-medium text-red-500">{error}</p>}
@@ -229,7 +304,7 @@ export default function PartnerStoreCheckoutPage() {
             <button
               type="button"
               onClick={placeOrder}
-              disabled={busy || checkoutState.isLoading || !isValid}
+              disabled={busy || checkoutState.isLoading || !isValid || shippingLoading}
               className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-70"
             >
               {busy || checkoutState.isLoading ? (

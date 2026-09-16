@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, PackageSearch } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
+import { isValidNigerianPhone } from "@/lib/phone";
 import { statusMeta } from "@/lib/order-status";
 import { useGetGuestOrderLookupQuery } from "@/lib/api/ordersApi";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
@@ -22,9 +23,11 @@ export default function PartnerStoreOrdersLookupPage() {
     { skip: !submittedPhone },
   );
 
+  const phoneValid = isValidNigerianPhone(phone);
+
   const submit = (e) => {
     e.preventDefault();
-    if (phone.trim().length >= 7) setSubmittedPhone(phone.trim());
+    if (phoneValid) setSubmittedPhone(phone.trim());
   };
 
   return (
@@ -49,11 +52,15 @@ export default function PartnerStoreOrdersLookupPage() {
           />
           <button
             type="submit"
-            className="shrink-0 rounded-[8px] bg-shop-accent-1 px-5 text-[13.5px] font-semibold text-white"
+            disabled={!phoneValid}
+            className="shrink-0 rounded-[8px] bg-shop-accent-1 px-5 text-[13.5px] font-semibold text-white disabled:opacity-50"
           >
             Find
           </button>
         </form>
+        {phone.length > 0 && !phoneValid && (
+          <p className="mt-1.5 text-[11.5px] text-red-500">Enter a valid Nigerian phone number.</p>
+        )}
 
         {isFetching && (
           <div className="mt-8 flex justify-center">

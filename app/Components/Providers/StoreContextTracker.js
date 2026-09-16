@@ -9,7 +9,8 @@ import { setActiveStore, clearActiveStore } from "@/lib/store-context";
  * product / cart / checkout pages only wear a partner store's theme while the
  * visitor is genuinely shopping that store:
  *
- *  - /store/<code>              -> that store
+ *  - /store/<code> and any nested path under it (cart, checkout, orders, ...)
+ *                               -> that store, read straight from the URL
  *  - /product/<id>?ref=<code>   -> that store
  *  - /product/<id> (no ref),
  *    /cart, /dashboard/cart,
@@ -22,7 +23,11 @@ export default function StoreContextTracker() {
   const ref = search.get("ref");
 
   useEffect(() => {
-    const storeMatch = pathname.match(/^\/store\/([^/]+)\/?$/);
+    // Not anchored at the end - matches /store/<code> and every nested path
+    // under it (/cart, /checkout, /orders, /orders/<reference>, ...), so a
+    // new route added later under a store doesn't need its own exception
+    // wired into this list.
+    const storeMatch = pathname.match(/^\/store\/([^/]+)/);
     if (storeMatch) {
       setActiveStore(storeMatch[1].toUpperCase());
       return;

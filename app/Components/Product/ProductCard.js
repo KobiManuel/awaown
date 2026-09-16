@@ -150,22 +150,26 @@ const ProductCard = ({
     >
       {/* Hover action icons */}
       <div className="absolute right-[10px] top-[-4px] z-20 flex flex-col opacity-0 transition-all duration-500 group-hover:top-[16px] group-hover:opacity-100">
-        <button
-          type="button"
-          aria-label="Add to wishlist"
-          data-tooltip={isWishlisted ? "Remove from wishlist" : "Wishlist"}
-          onClick={handleWishlist}
-          className={`shop-tooltip mb-[5px] flex h-[35px] w-[35px] items-center justify-center rounded-[5px] border transition-colors ${
-            isWishlisted
-              ? "border-shop-accent-1 bg-shop-accent-1"
-              : "border-shop-border bg-white hover:bg-shop-accent-1"
-          } hover:[&>svg]:text-white`}
-        >
-          <Heart
-            className={`h-4 w-4 ${isWishlisted ? "fill-white text-white" : "text-shop-accent-2"}`}
-            strokeWidth={1.75}
-          />
-        </button>
+        {/* No account to keep a wishlist on inside a partner store, and no
+            way to ever come back and view one - see ProductView.js. */}
+        {!refCode && (
+          <button
+            type="button"
+            aria-label="Add to wishlist"
+            data-tooltip={isWishlisted ? "Remove from wishlist" : "Wishlist"}
+            onClick={handleWishlist}
+            className={`shop-tooltip mb-[5px] flex h-[35px] w-[35px] items-center justify-center rounded-[5px] border transition-colors ${
+              isWishlisted
+                ? "border-shop-accent-1 bg-shop-accent-1"
+                : "border-shop-border bg-white hover:bg-shop-accent-1"
+            } hover:[&>svg]:text-white`}
+          >
+            <Heart
+              className={`h-4 w-4 ${isWishlisted ? "fill-white text-white" : "text-shop-accent-2"}`}
+              strokeWidth={1.75}
+            />
+          </button>
+        )}
         <button
           type="button"
           aria-label="Add to cart"

@@ -10,6 +10,7 @@ import { markSignedIn } from "@/lib/session-cookie";
 import { useCompleteOnboardingMutation } from "@/lib/api/authApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
+import { isValidNigerianPhone } from "@/lib/phone";
 
 const DASHBOARD_HOME = {
   customer: "/dashboard",
@@ -98,6 +99,13 @@ function OnboardingForm() {
   const submit = async (e) => {
     e.preventDefault();
     setFormError("");
+    if (
+      (role === "customer" || role === "merchant") &&
+      !isValidNigerianPhone(form.phone)
+    ) {
+      setFormError("Enter a valid Nigerian phone number.");
+      return;
+    }
     let body;
     if (role === "customer") body = { phone: form.phone?.trim() };
     else if (role === "merchant")

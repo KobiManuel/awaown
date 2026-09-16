@@ -31,6 +31,7 @@ import {
   useUpdateMerchantStoreMutation,
 } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { isValidNigerianPhone } from "@/lib/phone";
 
 const links = [
   { href: "/merchant/products", label: "Manage Products", icon: Store },
@@ -90,6 +91,7 @@ export default function MerchantAccountPage() {
       phone: store.phone ?? "",
     }) !== JSON.stringify(draft);
   const detailsComplete = draft?.state && draft?.address && draft?.phone;
+  const phoneValid = !draft?.phone || isValidNigerianPhone(draft.phone);
 
   const pickImage = async (e, key) => {
     const file = e.target.files?.[0];
@@ -282,13 +284,18 @@ export default function MerchantAccountPage() {
               inputMode="tel"
               className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 outline-none focus:border-shop-accent-1"
             />
+            {!phoneValid && (
+              <p className="text-[11.5px] text-shop-accent-3">
+                Enter a valid Nigerian phone number.
+              </p>
+            )}
           </div>
 
           {/* One save for both Store Settings and Store Details */}
           <button
             type="button"
             onClick={save}
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || !phoneValid}
             className="mx-4 flex items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60 lg:mx-0"
           >
             {saving ? (

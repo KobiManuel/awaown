@@ -585,25 +585,30 @@ function ProductDetail() {
             )}
 
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleWishlist}
-                aria-label="Toggle wishlist"
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border transition-colors ${
-                  isWishlisted
-                    ? "border-shop-accent-1 bg-shop-accent-1-light"
-                    : "border-shop-border"
-                }`}
-              >
-                <Heart
-                  className={`h-5 w-5 ${
+              {/* A partner store's buyer has no account to keep a wishlist on
+                  and no way to ever come back and view one, so it's dropped
+                  entirely here rather than offer a dead end. */}
+              {!storeThemed && (
+                <button
+                  type="button"
+                  onClick={handleWishlist}
+                  aria-label="Toggle wishlist"
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border transition-colors ${
                     isWishlisted
-                      ? "fill-shop-accent-1 text-shop-accent-1"
-                      : "text-shop-heading"
+                      ? "border-shop-accent-1 bg-shop-accent-1-light"
+                      : "border-shop-border"
                   }`}
-                  strokeWidth={1.75}
-                />
-              </button>
+                >
+                  <Heart
+                    className={`h-5 w-5 ${
+                      isWishlisted
+                        ? "fill-shop-accent-1 text-shop-accent-1"
+                        : "text-shop-heading"
+                    }`}
+                    strokeWidth={1.75}
+                  />
+                </button>
+              )}
 
               {outOfStock ? (
                 <button

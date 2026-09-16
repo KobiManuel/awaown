@@ -10,6 +10,7 @@ import {
   CITIES_BY_STATE,
   SERVICE_AREA_NOTE,
 } from "@/lib/merchant-data";
+import { isValidNigerianPhone } from "@/lib/phone";
 import {
   useGetAddressesQuery,
   useAddAddressMutation,
@@ -60,6 +61,10 @@ export default function AddressesPage() {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!isValidNigerianPhone(form.phone)) {
+      setError("Enter a valid Nigerian phone number.");
+      return;
+    }
     try {
       await addAddress(form).unwrap();
       setForm(EMPTY);
