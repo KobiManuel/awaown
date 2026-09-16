@@ -38,6 +38,10 @@ const categoryLabel = (slug) =>
 const processingLabel = (id) =>
   PROCESSING_TIME_OPTIONS.find((p) => p.id === id)?.label || id;
 
+// The "before" price a percentage is taken off of - the original sticker
+// price if a sale is already live, otherwise the current price.
+const discountBasePrice = (p) => p.compareAt ?? p.price;
+
 const APPROVAL_TONE = {
   PENDING: "bg-amber-100 text-amber-700",
   APPROVED: "bg-emerald-100 text-emerald-700",
@@ -162,6 +166,28 @@ export default function MerchantProductsPage() {
   const products = data?.items ?? [];
   const [openStockId, setOpenStockId] = useState(null);
   const [discountDrafts, setDiscountDrafts] = useState({});
+  const [discountModes, setDiscountModes] = useState({});
+
+  const discountMode = (id) => discountModes[id] ?? "flat";
+  const setMode = (id, mode) => {
+    setDiscountModes((m) => ({ ...m, [id]: mode }));
+    // The typed number means something different in each unit - drop it
+    // rather than silently reinterpreting, e.g. a flat "2000" read as "2000%".
+    setDiscountDrafts((d) => {
+      const next = { ...d };
+      delete next[id];
+      return next;
+    });
+  };
+  // Pre-fills the field with the equivalent of whatever sale is already live,
+  // in whichever unit is currently selected.
+  const defaultDraft = (p, mode) => {
+    if (!p.compareAt) return "";
+    if (mode === "percent") {
+      return String(Math.round(((p.compareAt - p.price) / p.compareAt) * 100));
+    }
+    return p.compareAt - p.price;
+  };
 
   const saveStock = async (body) => {
     try {
@@ -182,13 +208,15 @@ export default function MerchantProductsPage() {
   };
 
   const applyDiscount = async (p) => {
-    const raw = Number(
-      discountDrafts[p.productId] ??
-        (p.compareAt ? p.compareAt - p.price : 0),
-    );
+    const mode = discountMode(p.productId);
+    const draft = discountDrafts[p.productId] ?? defaultDraft(p, mode);
+    const amount =
+      mode === "percent"
+        ? Math.round((Number(draft) / 100) * discountBasePrice(p))
+        : Number(draft);
     try {
-      await setDiscount({ productId: p.productId, discountAmount: raw }).unwrap();
-      showToast(raw > 0 ? "Discount applied" : "Discount removed");
+      await setDiscount({ productId: p.productId, discountAmount: amount }).unwrap();
+      showToast(amount > 0 ? "Discount applied" : "Discount removed");
       setDiscountDrafts((d) => {
         const next = { ...d };
         delete next[p.productId];
@@ -432,22 +460,70 @@ export default function MerchantProductsPage() {
                     : "Run a sale on this item"}
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <MoneyInput
-                    value={
-                      discountDrafts[product.productId] ??
-                      (product.compareAt
-                        ? product.compareAt - product.price
-                        : "")
-                    }
-                    onChange={(v) =>
-                      setDiscountDrafts((prev) => ({
-                        ...prev,
-                        [product.productId]: v,
-                      }))
-                    }
-                    placeholder="0"
-                    className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
-                  />
+                  <div className="flex overflow-hidden rounded-[6px] border border-shop-border text-[11.5px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setMode(product.productId, "flat")}
+                      className={`px-2.5 py-1.5 ${
+                        discountMode(product.productId) === "flat"
+                          ? "bg-shop-accent-1 text-white"
+                          : "text-shop-text"
+                      }`}
+                    >
+                      ₦
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode(product.productId, "percent")}
+                      className={`px-2.5 py-1.5 ${
+                        discountMode(product.productId) === "percent"
+                          ? "bg-shop-accent-1 text-white"
+                          : "text-shop-text"
+                      }`}
+                    >
+                      %
+                    </button>
+                  </div>
+                  {discountMode(product.productId) === "percent" ? (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          discountDrafts[product.productId] ??
+                          defaultDraft(product, "percent")
+                        }
+                        onChange={(e) =>
+                          setDiscountDrafts((prev) => ({
+                            ...prev,
+                            [product.productId]: e.target.value
+                              .replace(/[^0-9.]/g, "")
+                              .replace(/(\..*)\./g, "$1"),
+                          }))
+                        }
+                        placeholder="0"
+                        className="w-20 rounded-[6px] border border-shop-border py-1.5 pl-2.5 pr-6 text-[12.5px] outline-none focus:border-shop-accent-1"
+                      />
+                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[12px] text-shop-text/50">
+                        %
+                      </span>
+                    </div>
+                  ) : (
+                    <MoneyInput
+                      value={
+                        discountDrafts[product.productId] ??
+                        defaultDraft(product, "flat")
+                      }
+                      onChange={(v) =>
+                        setDiscountDrafts((prev) => ({
+                          ...prev,
+                          [product.productId]: v,
+                        }))
+                      }
+                      placeholder="0"
+                      className="w-24 rounded-[6px] border border-shop-border px-2.5 py-1.5 text-[12.5px] outline-none focus:border-shop-accent-1"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => applyDiscount(product)}

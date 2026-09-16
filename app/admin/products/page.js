@@ -249,7 +249,21 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
           </div>
           <div className="rounded-[10px] bg-shop-bg p-3">
             <p className="text-shop-text/60">Price</p>
-            <p className="font-semibold text-shop-heading">{formatPrice(product.price)}</p>
+            {isOnSale(product) ? (
+              <p className="flex flex-wrap items-center gap-1.5">
+                <span className="font-semibold text-shop-heading">
+                  {formatPrice(product.price)}
+                </span>
+                <span className="text-[11px] text-shop-text/50 line-through">
+                  {formatPrice(product.compareAtPrice)}
+                </span>
+                <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+                  -{saleDiscountPct(product)}% on sale
+                </span>
+              </p>
+            ) : (
+              <p className="font-semibold text-shop-heading">{formatPrice(product.price)}</p>
+            )}
           </div>
           {product.variants?.length ? (
             <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
@@ -338,7 +352,12 @@ const TABS = [
   { id: "PENDING", label: "Pending" },
   { id: "APPROVED", label: "Approved" },
   { id: "REJECTED", label: "Rejected" },
+  { id: "ON_SALE", label: "On Sale" },
 ];
+
+const isOnSale = (p) => !!p.compareAtPrice && p.compareAtPrice > p.price;
+const saleDiscountPct = (p) =>
+  Math.round((1 - p.price / p.compareAtPrice) * 100);
 
 export default function AdminProductsPage() {
   const showToast = useToast();
@@ -349,10 +368,17 @@ export default function AdminProductsPage() {
   const [detailProduct, setDetailProduct] = useState(null);
 
   const products = data?.items ?? [];
-  const filtered = products.filter((p) => (p.approvalStatus || "APPROVED") === tab);
+  const filtered =
+    tab === "ON_SALE"
+      ? products.filter(isOnSale)
+      : products.filter((p) => (p.approvalStatus || "APPROVED") === tab);
   const liveCount = products.filter(
     (p) => p.status === "ACTIVE" && (p.approvalStatus || "APPROVED") === "APPROVED",
   ).length;
+  const tabCount = (id) =>
+    id === "ON_SALE"
+      ? products.filter(isOnSale).length
+      : products.filter((p) => (p.approvalStatus || "APPROVED") === id).length;
 
   const act = async (id, action, reason, ok) => {
     try {
@@ -424,7 +450,7 @@ export default function AdminProductsPage() {
               tab === t.id ? "border-shop-accent-1 bg-shop-accent-1 text-white" : "border-shop-border text-shop-text"
             }`}
           >
-            {t.label} ({products.filter((p) => (p.approvalStatus || "APPROVED") === t.id).length})
+            {t.label} ({tabCount(t.id)})
           </button>
         ))}
       </div>
@@ -455,8 +481,24 @@ export default function AdminProductsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-1 text-[13px] font-medium text-shop-heading">{p.title}</p>
-                  <p className="text-[11.5px] text-shop-text/70">
-                    {formatPrice(p.price)} · {p.category || "-"}
+                  <p className="flex items-center gap-1.5 text-[11.5px] text-shop-text/70">
+                    {isOnSale(p) ? (
+                      <>
+                        <span className="font-semibold text-shop-heading">
+                          {formatPrice(p.price)}
+                        </span>
+                        <span className="text-shop-text/50 line-through">
+                          {formatPrice(p.compareAtPrice)}
+                        </span>
+                        <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+                          -{saleDiscountPct(p)}%
+                        </span>
+                      </>
+                    ) : (
+                      formatPrice(p.price)
+                    )}
+                    {" · "}
+                    {p.category || "-"}
                   </p>
                   {p.rejectionReason && (
                     <p className="mt-0.5 text-[10.5px] text-shop-accent-3">Reason: {p.rejectionReason}</p>
@@ -478,7 +520,7 @@ export default function AdminProductsPage() {
                 </button>
               </div>
               <div className="flex gap-2 border-t border-shop-border pt-2.5">
-                {tab !== "APPROVED" && (
+                {(p.approvalStatus || "APPROVED") !== "APPROVED" && (
                   <button
                     type="button"
                     onClick={() => handleApprove(p)}
@@ -488,7 +530,7 @@ export default function AdminProductsPage() {
                     Approve
                   </button>
                 )}
-                {tab !== "REJECTED" && (
+                {(p.approvalStatus || "APPROVED") !== "REJECTED" && (
                   <button
                     type="button"
                     onClick={() => handleReject(p)}
@@ -511,7 +553,9 @@ export default function AdminProductsPage() {
           ))}
           {filtered.length === 0 && (
             <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
-              No {TABS.find((t) => t.id === tab)?.label.toLowerCase()} products.
+              {tab === "ON_SALE"
+                ? "No products are on sale right now."
+                : `No ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} products.`}
             </p>
           )}
         </div>
