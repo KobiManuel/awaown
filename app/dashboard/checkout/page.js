@@ -15,6 +15,7 @@ import {
   useCheckoutMutation,
   useConfirmPaymentMutation,
   useGetShippingQuoteQuery,
+  usePreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
@@ -52,10 +53,13 @@ export default function CheckoutPage() {
 
   const [checkout, checkoutState] = useCheckoutMutation();
   const [confirmPayment] = useConfirmPaymentMutation();
+  const [previewCoupon, previewCouponState] = usePreviewCouponMutation();
 
   const [addressId, setAddressId] = useState("");
   const [payment, setPayment] = useState("CARD");
   const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [couponError, setCouponError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -94,7 +98,37 @@ export default function CheckoutPage() {
   const shipping = !items.length
     ? 0
     : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
-  const total = subtotal + shipping;
+  const discount = appliedCoupon?.discount ?? 0;
+  const total = Math.max(0, subtotal - discount) + shipping;
+
+  const applyCoupon = async () => {
+    const code = coupon.trim().toUpperCase();
+    if (!code) return;
+    setCouponError("");
+    try {
+      const res = await previewCoupon({
+        couponCode: code,
+        buyNow: isBuyNow
+          ? { productId: buyNow.productId, qty: Math.max(1, buyNow.qty || 1) }
+          : undefined,
+      }).unwrap();
+      if (res.valid) {
+        setAppliedCoupon({ code: res.couponCode ?? code, discount: res.discount });
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(res.message || "That coupon code is not valid");
+      }
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponError(errorMessage(err));
+    }
+  };
+
+  const onCouponChange = (value) => {
+    setCoupon(value.toUpperCase());
+    if (appliedCoupon) setAppliedCoupon(null);
+    if (couponError) setCouponError("");
+  };
 
   useEffect(() => {
     if (!addressId && addresses?.length) {
@@ -157,7 +191,7 @@ export default function CheckoutPage() {
       const res = await checkout({
         addressId,
         paymentMethod: payment,
-        couponCode: coupon.trim() || undefined,
+        couponCode: appliedCoupon?.code || undefined,
         buyNow: isBuyNow
           ? {
               productId: buyNow.productId,
@@ -331,15 +365,48 @@ export default function CheckoutPage() {
             <p className="text-[13px] font-semibold text-shop-heading">
               Coupon code
             </p>
-            <div className="flex items-center gap-2 rounded-[10px] border border-shop-border px-3 py-2.5">
-              <Tag className="h-4 w-4 text-shop-text/50" />
-              <input
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                placeholder="WELCOME10"
-                className="w-full bg-transparent text-[13px] uppercase text-shop-heading outline-none placeholder:text-shop-text/40"
-              />
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-2 rounded-[10px] border border-shop-border px-3 py-2.5">
+                <Tag className="h-4 w-4 text-shop-text/50" />
+                <input
+                  value={coupon}
+                  onChange={(e) => onCouponChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyCoupon();
+                    }
+                  }}
+                  placeholder="WELCOME10"
+                  className="w-full bg-transparent text-[13px] uppercase text-shop-heading outline-none placeholder:text-shop-text/40"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={applyCoupon}
+                disabled={
+                  !coupon.trim() ||
+                  previewCouponState.isLoading ||
+                  appliedCoupon?.code === coupon.trim().toUpperCase()
+                }
+                className="shrink-0 rounded-[10px] bg-shop-accent-1-light px-4 py-2.5 text-[12.5px] font-semibold text-shop-accent-1 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {previewCouponState.isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </button>
             </div>
+            {couponError && (
+              <p className="text-[12px] font-medium text-red-600">{couponError}</p>
+            )}
+            {appliedCoupon && (
+              <p className="text-[12px] font-medium text-emerald-600">
+                &ldquo;{appliedCoupon.code}&rdquo; applied - you save{" "}
+                {formatPrice(appliedCoupon.discount)}.
+              </p>
+            )}
           </div>
         </div>
 
@@ -397,6 +464,12 @@ export default function CheckoutPage() {
                 {formatPrice(subtotal)}
               </span>
             </div>
+            {discount > 0 && (
+              <div className="flex items-center justify-between text-[13px] text-emerald-600">
+                <span>Discount ({appliedCoupon.code})</span>
+                <span className="font-medium">-{formatPrice(discount)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-[13px] text-shop-text">
               <span>Shipping</span>
               <span className="font-medium text-shop-heading">

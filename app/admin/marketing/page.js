@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2 } from "lucide-react";
+import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2, Trash2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetAdminOverviewQuery,
   useGetAdminCouponsQuery,
   useSaveAdminCouponMutation,
+  useDeleteAdminCouponMutation,
   useGetAdminCampaignsQuery,
   useSendAdminCampaignMutation,
 } from "@/lib/api/adminApi";
@@ -33,9 +35,11 @@ const AUDIENCES = [
 
 export default function AdminMarketingPage() {
   const showToast = useToast();
+  const confirm = useConfirm();
   const { data: overview } = useGetAdminOverviewQuery();
   const { data: coupons, isLoading: couponsLoading } = useGetAdminCouponsQuery();
   const [saveCoupon, saveCouponState] = useSaveAdminCouponMutation();
+  const [deleteCoupon] = useDeleteAdminCouponMutation();
   const { data: campaigns, isLoading: campaignsLoading } =
     useGetAdminCampaignsQuery();
   const [sendCampaign, sendState] = useSendAdminCampaignMutation();
@@ -46,6 +50,8 @@ export default function AdminMarketingPage() {
   const [type, setType] = useState("percent");
   const [value, setValue] = useState("");
   const [minSpend, setMinSpend] = useState("");
+  const [usageLimit, setUsageLimit] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
 
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [audience, setAudience] = useState("everyone");
@@ -71,12 +77,16 @@ export default function AdminMarketingPage() {
         type,
         value: Number(value),
         minSpend: Number(minSpend) || 0,
+        usageLimit: Number(usageLimit) || undefined,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
         status: "ACTIVE",
       }).unwrap();
       showToast(`Coupon "${code.toUpperCase()}" created`);
       setCode("");
       setValue("");
       setMinSpend("");
+      setUsageLimit("");
+      setExpiresAt("");
       setFormOpen(false);
     } catch (err) {
       showToast(errorMessage(err));
@@ -87,7 +97,26 @@ export default function AdminMarketingPage() {
     if (c.status === "EXPIRED") return;
     const next = c.status === "ACTIVE" ? "SCHEDULED" : "ACTIVE";
     try {
-      await saveCoupon({ id: c.id, code: c.code, status: next }).unwrap();
+      await saveCoupon({ id: c.id, code: c.code, type: c.type, value: c.value, status: next }).unwrap();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const removeCoupon = async (c) => {
+    const res = await confirm({
+      title: `Delete coupon "${c.code}"?`,
+      message:
+        c.usageCount > 0
+          ? `This coupon has been used ${c.usageCount} time${c.usageCount === 1 ? "" : "s"}. Deleting it only stops future use - past orders keep their discount.`
+          : "This cannot be undone.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (!res) return;
+    try {
+      await deleteCoupon(c.id).unwrap();
+      showToast(`Coupon "${c.code}" deleted`);
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -178,6 +207,25 @@ export default function AdminMarketingPage() {
             placeholder="Minimum spend (optional)"
             className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
           />
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min="1"
+              value={usageLimit}
+              onChange={(e) => setUsageLimit(e.target.value)}
+              placeholder="Usage limit (optional)"
+              className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+            />
+            <input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-text outline-none focus:border-shop-accent-1"
+            />
+          </div>
+          <p className="-mt-1 text-[11px] text-shop-text/50">
+            Leave usage limit or expiry blank for unlimited / no expiry.
+          </p>
           <button
             type="submit"
             disabled={saveCouponState.isLoading}
@@ -200,26 +248,40 @@ export default function AdminMarketingPage() {
             {(coupons ?? []).map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5"
+                className="flex items-center justify-between gap-2 rounded-[14px] border border-shop-border bg-white p-3.5"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-shop-heading">
                     {c.code}
                   </p>
                   <p className="text-[11.5px] text-shop-text/70">
                     {c.type === "percent" ? `${c.value}% off` : `₦${c.value} off`}
                     {c.minSpend ? ` · min ₦${c.minSpend.toLocaleString()}` : ""} ·{" "}
-                    {c.usageCount} uses
+                    {c.usageCount}
+                    {c.usageLimit ? `/${c.usageLimit}` : ""} uses
+                    {c.expiresAt
+                      ? ` · expires ${new Date(c.expiresAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}`
+                      : ""}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={c.status === "EXPIRED"}
-                  onClick={() => cycleCouponStatus(c)}
-                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize disabled:cursor-not-allowed ${STATUS_TONE[c.status]}`}
-                >
-                  {c.status.toLowerCase()}
-                </button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={c.status === "EXPIRED"}
+                    onClick={() => cycleCouponStatus(c)}
+                    className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize disabled:cursor-not-allowed ${STATUS_TONE[c.status]}`}
+                  >
+                    {c.status.toLowerCase()}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Delete coupon ${c.code}`}
+                    onClick={() => removeCoupon(c)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text/50 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
