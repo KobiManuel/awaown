@@ -14,11 +14,16 @@ import React from "react";
  */
 export default function FormattedDescription({ html, className = "" }) {
   if (!html) return null;
+  // Older saved descriptions may still carry non-breaking spaces (U+00A0)
+  // from a Word/Docs paste - left in, they glue the whole paragraph into
+  // one unbreakable run and force mid-word breaks. New saves are cleaned
+  // server-side, but this keeps already-stored ones rendering correctly.
+  const normalized = html.replace(/ /g, " ");
   return (
     <>
       <div
         className={`awaown-description min-w-0 max-w-full whitespace-pre-line text-[13px] leading-[21px] text-shop-text ${className}`}
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: normalized }}
       />
       <style jsx global>{`
         .awaown-description {
