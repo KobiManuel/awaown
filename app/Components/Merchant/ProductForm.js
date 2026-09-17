@@ -69,8 +69,13 @@ function combosFromApi(variants) {
       .sort()
       .map((k) => `${k}=${ov[k]}`)
       .join("|");
+    // Same rule as the top-level price field: while a sale is live, `price`
+    // is already net of the discount - `compareAtPrice` is the row's real
+    // sticker price. Seeding the form with the discounted number would make
+    // the backend cascade the discount onto it a second time on save.
+    const sticker = v.compareAtPrice ?? v.price;
     out[sig] = {
-      price: v.price != null ? String(v.price) : "",
+      price: sticker != null ? String(sticker) : "",
       stock: v.stock != null ? String(v.stock) : "",
       image: v.image || null,
       excluded: false,

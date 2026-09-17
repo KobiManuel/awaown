@@ -68,8 +68,7 @@ export default function DescriptionEditor({
         }
         .awaown-description-editor .ql-editor {
           min-height: 160px;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
         }
       `}</style>
     </div>

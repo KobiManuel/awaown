@@ -22,15 +22,14 @@ export default function FormattedDescription({ html, className = "" }) {
       />
       <style jsx global>{`
         .awaown-description {
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
         }
         .awaown-description :is(h1, h2, h3, h4) {
           font-weight: 600;
           color: var(--shop-heading, #1a1a1a);
           margin: 14px 0 6px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
         }
         .awaown-description h1 {
           font-size: 18px;
