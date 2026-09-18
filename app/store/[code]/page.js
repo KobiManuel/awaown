@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSelector } from "react-redux";
 import Link from "next/link";
-import { ShieldCheck, User, Clock, Loader2, PackageSearch } from "lucide-react";
+import { ShieldCheck, User, Clock, Loader2, PackageSearch, CheckCircle2, X } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
 import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
@@ -23,6 +24,26 @@ export default function PublicPartnerStorePage() {
   useEffect(() => {
     if (store?.code) rememberRef(store.code);
   }, [store?.code]);
+
+  // Purely informational - never gates or redirects a guest. PublicCommerceGate
+  // (mounted in the root layout for every non-dashboard route) already silently
+  // tries to re-establish a customer session from the httpOnly refresh cookie on
+  // every page load, so by the time this renders, Redux already knows whether
+  // the visitor is a signed-in AwaOwn customer. Surfacing that here just tells
+  // them their purchase will also land in their own dashboard, not just this
+  // store's guest order-lookup-by-phone flow.
+  const authStatus = useSelector((s) => s.auth.status);
+  const authUser = useSelector((s) => s.auth.user);
+  const [authBannerDismissed, setAuthBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const t = setTimeout(() => setAuthBannerDismissed(true), 8000);
+    return () => clearTimeout(t);
+  }, [authStatus]);
+
+  const showAuthBanner =
+    authStatus === "authenticated" && !!authUser && !authBannerDismissed;
 
   const theme = getTheme(store?.theme);
   const accent = getAccent(store?.accent);
@@ -64,6 +85,51 @@ export default function PublicPartnerStorePage() {
         fontFamily: bodyFont.style.fontFamily,
       }}
     >
+      {authStatus === "authenticated" && authUser && (
+        <div
+          className={`fixed inset-x-0 top-4 z-50 flex justify-center px-4 transition-all duration-300 ${
+            showAuthBanner
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-3 opacity-0"
+          }`}
+        >
+          <div
+            className="flex w-full max-w-[420px] items-start gap-3 rounded-[14px] border p-4 shadow-lg"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderColor: theme.border,
+              color: theme.textColor,
+            }}
+          >
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+              style={{ backgroundColor: `${accent.value}1a` }}
+            >
+              <CheckCircle2 className="h-4.5 w-4.5" style={{ color: accent.value }} />
+            </span>
+            <div className="flex-1">
+              <p className="text-[13.5px] font-semibold">
+                Signed in as {authUser.name?.split(" ")[0] || "you"}
+              </p>
+              <p
+                className="mt-0.5 text-[12px] leading-[17px]"
+                style={{ color: theme.subtleText }}
+              >
+                Any order you place here will also show up in your AwaOwn
+                dashboard.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAuthBannerDismissed(true)}
+              aria-label="Dismiss"
+              className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
       {store.pattern && store.pattern !== "none" && (
         <StorePattern
           pattern={store.pattern}
