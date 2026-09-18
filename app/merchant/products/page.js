@@ -168,7 +168,7 @@ export default function MerchantProductsPage() {
   const [discountDrafts, setDiscountDrafts] = useState({});
   const [discountModes, setDiscountModes] = useState({});
 
-  const discountMode = (id) => discountModes[id] ?? "flat";
+  const discountMode = (p) => discountModes[p.productId] ?? p.discountType ?? "flat";
   const setMode = (id, mode) => {
     setDiscountModes((m) => ({ ...m, [id]: mode }));
     // The typed number means something different in each unit - drop it
@@ -184,7 +184,11 @@ export default function MerchantProductsPage() {
   const defaultDraft = (p, mode) => {
     if (!p.compareAt) return "";
     if (mode === "percent") {
-      return String(Math.round(((p.compareAt - p.price) / p.compareAt) * 100));
+      // Prefer the exact percent the merchant last typed - back-calculating
+      // from the flat amount can drift a point off it due to rounding.
+      return p.discountType === "percent" && p.discountPercent != null
+        ? String(p.discountPercent)
+        : String(Math.round(((p.compareAt - p.price) / p.compareAt) * 100));
     }
     return p.compareAt - p.price;
   };
@@ -208,14 +212,19 @@ export default function MerchantProductsPage() {
   };
 
   const applyDiscount = async (p) => {
-    const mode = discountMode(p.productId);
+    const mode = discountMode(p);
     const draft = discountDrafts[p.productId] ?? defaultDraft(p, mode);
     const amount =
       mode === "percent"
         ? Math.round((Number(draft) / 100) * discountBasePrice(p))
         : Number(draft);
     try {
-      await setDiscount({ productId: p.productId, discountAmount: amount }).unwrap();
+      await setDiscount({
+        productId: p.productId,
+        discountAmount: amount,
+        discountType: mode,
+        discountPercent: mode === "percent" ? Number(draft) || 0 : undefined,
+      }).unwrap();
       showToast(amount > 0 ? "Discount applied" : "Discount removed");
       setDiscountDrafts((d) => {
         const next = { ...d };
@@ -465,7 +474,7 @@ export default function MerchantProductsPage() {
                       type="button"
                       onClick={() => setMode(product.productId, "flat")}
                       className={`px-2.5 py-1.5 ${
-                        discountMode(product.productId) === "flat"
+                        discountMode(product) === "flat"
                           ? "bg-shop-accent-1 text-white"
                           : "text-shop-text"
                       }`}
@@ -476,7 +485,7 @@ export default function MerchantProductsPage() {
                       type="button"
                       onClick={() => setMode(product.productId, "percent")}
                       className={`px-2.5 py-1.5 ${
-                        discountMode(product.productId) === "percent"
+                        discountMode(product) === "percent"
                           ? "bg-shop-accent-1 text-white"
                           : "text-shop-text"
                       }`}
@@ -484,7 +493,7 @@ export default function MerchantProductsPage() {
                       %
                     </button>
                   </div>
-                  {discountMode(product.productId) === "percent" ? (
+                  {discountMode(product) === "percent" ? (
                     <div className="relative">
                       <input
                         type="text"

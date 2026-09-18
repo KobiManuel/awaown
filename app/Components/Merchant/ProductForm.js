@@ -123,7 +123,9 @@ function seed(product) {
       productType: "simple",
       price: "",
       onSale: false,
+      discountType: "flat",
       discountAmount: "",
+      discountPercent: "",
       stock: "",
       weight: "",
       axes: [newAxis()],
@@ -155,9 +157,14 @@ function seed(product) {
         ? String(product.price)
         : "",
     onSale: !!product.compareAt,
+    discountType: product.compareAt ? (product.discountType ?? "flat") : "flat",
     discountAmount: product.compareAt
       ? String(product.compareAt - product.price)
       : "",
+    discountPercent:
+      product.compareAt && product.discountType === "percent"
+        ? String(product.discountPercent ?? "")
+        : "",
     stock: product.stock != null ? String(product.stock) : "",
     weight: product.weightKg != null ? String(product.weightKg) : "",
     axes: product.variantAxes?.length
@@ -209,9 +216,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const isGroup = productType === "group";
   const [price, setPrice] = useState(init.price);
   const [onSale, setOnSale] = useState(init.onSale);
-  const [discountType, setDiscountType] = useState("flat"); // flat | percent
+  const [discountType, setDiscountType] = useState(init.discountType); // flat | percent
   const [discountAmount, setDiscountAmount] = useState(init.discountAmount);
-  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(init.discountPercent);
   const [stock, setStock] = useState(init.stock);
   const [weight, setWeight] = useState(init.weight);
   const [uploadingSlot, setUploadingSlot] = useState(null);
@@ -450,6 +457,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       productType,
       price: basePrice,
       discountAmount: onSale ? effectiveDiscountAmount : 0,
+      discountType: onSale ? discountType : undefined,
+      discountPercent:
+        onSale && discountType === "percent"
+          ? Number(discountPercent) || 0
+          : undefined,
       stock: deliveryType === "digital" ? undefined : Number(stock) || 0,
       hideStock: isGroup ? false : hideStock,
       backInStockAlerts: isGroup ? false : backInStockAlerts,
