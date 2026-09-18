@@ -85,7 +85,7 @@
 [data-shop-theme] .bg-white,
 [data-shop-theme] .bg-white\/95,
 [data-shop-theme] .bg-white\/90 {
-  background-color: var(--shop-surface);
+  background-color: var(--shop-surface) !important;
 }
 
 /* Same bridge as above, for a partner's *public* storefront (StoreThemeShell,
@@ -95,7 +95,7 @@
 [data-store-theme] .bg-white,
 [data-store-theme] .bg-white\/95,
 [data-store-theme] .bg-white\/90 {
-  background-color: var(--shop-surface);
+  background-color: var(--shop-surface) !important;
 }
 :root[data-theme="dark"] body {
   background: var(--shop-bg);
