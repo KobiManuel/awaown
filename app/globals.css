@@ -87,6 +87,16 @@
 [data-shop-theme] .bg-white\/90 {
   background-color: var(--shop-surface);
 }
+
+/* Same bridge as above, for a partner's *public* storefront (StoreThemeShell,
+   `/store/[code]`) rather than their own dashboard - product cards there
+   (StorefrontProductCard) also use literal `bg-white`, so a dark-looking store
+   theme (e.g. "Bold") never reached them without this. */
+[data-store-theme] .bg-white,
+[data-store-theme] .bg-white\/95,
+[data-store-theme] .bg-white\/90 {
+  background-color: var(--shop-surface);
+}
 :root[data-theme="dark"] body {
   background: var(--shop-bg);
 }
