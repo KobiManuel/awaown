@@ -27,12 +27,6 @@ const CHART_STYLE = `
   --grid: #e4e2dd;
   --text-muted: #7a7871;
 }
-:root:not([data-theme="light"]) .awz-chart {
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --grid: #34332f;
-  --text-muted: #9d9b93;
-}
 :root[data-theme="dark"] .awz-chart {
   --series-1: #3987e5;
   --series-2: #d95926;

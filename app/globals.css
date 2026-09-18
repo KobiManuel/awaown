@@ -276,8 +276,7 @@ p {
   background-repeat: no-repeat;
   animation: shop-shimmer 1.5s linear infinite;
 }
-:root:not([data-theme="light"]) .shop-shimmer,
-[data-theme="dark"] .shop-shimmer {
+:root[data-theme="dark"] .shop-shimmer {
   background-image: linear-gradient(
     100deg,
     rgba(255, 255, 255, 0) 25%,
