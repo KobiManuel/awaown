@@ -167,7 +167,7 @@ export default function PartnerStorePage() {
                     {formatPrice(product.yourNetProfit)}
                   </p>
                   <p className="text-[9.5px] text-shop-text/50">
-                    after 20% platform fee
+                    after 20% commission
                   </p>
                 </div>
               </div>

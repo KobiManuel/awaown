@@ -124,7 +124,7 @@ export default function PartnerEarningsPage() {
                       <p className="text-[11px] text-shop-text/60">
                         {e.variantLabel ? `${e.variantLabel} · ` : ""}Qty {e.qty} ·
                         margin {formatPrice(e.grossProfit)}, less{" "}
-                        {formatPrice(e.platformFee)} platform fee
+                        {formatPrice(e.platformFee)} commission
                       </p>
                     </div>
                     <span className="shrink-0 text-[12.5px] font-semibold text-emerald-600">
