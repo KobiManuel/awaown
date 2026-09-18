@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
-import { Plus, Store, Package, Check } from "lucide-react";
+import { Plus, Store, Package, Minus } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { smartTitle } from "@/lib/text-format";
@@ -13,6 +13,7 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetPartnerMarketplaceQuery,
   useAddToPartnerStoreMutation,
+  useRemoveFromPartnerStoreMutation,
 } from "@/lib/api/partnerApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
@@ -21,6 +22,8 @@ export default function PartnerMarketplacePage() {
   const [category, setCategory] = useState("all");
   const { data, isLoading, isError } = useGetPartnerMarketplaceQuery();
   const [addToStore, { isLoading: adding }] = useAddToPartnerStoreMutation();
+  const [removeFromStore, { isLoading: removing }] =
+    useRemoveFromPartnerStoreMutation();
 
   const all = data?.items ?? [];
 
@@ -37,6 +40,15 @@ export default function PartnerMarketplacePage() {
     try {
       await addToStore(p.productId).unwrap();
       showToast("Added to your store");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const handleRemove = async (p) => {
+    try {
+      await removeFromStore(p.productId).unwrap();
+      showToast("Removed from your store");
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -161,17 +173,18 @@ export default function PartnerMarketplacePage() {
                   <p className="text-[13px] font-semibold text-emerald-600">
                     {formatPrice(Math.round(product.partnerProfit * 0.8))}
                   </p>
-                  <p className="text-[9.5px] text-shop-text/50">after 20% platform fee</p>
+                  <p className="text-[9.5px] text-shop-text/50">after 20% commission</p>
                 </div>
               </div>
 
               {product.inStore ? (
                 <button
                   type="button"
-                  disabled
-                  className="flex items-center justify-center gap-1.5 rounded-[10px] border border-emerald-300 py-2.5 text-[12.5px] font-semibold text-emerald-700"
+                  onClick={() => handleRemove(product)}
+                  disabled={removing}
+                  className="flex items-center justify-center gap-1.5 rounded-[10px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading hover:bg-shop-bg disabled:opacity-70"
                 >
-                  <Check className="h-3.5 w-3.5" /> In your store
+                  <Minus className="h-3.5 w-3.5" /> Remove from Store
                 </button>
               ) : (
                 <button
