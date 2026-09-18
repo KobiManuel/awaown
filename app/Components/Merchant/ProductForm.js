@@ -84,6 +84,132 @@ function combosFromApi(variants) {
   return out;
 }
 
+// Pure derivations shared between the live form state and the originally-
+// loaded product, so submit() can build both the same way and diff them -
+// see buildBody() below.
+function buildComboRows(axes) {
+  const activeAxes = axes.filter(
+    (a) => a.name.trim() && a.values.some((v) => v.label.trim()),
+  );
+  if (!activeAxes.length) return { activeAxes, comboRows: [] };
+  let acc = [{}];
+  for (const a of activeAxes) {
+    const key = slugValue(a.name) || "option";
+    const opts = a.values
+      .filter((v) => v.label.trim())
+      .map((v) => slugValue(v.label) || v.label.trim().toLowerCase());
+    const next = [];
+    for (const partial of acc)
+      for (const val of opts) next.push({ ...partial, [key]: val });
+    acc = next;
+  }
+  const comboRows = acc.map((ov) => ({
+    sig: Object.keys(ov)
+      .sort()
+      .map((k) => `${k}=${ov[k]}`)
+      .join("|"),
+    optionValues: ov,
+  }));
+  return { activeAxes, comboRows };
+}
+
+function buildVariantPayload(axes, combos, basePrice, stock) {
+  const { activeAxes, comboRows } = buildComboRows(axes);
+  const variantAxes = activeAxes.map((a) => ({
+    name: a.name.trim(),
+    type: a.type,
+    useImages: !!a.useImages,
+    options: a.values
+      .filter((v) => v.label.trim())
+      .map((v) => ({
+        label: v.label.trim(),
+        swatch: a.type === "color" ? v.swatch || undefined : undefined,
+        image: a.useImages ? v.image || undefined : undefined,
+      })),
+  }));
+  const variants = comboRows
+    .filter((r) => !combos[r.sig]?.excluded)
+    .map((r) => ({
+      options: r.optionValues,
+      price: Number(combos[r.sig]?.price) || basePrice,
+      stock:
+        combos[r.sig]?.stock != null && combos[r.sig]?.stock !== ""
+          ? Number(combos[r.sig].stock)
+          : Number(stock) || 0,
+      image: combos[r.sig]?.image || undefined,
+    }));
+  return { variantAxes, variants };
+}
+
+/**
+ * Builds the API payload from a full snapshot of the form's fields - called
+ * once on the live state and once on the originally-loaded product (`init`),
+ * so submit() can diff the two and send only what actually changed. Does not
+ * include `status`, which represents an explicit publish/draft action rather
+ * than a value that can drift, so it's always applied separately.
+ */
+function buildBody(s) {
+  const basePrice = Number(s.price) || 0;
+  const isGroup = s.productType === "group";
+  const hasVariants = s.productType === "variable";
+  // Merchants can set the sale discount as a flat naira amount or a percentage
+  // of the price - either way it's converted to a flat amount before it's sent
+  // to the backend, which only ever stores/compares an absolute naira discount.
+  const effectiveDiscountAmount =
+    s.discountType === "percent"
+      ? Math.round((Number(s.discountPercent) / 100) * basePrice) || 0
+      : Number(s.discountAmount) || 0;
+
+  const body = {
+    title: s.title.trim(),
+    description: s.description.trim(),
+    category: s.category,
+    deliveryType: s.deliveryType,
+    digitalFileUrl: s.deliveryType === "digital" ? s.digitalFile : undefined,
+    processingTime:
+      s.deliveryType === "digital" ? "same_day" : s.processingTime,
+    images: s.images.filter(Boolean),
+    productType: s.productType,
+    price: basePrice,
+    discountAmount: s.onSale ? effectiveDiscountAmount : 0,
+    discountType: s.onSale ? s.discountType : undefined,
+    discountPercent:
+      s.onSale && s.discountType === "percent"
+        ? Number(s.discountPercent) || 0
+        : undefined,
+    stock: s.deliveryType === "digital" ? undefined : Number(s.stock) || 0,
+    hideStock: isGroup ? false : s.hideStock,
+    backInStockAlerts: isGroup ? false : s.backInStockAlerts,
+    offerCommission: s.offerCommission,
+    partnerProfitAmount: s.offerCommission
+      ? Number(s.partnerProfitAmount)
+      : undefined,
+    weightKg:
+      s.deliveryType === "digital" || !s.weight ? undefined : Number(s.weight),
+  };
+  if (hasVariants) {
+    Object.assign(body, buildVariantPayload(s.axes, s.combos, basePrice, s.stock));
+  }
+  if (isGroup) {
+    body.groupItems = s.bundleItems.map((b) => ({
+      title: b.title,
+      image: b.image,
+    }));
+  }
+  return body;
+}
+
+/** Only the keys of `liveBody` that actually differ from `originalBody`. */
+function diffBody(liveBody, originalBody) {
+  const patch = {};
+  for (const key of Object.keys(liveBody)) {
+    if (JSON.stringify(liveBody[key]) !== JSON.stringify(originalBody[key])) {
+      patch[key] = liveBody[key];
+    }
+  }
+  return patch;
+}
+
 const FIELD =
   "rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1";
 
@@ -329,30 +455,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
 
   // The axes that actually carry values, and the full combination list they
   // generate - shared by the validation checklist and the submit payload.
-  const activeAxes = axes.filter(
-    (a) => a.name.trim() && a.values.some((v) => v.label.trim()),
-  );
-  const comboRows = useMemo(() => {
-    if (!activeAxes.length) return [];
-    let acc = [{}];
-    for (const a of activeAxes) {
-      const key = slugValue(a.name) || "option";
-      const opts = a.values
-        .filter((v) => v.label.trim())
-        .map((v) => slugValue(v.label) || v.label.trim().toLowerCase());
-      const next = [];
-      for (const partial of acc)
-        for (const val of opts) next.push({ ...partial, [key]: val });
-      acc = next;
-    }
-    return acc.map((ov) => ({
-      sig: Object.keys(ov)
-        .sort()
-        .map((k) => `${k}=${ov[k]}`)
-        .join("|"),
-      optionValues: ov,
-    }));
-  }, [axes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { activeAxes, comboRows } = useMemo(() => buildComboRows(axes), [axes]);
 
   const partnerRateValid =
     !offerCommission ||
@@ -446,67 +549,43 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     if (submitting) return;
     if (asDraft ? !title.trim() : !isValid) return;
 
-    const body = {
-      title: title.trim(),
-      description: description.trim(),
+    const liveState = {
+      title,
+      description,
       category,
       deliveryType,
-      digitalFileUrl: deliveryType === "digital" ? digitalFile : undefined,
-      processingTime: deliveryType === "digital" ? "same_day" : processingTime,
-      images: images.filter(Boolean),
+      digitalFile,
+      processingTime,
+      images,
       productType,
-      price: basePrice,
-      discountAmount: onSale ? effectiveDiscountAmount : 0,
-      discountType: onSale ? discountType : undefined,
-      discountPercent:
-        onSale && discountType === "percent"
-          ? Number(discountPercent) || 0
-          : undefined,
-      stock: deliveryType === "digital" ? undefined : Number(stock) || 0,
-      hideStock: isGroup ? false : hideStock,
-      backInStockAlerts: isGroup ? false : backInStockAlerts,
+      price,
+      onSale,
+      discountType,
+      discountAmount,
+      discountPercent,
+      stock,
+      weight,
       offerCommission,
-      partnerProfitAmount: offerCommission
-        ? Number(partnerProfitAmount)
-        : undefined,
-      weightKg:
-        deliveryType === "digital" || !weight ? undefined : Number(weight),
-      // Only touch status on create or when moving a draft. Editing a live
-      // product leaves status alone so the re-approval rule can tell an
-      // inventory-only change from a real one.
-      status: asDraft ? "DRAFT" : isDraft ? "ACTIVE" : undefined,
+      partnerProfitAmount,
+      hideStock,
+      backInStockAlerts,
+      axes,
+      combos,
+      bundleItems,
     };
-    if (hasVariants) {
-      body.variantAxes = activeAxes.map((a) => ({
-        name: a.name.trim(),
-        type: a.type,
-        useImages: !!a.useImages,
-        options: a.values
-          .filter((v) => v.label.trim())
-          .map((v) => ({
-            label: v.label.trim(),
-            swatch: a.type === "color" ? v.swatch || undefined : undefined,
-            image: a.useImages ? v.image || undefined : undefined,
-          })),
-      }));
-      body.variants = comboRows
-        .filter((r) => !combos[r.sig]?.excluded)
-        .map((r) => ({
-          options: r.optionValues,
-          price: Number(combos[r.sig]?.price) || basePrice,
-          stock:
-            combos[r.sig]?.stock != null && combos[r.sig]?.stock !== ""
-              ? Number(combos[r.sig].stock)
-              : Number(stock) || 0,
-          image: combos[r.sig]?.image || undefined,
-        }));
-    }
-    if (isGroup) {
-      body.groupItems = bundleItems.map((b) => ({
-        title: b.title,
-        image: b.image,
-      }));
-    }
+    const liveBody = buildBody(liveState);
+    // On create there's no "original" to diff against - send everything. On
+    // edit, only send what the merchant actually changed, so an untouched
+    // section (e.g. pricing) can never clobber it with a stale recomputation,
+    // and a change limited to inventory-safe fields can still qualify for
+    // applyProductPatch's "stays live, no re-review" fast path.
+    const body = isCreate ? liveBody : diffBody(liveBody, buildBody(init));
+    // status represents an explicit publish/draft action, not a value that
+    // can drift, so it's always applied on top of the diff. Editing a live
+    // product without moving it leaves status out entirely so the
+    // re-approval rule can tell an inventory-only change from a real one.
+    body.status = asDraft ? "DRAFT" : isDraft ? "ACTIVE" : undefined;
+
     await onSubmit(body, { asDraft });
   };
 
