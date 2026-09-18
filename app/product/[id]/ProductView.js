@@ -17,6 +17,7 @@ import {
   Loader2,
   BellRing,
   MapPin,
+  Play,
 } from "lucide-react";
 import {
   resolveVariant,
@@ -86,6 +87,7 @@ function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(null); // thumbnail the buyer tapped
+  const [showVideo, setShowVideo] = useState(false); // video thumbnail tapped instead
   const [imgLoading, setImgLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -134,6 +136,7 @@ function ProductDetail() {
   // image follows the variety again.
   useEffect(() => {
     setActiveImg(null); // eslint-disable-line react-hooks/set-state-in-effect
+    setShowVideo(false);
   }, [resolved?.variantId]);
 
   const shownImg =
@@ -319,7 +322,7 @@ function ProductDetail() {
             <div className="relative aspect-square overflow-hidden rounded-[16px] bg-shop-bg">
               {/* wave skeleton fills the box until the image paints, so it's
                   never a blank rectangle while switching photos */}
-              {shownImg && imgLoading && (
+              {!showVideo && shownImg && imgLoading && (
                 <div className="shop-shimmer absolute inset-0 z-[1]" />
               )}
               {discount && (
@@ -327,33 +330,47 @@ function ProductDetail() {
                   -{discount}%
                 </span>
               )}
-              {shownImg && (
-                <Image
-                  key={shownImg}
-                  src={shownImg}
-                  alt={product.title}
-                  fill
-                  onLoad={() => setImgLoading(false)}
-                  onError={() => setImgLoading(false)}
-                  className={`relative z-[2] object-contain p-8 transition-opacity duration-300 ${
-                    imgLoading ? "opacity-0" : "opacity-100"
-                  }`}
-                  sizes="(max-width: 1024px) 480px, 540px"
-                  priority
+              {showVideo && product.videoUrl ? (
+                <video
+                  key={product.videoUrl}
+                  src={product.videoUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="relative z-[2] h-full w-full bg-black object-contain"
                 />
+              ) : (
+                shownImg && (
+                  <Image
+                    key={shownImg}
+                    src={shownImg}
+                    alt={product.title}
+                    fill
+                    onLoad={() => setImgLoading(false)}
+                    onError={() => setImgLoading(false)}
+                    className={`relative z-[2] object-contain p-8 transition-opacity duration-300 ${
+                      imgLoading ? "opacity-0" : "opacity-100"
+                    }`}
+                    sizes="(max-width: 1024px) 480px, 540px"
+                    priority
+                  />
+                )
               )}
             </div>
 
-            {gallery.length > 1 && (
+            {(gallery.length > 1 || product.videoUrl) && (
               <div className="hide-scrollbar flex max-h-[164px] flex-wrap gap-2 overflow-y-auto">
                 {gallery.map((img) => (
                   <button
                     key={img}
                     type="button"
-                    onClick={() => setActiveImg(img)}
+                    onClick={() => {
+                      setActiveImg(img);
+                      setShowVideo(false);
+                    }}
                     aria-label="View photo"
                     className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border-2 bg-shop-bg transition-colors ${
-                      img === shownImg
+                      !showVideo && img === shownImg
                         ? "border-shop-accent-1"
                         : "border-transparent hover:border-shop-border"
                     }`}
@@ -367,6 +384,45 @@ function ProductDetail() {
                     />
                   </button>
                 ))}
+                {product.videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVideo(true)}
+                    aria-label="Play product video"
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border-2 bg-shop-bg transition-colors ${
+                      showVideo
+                        ? "border-shop-accent-1"
+                        : "border-transparent hover:border-shop-border"
+                    }`}
+                  >
+                    {gallery[0] && (
+                      <Image
+                        src={gallery[0]}
+                        alt=""
+                        fill
+                        className="object-contain p-1.5 opacity-60"
+                        sizes="64px"
+                      />
+                    )}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      {/* Inline styles, not bg-white/text classes: a play
+                          button needs the same high contrast regardless of
+                          site dark mode or a partner store's own theme,
+                          which reskin literal bg-white/text-shop-heading
+                          elsewhere on purpose. */}
+                      <span
+                        className="flex h-6 w-6 items-center justify-center rounded-full"
+                        style={{ backgroundColor: "rgba(255,255,255,0.9)" }}
+                      >
+                        <Play
+                          className="ml-0.5 h-3 w-3"
+                          style={{ fill: "#1a1a1a", color: "#1a1a1a" }}
+                          strokeWidth={0}
+                        />
+                      </span>
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
