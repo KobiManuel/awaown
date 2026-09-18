@@ -166,6 +166,7 @@ function buildBody(s) {
     category: s.category,
     deliveryType: s.deliveryType,
     digitalFileUrl: s.deliveryType === "digital" ? s.digitalFile : undefined,
+    videoUrl: s.deliveryType === "digital" ? undefined : (s.video ?? null),
     processingTime:
       s.deliveryType === "digital" ? "same_day" : s.processingTime,
     images: s.images.filter(Boolean),
@@ -272,7 +273,7 @@ function seed(product) {
     processingTime: product.processingTime ?? PROCESSING_TIME_OPTIONS[1].id,
     digitalFile: product.digitalFileUrl ?? null,
     images: product.images ?? [],
-    video: product.video ?? null,
+    video: product.videoUrl ?? null,
     productType: type === "group" || type === "variable" ? type : "simple",
     // The "Price" field always holds the sticker price - when a discount is
     // already live, that's compareAt (the price before it), not the
@@ -555,6 +556,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
       category,
       deliveryType,
       digitalFile,
+      video,
       processingTime,
       images,
       productType,
