@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ShieldCheck, X, Minus, Plus } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
-import { NIGERIAN_STATES } from "@/lib/merchant-data";
+import { NIGERIAN_STATES, CITIES_BY_STATE } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
 import { usePartnerCart } from "@/lib/usePartnerCart";
 import {
@@ -50,6 +50,16 @@ export default function PartnerStoreCheckoutPage() {
   const [busy, setBusy] = useState(false);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const setAddressState = (e) => {
+    const state = e.target.value;
+    setForm((f) => ({
+      ...f,
+      state,
+      // city options depend on state, so drop a city that no longer applies
+      city: CITIES_BY_STATE[state]?.includes(f.city) ? f.city : "",
+    }));
+  };
+  const cityOptions = CITIES_BY_STATE[form.state] ?? [];
 
   const phoneValid = isValidNigerianPhone(form.phone);
   const isValid =
@@ -193,11 +203,23 @@ export default function PartnerStoreCheckoutPage() {
               <p className="text-[13px] font-semibold">Delivery address</p>
               <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={FIELD} />
               <div className="flex gap-3">
-                <input value={form.city} onChange={set("city")} placeholder="City" className={FIELD} />
-                <select value={form.state} onChange={set("state")} className={FIELD}>
+                <select value={form.state} onChange={setAddressState} className={FIELD}>
                   {NIGERIAN_STATES.map((s) => (
                     <option key={s} value={s}>
                       {s}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={form.city}
+                  onChange={set("city")}
+                  disabled={!form.state}
+                  className={`${FIELD} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  <option value="">{form.state ? "City" : "Select state first"}</option>
+                  {cityOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
                     </option>
                   ))}
                 </select>
