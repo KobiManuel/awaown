@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, User, Clock, Loader2, PackageSearch } from "lucide-react";
 import { getTheme, getAccent, getFontPairing } from "@/lib/partner-store-options";
+import { buildPartnerThemeVars } from "@/lib/partner-theme-vars";
 import { STORE_FONT_FAMILIES } from "@/app/Components/PartnerStore/storeFonts";
 import ProductCard from "@/app/Components/Product/ProductCard";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
@@ -54,8 +55,10 @@ export default function PublicPartnerStorePage() {
 
   return (
     <div
+      data-store-theme=""
       className="relative min-h-screen w-full"
       style={{
+        ...buildPartnerThemeVars(store.theme, store.accent, store.font),
         backgroundColor: theme.pageBg,
         color: theme.textColor,
         fontFamily: bodyFont.style.fontFamily,
