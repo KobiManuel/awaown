@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import ProductCard from "@/app/Components/Product/ProductCard";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 import { SkeletonProductCard } from "@/components/ui/skeleton";
@@ -12,7 +13,12 @@ import { useGetProductsQuery } from "@/lib/api/catalogApi";
  * straight to GET /products (e.g. { sort: "newest", limit: 12 } or
  * { featured: true }). Cards route to the public /product/[slug] page.
  */
-export default function HomeProductRow({ title, params = {}, href = "/dashboard/shop" }) {
+export default function HomeProductRow({
+  title,
+  params = {},
+  href = "/shop",
+  showSeeAll = false,
+}) {
   const trackRef = useRef(null);
   const { data, isLoading } = useGetProductsQuery({ limit: 12, ...params });
   const products = data?.items ?? [];
@@ -73,6 +79,17 @@ export default function HomeProductRow({ title, params = {}, href = "/dashboard/
               </div>
             ))}
       </div>
+      {showSeeAll && !isLoading && products.length > 0 && (
+        <div className="mt-3 flex justify-end">
+          <Link
+            href={href}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            See all
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

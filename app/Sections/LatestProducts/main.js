@@ -2,7 +2,11 @@ import React from "react";
 import HomeProductRow from "@/app/Sections/HomeProductRow";
 
 const LatestProducts = () => (
-  <HomeProductRow title="Latest Products" params={{ sort: "newest" }} />
+  <HomeProductRow
+    title="Latest Products"
+    params={{ sort: "newest" }}
+    showSeeAll
+  />
 );
 
 export default LatestProducts;
