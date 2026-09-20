@@ -2,13 +2,19 @@
 
 import React, { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import { ToastProvider } from "@/app/Components/Dashboard/ToastContext";
 import BottomNav from "@/app/Components/Dashboard/BottomNav";
 import DesktopSidebar from "@/app/Components/Dashboard/DesktopSidebar";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewContext";
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
+import MerchantTermsGate from "@/app/Components/Legal/MerchantTermsGate";
+import PartnerTermsGate from "@/app/Components/Legal/PartnerTermsGate";
 import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
+import { markTermsAccepted } from "@/lib/store/authSlice";
+import { useAcceptMerchantTermsMutation } from "@/lib/api/merchantApi";
+import { useAcceptPartnerTermsMutation } from "@/lib/api/partnerApi";
 
 // Shared shell for every role dashboard (customer/merchant/partner/admin): it
 // re-establishes the session from the refresh cookie, gates on auth +
@@ -49,8 +55,28 @@ const AppFrame = ({
   const role = loginHref.split("/").filter(Boolean).pop();
   const { resolving, authed, unauth, onboardingComplete } =
     useAuthBootstrap(role);
+  const dispatch = useDispatch();
+  const profile = useSelector((s) => s.auth.profile);
+  const [acceptMerchantTerms] = useAcceptMerchantTermsMutation();
+  const [acceptPartnerTerms] = useAcceptPartnerTermsMutation();
 
   const onOnboardingRoute = pathname?.startsWith("/onboarding");
+  // Onboarding already gates new signups through {Merchant,Partner}TermsGate
+  // (see app/onboarding/[role]/page.js), which sets termsAcceptedAt at
+  // creation - null here only ever means a legacy account from before that
+  // existed, so this is exactly "show it once, on their next login."
+  const needsTerms =
+    (role === "merchant" || role === "partner") &&
+    authed &&
+    onboardingComplete &&
+    profile &&
+    !profile.termsAcceptedAt;
+
+  const handleAcceptTerms = async () => {
+    if (role === "merchant") await acceptMerchantTerms().unwrap().catch(() => {});
+    else await acceptPartnerTerms().unwrap().catch(() => {});
+    dispatch(markTermsAccepted());
+  };
 
   useEffect(() => {
     // Carry the page a guest was actually trying to reach (e.g. a "Track an
@@ -73,6 +99,14 @@ const AppFrame = ({
       <div className="flex min-h-screen items-center justify-center bg-shop-bg">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-shop-accent-1 border-t-transparent" />
       </div>
+    );
+  }
+
+  if (needsTerms) {
+    return role === "merchant" ? (
+      <MerchantTermsGate onAccept={handleAcceptTerms} />
+    ) : (
+      <PartnerTermsGate onAccept={handleAcceptTerms} />
     );
   }
 

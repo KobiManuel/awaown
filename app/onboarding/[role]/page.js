@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/api/errorMessage";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
 import MerchantTermsGate from "@/app/Components/Legal/MerchantTermsGate";
+import PartnerTermsGate from "@/app/Components/Legal/PartnerTermsGate";
 
 const DASHBOARD_HOME = {
   customer: "/dashboard",
@@ -71,6 +72,7 @@ function OnboardingForm() {
   const [formError, setFormError] = useState("");
   const [complete, completeState] = useCompleteOnboardingMutation();
   const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(false);
+  const [partnerTermsAccepted, setPartnerTermsAccepted] = useState(false);
 
   const set = (k) => (e) => {
     const raw = e.target.value;
@@ -100,6 +102,10 @@ function OnboardingForm() {
 
   if (role === "merchant" && !merchantTermsAccepted) {
     return <MerchantTermsGate onAccept={() => setMerchantTermsAccepted(true)} />;
+  }
+
+  if (role === "partner" && !partnerTermsAccepted) {
+    return <PartnerTermsGate onAccept={() => setPartnerTermsAccepted(true)} />;
   }
 
   const submit = async (e) => {
