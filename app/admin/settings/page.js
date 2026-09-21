@@ -13,6 +13,7 @@ import {
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import {
   useGetAdminSettingsQuery,
   useUpdateAdminSettingsMutation,
@@ -171,11 +172,10 @@ export default function AdminSettingsPage() {
               <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
                 Orders above (₦)
               </span>
-              <input
-                inputMode="numeric"
+              <MoneyInput
                 value={minOrderAmount}
-                onChange={(e) => setMinOrderAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="e.g. 50000 (blank = off)"
+                onChange={setMinOrderAmount}
+                placeholder="e.g. 50,000 (blank = off)"
                 className="rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
               />
             </label>
