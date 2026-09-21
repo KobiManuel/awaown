@@ -212,6 +212,12 @@ function ProductDetail() {
   const stockLeft = needsSelection ? null : resolved.maxQty;
   const outOfStock = !needsSelection && resolved.inStock === false;
   const canAlert = outOfStock && product.backInStockAlerts;
+  // Delivery coverage is currently Lagos and Abuja only - AwaOwn's own stock
+  // isn't a "merchant" and isn't subject to this.
+  const outOfCoverage =
+    product.sellerType === "MERCHANT" &&
+    !!product.location &&
+    !["Lagos", "Abuja"].includes(product.location);
 
   const handleAlert = async () => {
     if (!authed) return requireLogin();
@@ -667,7 +673,15 @@ function ProductDetail() {
                 </button>
               )}
 
-              {outOfStock ? (
+              {outOfCoverage ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-text/60"
+                >
+                  Not deliverable to your area yet
+                </button>
+              ) : outOfStock ? (
                 <button
                   type="button"
                   onClick={handleAlert}
@@ -711,7 +725,7 @@ function ProductDetail() {
               )}
             </div>
 
-            {!outOfStock && !needsSelection && (
+            {!outOfCoverage && !outOfStock && !needsSelection && (
               <button
                 type="button"
                 onClick={buyNow}

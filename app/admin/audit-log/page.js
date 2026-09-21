@@ -40,6 +40,8 @@ export default function AdminAuditLogPage() {
                   {r.action.replace(/^admin\./, "").replace(/[._]/g, " ")}
                 </p>
                 <p className="text-[11px] text-shop-text/60">
+                  {r.actorName}
+                  {r.actorEmail ? ` (${r.actorEmail})` : ""} ·{" "}
                   {new Date(r.createdAt).toLocaleString("en-NG", {
                     day: "numeric",
                     month: "short",

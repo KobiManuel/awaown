@@ -11,6 +11,7 @@ import { useCommerce } from "@/lib/useCommerce";
 import { usePartnerCart } from "@/lib/usePartnerCart";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { readRef } from "@/lib/partner-ref";
+import { errorMessage } from "@/lib/api/errorMessage";
 
 // Rough colour-name → hex map so a "Color" variant group renders as swatches.
 const COLOR_HEX = {
@@ -135,8 +136,10 @@ const ProductCard = ({
       setJustAdded(true);
       showToast("Added to cart");
       setTimeout(() => setJustAdded(false), 1600);
-    } catch {
-      showToast("Couldn't add to cart");
+    } catch (err) {
+      // Surface the real reason (e.g. out of delivery coverage, out of
+      // stock) instead of a generic message that hides why it failed.
+      showToast(errorMessage(err, "Couldn't add to cart"));
     } finally {
       setBusy(false);
     }
