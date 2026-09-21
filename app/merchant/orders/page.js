@@ -18,19 +18,26 @@ import { errorMessage } from "@/lib/api/errorMessage";
 export default function MerchantOrdersPage() {
   const showToast = useToast();
   const { data, isLoading, isError } = useGetMerchantOrdersQuery();
-  const [confirmReady, { isLoading: confirming }] =
-    useConfirmOrderReadyMutation();
+  const [confirmReady] = useConfirmOrderReadyMutation();
+  // One shared mutation hook means one shared isLoading - without tracking
+  // which specific order is in flight, confirming one order's card put every
+  // other order's "Confirm Ready for Pickup" button into a loading/disabled
+  // state too.
+  const [confirmingRef, setConfirmingRef] = React.useState(null);
 
   const orders = data?.items ?? [];
 
   const handleConfirm = async (e, ref) => {
     e.preventDefault();
     e.stopPropagation();
+    setConfirmingRef(ref);
     try {
       await confirmReady(ref).unwrap();
       showToast(`${ref} marked ready for pickup`);
     } catch (err) {
       showToast(errorMessage(err));
+    } finally {
+      setConfirmingRef(null);
     }
   };
 
@@ -59,7 +66,10 @@ export default function MerchantOrdersPage() {
         <div className="flex flex-col gap-3 px-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:px-8">
           {orders.map((order) => {
             const meta = statusMeta(order.status);
-            const awaiting = order.status === "AWAITING_CONFIRMATION";
+            // Scoped to this merchant's own shipment, not the shared order
+            // status - on a multi-merchant order another merchant confirming
+            // first already moved order.status past AWAITING_CONFIRMATION.
+            const awaiting = order.needsConfirmation;
             return (
               <Link
                 key={order.id}
@@ -114,10 +124,10 @@ export default function MerchantOrdersPage() {
                     <button
                       type="button"
                       onClick={(e) => handleConfirm(e, order.reference)}
-                      disabled={confirming}
+                      disabled={confirmingRef === order.reference}
                       className="flex items-center gap-1.5 rounded-full bg-shop-accent-1 px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-shop-accent-1-dark disabled:opacity-70"
                     >
-                      {confirming ? (
+                      {confirmingRef === order.reference ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <CheckCircle2 className="h-3.5 w-3.5" />

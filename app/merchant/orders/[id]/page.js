@@ -56,7 +56,10 @@ export default function MerchantOrderDetailPage() {
     (acc, step, i) => (reached.has(step.key) ? i : acc),
     -1,
   );
-  const awaiting = order.status === "AWAITING_CONFIRMATION";
+  // Scoped to this merchant's own shipment, not the shared order status - on
+  // a multi-merchant order another merchant confirming first already moved
+  // order.status past AWAITING_CONFIRMATION.
+  const awaiting = order.needsConfirmation;
 
   const handleConfirm = async () => {
     try {
