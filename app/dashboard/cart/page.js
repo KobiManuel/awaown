@@ -127,7 +127,7 @@ export default function CartPage() {
                         type="button"
                         aria-label="Decrease quantity"
                         onClick={() =>
-                          updateQty({ id: item.id, qty: item.qty - 1 })
+                          updateQty({ id: item.id, qty: Math.max(1, item.qty - 1) })
                         }
                         className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-shop-bg"
                       >

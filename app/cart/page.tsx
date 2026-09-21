@@ -1,6 +1,7 @@
 import Header from "@/app/Components/Header/header";
 import Footer from "@/app/Components/Footer/footer";
 import ScrollToTop from "@/app/Components/Header/ScrollToTop";
+import { ToastProvider } from "@/app/Components/Dashboard/ToastContext";
 import CartClient from "./CartClient";
 import CartShell from "./CartShell";
 
@@ -12,10 +13,12 @@ export const metadata = {
 export default function CartPage() {
   return (
     <CartShell>
-      <Header />
-      <CartClient />
-      <Footer />
-      <ScrollToTop />
+      <ToastProvider>
+        <Header />
+        <CartClient />
+        <Footer />
+        <ScrollToTop />
+      </ToastProvider>
     </CartShell>
   );
 }

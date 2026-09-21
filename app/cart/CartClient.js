@@ -34,8 +34,6 @@ const CartClient = () => {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const shipping = subtotal > 0 && subtotal < 200 ? 15 : 0;
-  const total = subtotal + shipping;
 
   if (items.length === 0) {
     return (
@@ -96,7 +94,7 @@ const CartClient = () => {
                   <button
                     type="button"
                     aria-label="Decrease quantity"
-                    onClick={() => commerce.updateQty(item.id, item.qty - 1)}
+                    onClick={() => commerce.updateQty(item.id, Math.max(1, item.qty - 1))}
                     className="flex h-6 w-6 items-center justify-center text-shop-heading hover:text-shop-accent-1"
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -147,14 +145,12 @@ const CartClient = () => {
             </div>
             <div className="flex justify-between text-shop-text">
               <span>Shipping</span>
-              <span className="text-shop-heading">
-                {shipping === 0 ? "Free" : formatPrice(shipping)}
-              </span>
+              <span className="text-shop-heading">Calculated at checkout</span>
             </div>
             <div className="h-px bg-shop-border" />
             <div className="flex justify-between text-[16px] font-semibold text-shop-heading">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
+              <span>Subtotal</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
           </div>
           <button
