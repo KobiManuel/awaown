@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck, X, Minus, Plus } from "lucide-react";
+import { Loader2, ShieldCheck, X, Minus, Plus, PackageSearch } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { NIGERIAN_STATES, CITIES_BY_STATE } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
@@ -160,6 +160,13 @@ export default function PartnerStoreCheckoutPage() {
           <Link href={`/store/${code}`} className="text-[13px] font-semibold text-shop-accent-1 hover:underline">
             &larr; Back to the store
           </Link>
+          <Link
+            href={`/store/${code}/orders`}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            <PackageSearch className="h-3.5 w-3.5" />
+            Track an order
+          </Link>
         </div>
       </StoreThemeShell>
     );
@@ -168,7 +175,16 @@ export default function PartnerStoreCheckoutPage() {
   return (
     <StoreThemeShell cartButton={false}>
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 font-shop md:py-12">
-        <h1 className="mb-1 text-[20px] font-semibold">Checkout</h1>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h1 className="text-[20px] font-semibold">Checkout</h1>
+          <Link
+            href={`/store/${code}/orders`}
+            className="flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            <PackageSearch className="h-3.5 w-3.5" />
+            Track an order
+          </Link>
+        </div>
         <p className="mb-6 text-[12.5px] opacity-70">
           No account needed. Keep your phone number handy - it&apos;s how you&apos;ll look up this order later.
         </p>

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, ArrowRight, PackageSearch } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { usePartnerCart } from "@/lib/usePartnerCart";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
@@ -30,6 +30,13 @@ export default function PartnerStoreCartPage() {
           >
             Continue Shopping
           </Link>
+          <Link
+            href={`/store/${code}/orders`}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            <PackageSearch className="h-3.5 w-3.5" />
+            Track an order
+          </Link>
         </div>
       </StoreThemeShell>
     );
@@ -38,9 +45,18 @@ export default function PartnerStoreCartPage() {
   return (
     <StoreThemeShell cartButton={false}>
       <div className="mx-auto w-full max-w-[800px] px-4 py-8 font-shop md:py-12">
-        <h1 className="mb-5 text-[20px] font-semibold">
-          Your Cart ({cart.items.length})
-        </h1>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h1 className="text-[20px] font-semibold">
+            Your Cart ({cart.items.length})
+          </h1>
+          <Link
+            href={`/store/${code}/orders`}
+            className="flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1 hover:underline"
+          >
+            <PackageSearch className="h-3.5 w-3.5" />
+            Track an order
+          </Link>
+        </div>
         <div className="flex flex-col gap-3">
           {cart.items.map((item) => (
             <div
