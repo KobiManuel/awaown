@@ -285,6 +285,12 @@ p {
   );
 }
 
+/* Loading skeletons (components/ui/skeleton.jsx) - same dark-mode-attribute
+   vs. dark: variant mismatch as .shop-shimmer above. */
+:root[data-theme="dark"] .ui-skeleton {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 .shop-tooltip {
   position: relative;
 }

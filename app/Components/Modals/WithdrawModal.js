@@ -111,7 +111,7 @@ const WithdrawModal = () => {
               <div className="mb-4 flex items-start gap-2 rounded-[10px] bg-amber-50 px-3.5 py-3">
                 <CalendarClock className="h-4 w-4 shrink-0 text-amber-700" strokeWidth={1.75} />
                 <p className="text-[11.5px] leading-[16px] text-amber-800">
-                  Withdrawal requests are processed weekly. Minimum withdrawal is{" "}
+                  Withdrawals reach your bank in 2-3 business days. Minimum withdrawal is{" "}
                   {formatPrice(MIN_WITHDRAWAL)}.
                 </p>
               </div>
@@ -225,7 +225,7 @@ const WithdrawModal = () => {
                   Withdrawal Requested
                 </p>
                 <p className="mt-1 text-[12.5px] text-shop-text">
-                  {formatPrice(numericAmount)} will be sent to your bank within 24 hours.
+                  {formatPrice(numericAmount)} will reach your bank in 2-3 business days.
                 </p>
               </div>
               <button

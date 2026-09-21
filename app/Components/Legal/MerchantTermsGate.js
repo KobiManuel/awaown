@@ -12,7 +12,7 @@ const merchantDocs = LEGAL_DOCUMENTS.filter((d) => MERCHANT_TERMS_DOC_IDS.includ
  * must read this and check the box before onboarding continues. Deliberately
  * has no "skip"/"remind me later" path.
  */
-export default function MerchantTermsGate({ onAccept }) {
+export default function MerchantTermsGate({ onAccept, submitting, error }) {
   const [checked, setChecked] = useState(false);
 
   return (
@@ -48,13 +48,16 @@ export default function MerchantTermsGate({ onAccept }) {
             />
             I have read and agree to the AwaOwn Terms of Use and Merchant Agreement.
           </label>
+          {error && (
+            <p className="text-[12.5px] text-shop-accent-3">{error}</p>
+          )}
           <button
             type="button"
             onClick={onAccept}
-            disabled={!checked}
+            disabled={!checked || submitting}
             className="w-full rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Continue
+            {submitting ? "Saving…" : "Continue"}
           </button>
         </div>
       </div>

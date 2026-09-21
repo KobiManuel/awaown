@@ -11,7 +11,12 @@ export function Skeleton({ className, ...props }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-shop-border/60 dark:bg-white/10",
+        // Tailwind's dark: variant follows the OS colour scheme, but this
+        // app's theme toggle sets [data-theme] manually - the two can
+        // disagree, which is why this used to stay light-mode-coloured (or
+        // the reverse) regardless of what the toggle was set to. The dark
+        // override lives in globals.css keyed off [data-theme="dark"] instead.
+        "ui-skeleton animate-pulse rounded-md bg-shop-border/60",
         className,
       )}
       {...props}

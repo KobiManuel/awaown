@@ -163,7 +163,7 @@ export default function PartnerMarketplacePage() {
                     Partner Price
                   </p>
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    {formatPrice(product.price - product.partnerProfit)}
+                    {formatPrice(product.price - product.maxDiscount)}
                   </p>
                 </div>
                 <div>
@@ -171,9 +171,9 @@ export default function PartnerMarketplacePage() {
                     Your Profit
                   </p>
                   <p className="text-[13px] font-semibold text-emerald-600">
-                    {formatPrice(Math.round(product.partnerProfit * 0.8))}
+                    {formatPrice(product.yourNetProfit)}
                   </p>
-                  <p className="text-[9.5px] text-shop-text/50">after 20% commission</p>
+                  <p className="text-[9.5px] text-shop-text/50">after platform fee</p>
                 </div>
               </div>
 

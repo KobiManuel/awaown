@@ -57,8 +57,9 @@ const AppFrame = ({
     useAuthBootstrap(role);
   const dispatch = useDispatch();
   const profile = useSelector((s) => s.auth.profile);
-  const [acceptMerchantTerms] = useAcceptMerchantTermsMutation();
-  const [acceptPartnerTerms] = useAcceptPartnerTermsMutation();
+  const [acceptMerchantTerms, acceptMerchantTermsState] = useAcceptMerchantTermsMutation();
+  const [acceptPartnerTerms, acceptPartnerTermsState] = useAcceptPartnerTermsMutation();
+  const [termsError, setTermsError] = React.useState("");
 
   const onOnboardingRoute = pathname?.startsWith("/onboarding");
   // Onboarding already gates new signups through {Merchant,Partner}TermsGate
@@ -73,9 +74,17 @@ const AppFrame = ({
     !profile.termsAcceptedAt;
 
   const handleAcceptTerms = async () => {
-    if (role === "merchant") await acceptMerchantTerms().unwrap().catch(() => {});
-    else await acceptPartnerTerms().unwrap().catch(() => {});
-    dispatch(markTermsAccepted());
+    setTermsError("");
+    try {
+      if (role === "merchant") await acceptMerchantTerms().unwrap();
+      else await acceptPartnerTerms().unwrap();
+      dispatch(markTermsAccepted());
+    } catch {
+      // Don't fake acceptance locally when the save fails - this gate exists
+      // to legally bind the account to the terms, so it must stay up until
+      // the backend actually confirms it.
+      setTermsError("Could not save - check your connection and try again.");
+    }
   };
 
   useEffect(() => {
@@ -103,10 +112,12 @@ const AppFrame = ({
   }
 
   if (needsTerms) {
+    const submitting =
+      role === "merchant" ? acceptMerchantTermsState.isLoading : acceptPartnerTermsState.isLoading;
     return role === "merchant" ? (
-      <MerchantTermsGate onAccept={handleAcceptTerms} />
+      <MerchantTermsGate onAccept={handleAcceptTerms} submitting={submitting} error={termsError} />
     ) : (
-      <PartnerTermsGate onAccept={handleAcceptTerms} />
+      <PartnerTermsGate onAccept={handleAcceptTerms} submitting={submitting} error={termsError} />
     );
   }
 

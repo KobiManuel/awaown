@@ -1383,7 +1383,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                       )}
                     </span>{" "}
                     per sale (after AwaOwn&apos;s{" "}
-                    {Math.round(PARTNER_PLATFORM_FEE_RATE * 100)}% commission).
+                    {Math.round(PARTNER_PLATFORM_FEE_RATE * 100)}% platform fee).
                   </p>
                 )}
               </div>
