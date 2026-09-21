@@ -60,15 +60,19 @@ function axisFromApi(ax) {
   };
 }
 
-function combosFromApi(variants) {
+function comboSig(ov) {
+  return Object.keys(ov)
+    .sort()
+    .map((k) => `${k}=${ov[k]}`)
+    .join("|");
+}
+
+function combosFromApi(variants, excludedCombos) {
   const out = {};
   for (const v of variants || []) {
     const ov = v.options || v.optionValues || {};
     if (!Object.keys(ov).length) continue;
-    const sig = Object.keys(ov)
-      .sort()
-      .map((k) => `${k}=${ov[k]}`)
-      .join("|");
+    const sig = comboSig(ov);
     // Same rule as the top-level price field: while a sale is live, `price`
     // is already net of the discount - `compareAtPrice` is the row's real
     // sticker price. Seeding the form with the discounted number would make
@@ -80,6 +84,16 @@ function combosFromApi(variants) {
       image: v.image || null,
       excluded: false,
     };
+  }
+  // Combos the merchant previously marked "not sold" never exist as a real
+  // variant row (that's how exclusion is persisted), so without this they're
+  // indistinguishable from a combo that was simply never configured - and
+  // would silently reappear as sellable at the base price on the next save.
+  for (const ov of excludedCombos || []) {
+    if (!ov || !Object.keys(ov).length) continue;
+    const sig = comboSig(ov);
+    if (out[sig]) continue; // a real, active row wins if both somehow exist
+    out[sig] = { price: "", stock: "", image: null, excluded: true };
   }
   return out;
 }
@@ -138,7 +152,10 @@ function buildVariantPayload(axes, combos, basePrice, stock) {
           : Number(stock) || 0,
       image: combos[r.sig]?.image || undefined,
     }));
-  return { variantAxes, variants };
+  const excludedCombos = comboRows
+    .filter((r) => !!combos[r.sig]?.excluded)
+    .map((r) => r.optionValues);
+  return { variantAxes, variants, excludedCombos };
 }
 
 /**
@@ -297,7 +314,7 @@ function seed(product) {
     axes: product.variantAxes?.length
       ? product.variantAxes.map(axisFromApi)
       : [newAxis()],
-    combos: combosFromApi(product.variants),
+    combos: combosFromApi(product.variants, product.excludedCombos),
     bundleItems: (product.groupItems ?? []).map((g, i) => ({
       id: `bi-${i}-${Date.now()}`,
       title: g.title,

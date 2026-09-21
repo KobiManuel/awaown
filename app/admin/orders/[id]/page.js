@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
@@ -35,11 +35,6 @@ export default function AdminOrderDetailPage() {
   const confirm = useConfirm();
   const { data: order, isLoading, isError } = useGetAdminOrderQuery(id);
   const [advance, advanceState] = useAdvanceAdminOrderMutation();
-  // Manual carrier/tracking-number/tracking-link entry is retired now that
-  // Fez books and tracks every shipment itself - see the commented-out
-  // "Shipment" block below.
-  // const [track, setTrack] = useState({ carrier: "", number: "", url: "" });
-
   const step = async (to, tracking) => {
     const res = await confirm({
       title: `Move ${id} to "${to.toLowerCase().replace(/_/g, " ")}"?`,
@@ -153,53 +148,13 @@ export default function AdminOrderDetailPage() {
         )}
       </div>
 
-      {/* Shipment tracking (set/edit any time before delivery) - retired,
-          Fez now books and tracks every shipment itself.
-      {["PROCESSING", "SHIPPED"].includes(order.status) && (
-        <div className="mx-4 flex flex-col gap-2 rounded-[14px] border border-shop-border p-4 lg:mx-8">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <Truck className="h-4 w-4" /> Shipment
-          </p>
-          {order.tracking && (
-            <p className="text-[12px] text-shop-text">
-              Current: {order.tracking.carrier || "-"}
-              {order.tracking.number ? ` · ${order.tracking.number}` : ""}
-            </p>
-          )}
-          <input
-            value={track.carrier}
-            onChange={(e) => setTrack((t) => ({ ...t, carrier: e.target.value }))}
-            placeholder="Carrier"
-            className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-          />
-          <input
-            value={track.number}
-            onChange={(e) => setTrack((t) => ({ ...t, number: e.target.value }))}
-            placeholder="Tracking number"
-            className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-          />
-          <input
-            value={track.url}
-            onChange={(e) => setTrack((t) => ({ ...t, url: e.target.value }))}
-            placeholder="Tracking link (optional)"
-            className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] outline-none focus:border-shop-accent-1"
-          />
-        </div>
-      )}
-      */}
-
       {/* Advance status */}
       {next && (
         <div className="mx-4 lg:mx-8">
           <button
             type="button"
             disabled={advanceState.isLoading}
-            onClick={() =>
-              step(
-                next,
-                next === "SHIPPED" && (track.carrier || track.number) ? track : undefined,
-              )
-            }
+            onClick={() => step(next, undefined)}
             className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:opacity-60"
           >
             <Truck className="h-4 w-4" />

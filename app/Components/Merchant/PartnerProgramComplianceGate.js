@@ -41,16 +41,16 @@ export default function PartnerProgramComplianceGate() {
 
   if (isLoading || flagged.length === 0) return null;
 
-  const draftFor = (p) => drafts[p.id] ?? String(p.partnerProfitAmount ?? "");
+  const draftFor = (p) => drafts[p.productId] ?? String(p.partnerProfitAmount ?? "");
   const isValid = (p) => Number(draftFor(p)) >= PARTNER_PROGRAM_MIN_PROFIT;
   const allValid = flagged.every(isValid);
 
   const saveOne = async (p) => {
     if (!isValid(p)) return;
-    setSavingId(p.id);
+    setSavingId(p.productId);
     try {
       await updateProduct({
-        id: p.id,
+        id: p.productId,
         partnerProfitAmount: Number(draftFor(p)),
       }).unwrap();
       showToast(`${p.title} updated`);
@@ -68,7 +68,7 @@ export default function PartnerProgramComplianceGate() {
       await Promise.all(
         flagged.map((p) =>
           updateProduct({
-            id: p.id,
+            id: p.productId,
             partnerProfitAmount: Number(draftFor(p)),
           }).unwrap(),
         ),
@@ -112,10 +112,10 @@ export default function PartnerProgramComplianceGate() {
           </p>
           {flagged.map((p) => {
             const valid = isValid(p);
-            const saving = savingId === p.id || savingId === "__all__";
+            const saving = savingId === p.productId || savingId === "__all__";
             return (
               <div
-                key={p.id}
+                key={p.productId}
                 className="flex flex-col gap-2.5 rounded-[14px] border border-shop-border p-3.5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
@@ -138,7 +138,7 @@ export default function PartnerProgramComplianceGate() {
                     <MoneyInput
                       value={draftFor(p)}
                       onChange={(v) =>
-                        setDrafts((d) => ({ ...d, [p.id]: v }))
+                        setDrafts((d) => ({ ...d, [p.productId]: v }))
                       }
                       placeholder={String(PARTNER_PROGRAM_MIN_PROFIT)}
                       className={`w-[120px] rounded-[10px] border px-3 py-2 text-[13px] outline-none ${
@@ -153,7 +153,7 @@ export default function PartnerProgramComplianceGate() {
                       disabled={!valid || saving}
                       className="rounded-[10px] bg-shop-accent-1-light px-3 py-2 text-[12px] font-semibold text-shop-accent-1 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {savingId === p.id ? (
+                      {savingId === p.productId ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         "Save"

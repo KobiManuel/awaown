@@ -71,6 +71,11 @@ function StockEditor({ product, onSave, saving }) {
       id: product.productId,
       variants: rows.map((v) => ({
         options: v.options ?? {},
+        // This quick editor never shows or edits price - echo back the exact
+        // number the product already has (whatever it is, discounted or
+        // not) so the backend's "did the price actually change" check sees
+        // no change, and so it can tell this variant's compareAtPrice
+        // should be carried over unchanged rather than dropped.
         price: v.price,
         image: v.image ?? null,
         stock: allZero ? 0 : Math.max(0, Number(v.stock) || 0),
