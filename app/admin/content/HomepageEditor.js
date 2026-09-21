@@ -717,6 +717,53 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
+// The scrolling "Free Shipping" marquee just above the footer. No visibility
+// toggle - it's a permanent trust-badge strip, not a seasonal content block.
+function FreeShippingEditor({ data, onChange }) {
+  return (
+    <SectionShell title="Free Shipping Banner">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-1 flex-col gap-1">
+          <span className={LABEL}>Message</span>
+          <input
+            value={data.message}
+            onChange={(e) => onChange({ message: e.target.value })}
+            placeholder="Free delivery on your first order…"
+            className="rounded-[8px] border border-shop-border bg-white px-3 py-2 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className={LABEL}>Background colour</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={data.bgColor}
+              onChange={(e) => onChange({ bgColor: e.target.value })}
+              aria-label="Background colour"
+              className="h-9 w-9 shrink-0 cursor-pointer rounded-[6px] border border-shop-border bg-white p-1"
+            />
+            <input
+              value={data.bgColor}
+              onChange={(e) => onChange({ bgColor: e.target.value })}
+              placeholder="#6D28D9"
+              className="w-24 rounded-[8px] border border-shop-border bg-white px-2.5 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        className="flex h-14 items-center gap-2 overflow-hidden rounded-[10px] px-4 font-shop"
+        style={{ backgroundColor: data.bgColor }}
+      >
+        <span className="shrink-0 text-[13px] font-semibold uppercase tracking-wide text-white">
+          Free Shipping
+        </span>
+        <span className="truncate text-[13px] text-white/85">{data.message}</span>
+      </div>
+    </SectionShell>
+  );
+}
+
 export default function HomepageEditor() {
   const showToast = useToast();
   const { data: cms, isLoading } = useGetHomepageCmsQuery();
@@ -852,6 +899,10 @@ export default function HomepageEditor() {
         onChange={(patch) => updateSection("merchantOfWeek", patch)}
         visible={visibility.merchantOfWeek}
         onToggleVisible={() => toggleVisible("merchantOfWeek")}
+      />
+      <FreeShippingEditor
+        data={draft.freeShipping}
+        onChange={(patch) => updateSection("freeShipping", patch)}
       />
       <CommunityEditor
         data={community}
