@@ -8,6 +8,7 @@ import {
   MessageSquare,
   ShieldAlert,
   Check,
+  Gift,
 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -56,12 +57,35 @@ export default function AdminSettingsPage() {
 
   const [maintKey, setMaintKey] = useState("");
   const [maintMsg, setMaintMsg] = useState("");
+  // Empty string in the input = "not set" (null), not zero - a merchant
+  // shouldn't get free shipping on a ₦0 threshold just because the field
+  // was left blank.
+  const [minOrderAmount, setMinOrderAmount] = useState("");
+  const [firstNUsersToday, setFirstNUsersToday] = useState("");
+  const [minQuantity, setMinQuantity] = useState("");
   useEffect(() => {
     if (settings) {
       setMaintKey(settings.maintenanceKey ?? "");
       setMaintMsg(settings.maintenanceMessage ?? "");
+      const r = settings.freeShippingRules ?? {};
+      setMinOrderAmount(r.minOrderAmount != null ? String(r.minOrderAmount) : "");
+      setFirstNUsersToday(r.firstNUsersToday != null ? String(r.firstNUsersToday) : "");
+      setMinQuantity(r.minQuantity != null ? String(r.minQuantity) : "");
     }
   }, [settings]);
+
+  const toIntOrNull = (v) => (v.trim() === "" ? null : Number(v.replace(/[^0-9]/g, "")) || 0);
+  const saveFreeShippingRules = () =>
+    save(
+      {
+        freeShippingRules: {
+          minOrderAmount: toIntOrNull(minOrderAmount),
+          firstNUsersToday: toIntOrNull(firstNUsersToday),
+          minQuantity: toIntOrNull(minQuantity),
+        },
+      },
+      "Free shipping rules saved",
+    );
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://awaown.com";
 
@@ -129,6 +153,69 @@ export default function AdminSettingsPage() {
             <span className="text-[12.5px] capitalize text-shop-text">
               {String(settings?.shippingProvider ?? "fez_delivery").replace(/_/g, " ")}
             </span>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-3.5">
+            <div>
+              <span className="flex items-center gap-2.5 text-[13px] font-medium text-shop-heading">
+                <Gift className="h-4.5 w-4.5 text-shop-accent-1" />
+                Automatic Free Shipping
+              </span>
+              <p className="mt-0.5 text-[11px] text-shop-text/60">
+                A shopper gets free shipping the moment any one of these is met.
+                Leave a field blank to turn that condition off - none are required.
+              </p>
+            </div>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                Orders above (₦)
+              </span>
+              <input
+                inputMode="numeric"
+                value={minOrderAmount}
+                onChange={(e) => setMinOrderAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 50000 (blank = off)"
+                className="rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                First N customers to order today
+              </span>
+              <input
+                inputMode="numeric"
+                value={firstNUsersToday}
+                onChange={(e) => setFirstNUsersToday(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 20 (blank = off)"
+                className="rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+              <span className="text-[10.5px] text-shop-text/50">
+                Resets at midnight. Counts distinct customers, not order count.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                Orders with more than N items
+              </span>
+              <input
+                inputMode="numeric"
+                value={minQuantity}
+                onChange={(e) => setMinQuantity(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 5 (blank = off)"
+                className="rounded-[8px] border border-shop-border px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={saveFreeShippingRules}
+              className="w-fit rounded-[8px] bg-shop-accent-1 px-4 py-1.5 text-[12px] font-semibold text-white"
+            >
+              Save free shipping rules
+            </button>
           </div>
 
           <div className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5">

@@ -26,7 +26,7 @@ import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 // Shown only while the real quote is loading, or if it fails - the actual
 // charge always comes from the backend's own computeShipping() at order
 // creation (Fez quote when enabled, this same flat fee as its fallback).
-const SHIPPING_FEE_FALLBACK = 1500;
+const SHIPPING_FEE_FALLBACK = 5000;
 
 const METHODS = [
   { id: "CARD", label: "Debit / Credit Card", description: "Visa, Mastercard, Verve. Secured by Paystack" },
@@ -98,6 +98,10 @@ export default function CheckoutPage() {
   const shipping = !items.length
     ? 0
     : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
+  // Only the backend's explicit flag means "actually free" (an admin-set
+  // free-shipping rule matched) - a merely-zero quote for some other reason
+  // shouldn't get mislabelled as a free-shipping win.
+  const freeShipping = !!shippingQuote?.freeShipping;
   const discount = appliedCoupon?.discount ?? 0;
   const total = Math.max(0, subtotal - discount) + shipping;
 
@@ -475,6 +479,8 @@ export default function CheckoutPage() {
               <span className="font-medium text-shop-heading">
                 {shippingLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-shop-text/50" />
+                ) : freeShipping ? (
+                  <span className="text-emerald-600">Free</span>
                 ) : (
                   formatPrice(shipping)
                 )}

@@ -5,8 +5,8 @@ import { Truck } from "lucide-react";
 import { useHomepageContent } from "@/lib/useHomepageContent";
 
 const FreeShipping = () => {
-  const { content, isLoading } = useHomepageContent();
-  if (isLoading) return null;
+  const { content, visibility, isLoading } = useHomepageContent();
+  if (isLoading || !visibility.freeShipping) return null;
 
   const { message, bgColor } = content.freeShipping ?? {};
   const items = Array.from({ length: 8 });

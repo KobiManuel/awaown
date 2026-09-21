@@ -20,7 +20,7 @@ import { useStoreTheme } from "@/lib/useStoreTheme";
 
 // Shown only while the real quote is loading, or if it fails - the actual
 // charge always comes from the backend's own computeShipping() at checkout.
-const SHIPPING_FEE_FALLBACK = 1500;
+const SHIPPING_FEE_FALLBACK = 5000;
 
 export default function CartPage() {
   const showToast = useToast();
@@ -40,6 +40,10 @@ export default function CartPage() {
   );
   const shipping = items.length === 0 ? 0 : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
   const total = subtotal + shipping;
+  // Only the backend's explicit flag means "actually free" (an admin-set
+  // free-shipping rule matched) - a merely-zero quote for some other reason
+  // shouldn't get mislabelled as a free-shipping win.
+  const freeShipping = !!shippingQuote?.freeShipping;
 
   const handleRemove = async (id, title) => {
     try {
@@ -177,7 +181,11 @@ export default function CartPage() {
               <div className="flex items-center justify-between text-[13px] text-shop-text">
                 <span>Shipping</span>
                 <span className="font-medium text-shop-heading">
-                  {formatPrice(shipping)}
+                  {freeShipping ? (
+                    <span className="text-emerald-600">Free</span>
+                  ) : (
+                    formatPrice(shipping)
+                  )}
                 </span>
               </div>
               <div className="mt-1 flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">

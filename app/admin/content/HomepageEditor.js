@@ -717,11 +717,10 @@ function CommunityEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
-// The scrolling "Free Shipping" marquee just above the footer. No visibility
-// toggle - it's a permanent trust-badge strip, not a seasonal content block.
-function FreeShippingEditor({ data, onChange }) {
+// The scrolling "Free Shipping" marquee just above the footer.
+function FreeShippingEditor({ data, onChange, visible, onToggleVisible }) {
   return (
-    <SectionShell title="Free Shipping Banner">
+    <SectionShell title="Free Shipping Banner" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1">
           <span className={LABEL}>Message</span>
@@ -903,6 +902,8 @@ export default function HomepageEditor() {
       <FreeShippingEditor
         data={draft.freeShipping}
         onChange={(patch) => updateSection("freeShipping", patch)}
+        visible={visibility.freeShipping}
+        onToggleVisible={() => toggleVisible("freeShipping")}
       />
       <CommunityEditor
         data={community}

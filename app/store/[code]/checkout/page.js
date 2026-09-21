@@ -28,7 +28,7 @@ const METHODS = [
 
 // Shown only while the real quote is loading, or if it fails - the actual
 // charge always comes from the backend's own computeShipping() at checkout.
-const SHIPPING_FEE_FALLBACK = 1500;
+const SHIPPING_FEE_FALLBACK = 5000;
 
 export default function PartnerStoreCheckoutPage() {
   const { code } = useParams();
@@ -84,6 +84,10 @@ export default function PartnerStoreCheckoutPage() {
     ? (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK)
     : 0;
   const total = cart.subtotal + shipping;
+  // Only the backend's explicit flag means "actually free" (an admin-set
+  // free-shipping rule matched) - a merely-zero quote for some other reason
+  // shouldn't get mislabelled as a free-shipping win.
+  const freeShipping = !!shippingQuote?.freeShipping;
 
   const finishOrder = async (reference) => {
     try {
@@ -325,6 +329,8 @@ export default function PartnerStoreCheckoutPage() {
                   <span className="font-medium">
                     {shippingLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin opacity-60" />
+                    ) : freeShipping ? (
+                      <span className="text-emerald-600">Free</span>
                     ) : (
                       formatPrice(shipping)
                     )}
