@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Pencil,
   Check,
+  Trash2,
 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
@@ -220,6 +221,22 @@ export default function PartnerAccountPage() {
           </span>
           <span className="flex-1 text-[13.5px] font-medium text-shop-accent-3">
             Log Out
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => dispatch(openModal({ modalType: MODAL_TYPES.DELETE_ACCOUNT }))}
+          className="flex items-center gap-3 rounded-[12px] px-2 py-3 text-left hover:bg-shop-bg"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50">
+            <Trash2
+              className="h-4.5 w-4.5 text-shop-accent-3"
+              strokeWidth={1.75}
+            />
+          </span>
+          <span className="flex-1 text-[13.5px] font-medium text-shop-accent-3">
+            Delete Account
           </span>
         </button>
       </div>

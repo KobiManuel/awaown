@@ -180,11 +180,22 @@ const VerificationModal = ({ modalProps }) => {
                 </p>
               )}
 
-              <p className="mb-4 text-[12.5px] leading-[18px] text-shop-text">
+              <p className="mb-3 text-[12.5px] leading-[18px] text-shop-text">
                 Merchants and Partners must verify their identity before
                 requesting a payout. Upload both sides of a government-issued ID
                 and a selfie of you holding it.
               </p>
+
+              <div className="mb-4 flex items-start gap-2 rounded-[10px] bg-shop-accent-1-light px-3 py-2.5">
+                <ShieldCheck
+                  className="mt-0.5 h-4 w-4 shrink-0 text-shop-accent-1"
+                  strokeWidth={1.75}
+                />
+                <p className="text-[11.5px] leading-[16px] text-shop-heading">
+                  Your documents are encrypted and stored securely - only
+                  AwaOwn&apos;s verification team can access them.
+                </p>
+              </div>
 
               <div className="mb-3 flex flex-col gap-1.5">
                 <span className="text-[12.5px] font-semibold text-shop-heading">

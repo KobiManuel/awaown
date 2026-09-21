@@ -8,6 +8,7 @@ import TopUpModal from "./TopUpModal";
 import WithdrawModal from "./WithdrawModal";
 import MerchantPayoutModal from "./MerchantPayoutModal";
 import VerificationModal from "./VerificationModal";
+import DeleteAccountModal from "./DeleteAccountModal";
 
 // Add new modals here: MODAL_TYPES.FOO -> <FooModal />.
 const MODAL_COMPONENTS = {
@@ -16,6 +17,7 @@ const MODAL_COMPONENTS = {
   [MODAL_TYPES.WITHDRAW]: WithdrawModal,
   [MODAL_TYPES.MERCHANT_PAYOUT]: MerchantPayoutModal,
   [MODAL_TYPES.VERIFY_IDENTITY]: VerificationModal,
+  [MODAL_TYPES.DELETE_ACCOUNT]: DeleteAccountModal,
 };
 
 const ModalRoot = () => {
