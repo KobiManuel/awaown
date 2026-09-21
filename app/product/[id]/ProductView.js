@@ -18,6 +18,7 @@ import {
   BellRing,
   MapPin,
   Play,
+  PackageSearch,
 } from "lucide-react";
 import {
   resolveVariant,
@@ -316,12 +317,23 @@ function ProductDetail() {
     <PageShell>
       {navigating && <FullScreenLoader label="Taking you to checkout" />}
       <div className="mx-auto w-full max-w-[1100px] px-4 py-6 font-shop lg:py-10">
-        <Link
-          href={storeTheme ? storeTheme.storeHref : "/"}
-          className="mb-4 inline-flex items-center gap-1 text-[12.5px] text-shop-text/70 hover:text-shop-accent-1"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" /> Continue shopping
-        </Link>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Link
+            href={storeTheme ? storeTheme.storeHref : "/"}
+            className="inline-flex items-center gap-1 text-[12.5px] text-shop-text/70 hover:text-shop-accent-1"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Continue shopping
+          </Link>
+          {storeTheme && (
+            <Link
+              href={`/store/${storeTheme.code}/orders`}
+              className="flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1 hover:underline"
+            >
+              <PackageSearch className="h-3.5 w-3.5" />
+              Track an order
+            </Link>
+          )}
+        </div>
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-10">
           <div className="flex flex-col gap-3 lg:sticky lg:top-28 lg:self-start">
