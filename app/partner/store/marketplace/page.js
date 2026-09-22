@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { Plus, Store, Package, Minus } from "lucide-react";
-import { formatPrice } from "@/lib/partner-data";
+import { formatPrice, splitPartnerProfit } from "@/lib/partner-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import { smartTitle } from "@/lib/text-format";
 import SellerPill from "@/app/Components/Product/SellerPill";
@@ -163,7 +163,7 @@ export default function PartnerMarketplacePage() {
                     Partner Price
                   </p>
                   <p className="text-[13px] font-semibold text-shop-heading">
-                    {formatPrice(product.price - product.maxDiscount)}
+                    {formatPrice(product.price - product.partnerProfit)}
                   </p>
                 </div>
                 <div>
@@ -171,7 +171,7 @@ export default function PartnerMarketplacePage() {
                     Your Profit
                   </p>
                   <p className="text-[13px] font-semibold text-emerald-600">
-                    {formatPrice(product.yourNetProfit)}
+                    {formatPrice(splitPartnerProfit(product.partnerProfit).netProfit)}
                   </p>
                   <p className="text-[9.5px] text-shop-text/50">after platform fee</p>
                 </div>
