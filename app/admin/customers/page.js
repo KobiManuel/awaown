@@ -47,6 +47,7 @@ export default function AdminCustomersPage() {
   );
   const guestCount = allCustomers.filter((c) => c.isGuest).length;
   const complaints = (complaintsData?.items ?? []).slice(0, 6);
+  const summary = data?.summary;
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -69,6 +70,16 @@ export default function AdminCustomersPage() {
           </button>
         }
       />
+
+      {summary && (summary.alsoPartner > 0 || summary.alsoMerchant > 0) && (
+        <p className="mx-4 text-[11px] leading-snug text-shop-text/60 lg:mx-8">
+          Of {summary.total} total, {summary.pure} are customers only.{" "}
+          {summary.alsoPartner} also have a Partner account and{" "}
+          {summary.alsoMerchant} also have a Merchant account (mostly
+          zero-order shopper identities carried over from the old site&rsquo;s
+          migration, not double-counted real customers).
+        </p>
+      )}
 
       <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:mx-8">
         <Search className="h-4 w-4 text-shop-text/50" />
@@ -114,7 +125,7 @@ export default function AdminCustomersPage() {
                 className="flex items-center justify-between rounded-[14px] border border-shop-border bg-white p-3.5"
               >
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+                  <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
                     {c.name}
                     {c.isGuest && (
                       <span
@@ -122,6 +133,22 @@ export default function AdminCustomersPage() {
                         title="No AwaOwn account - checked out as a guest through a partner store"
                       >
                         Guest{c.guestStoreName ? ` · ${c.guestStoreName}` : ""}
+                      </span>
+                    )}
+                    {c.alsoPartner && (
+                      <span
+                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
+                        title="Also has a Partner account under this email"
+                      >
+                        Also Partner
+                      </span>
+                    )}
+                    {c.alsoMerchant && (
+                      <span
+                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
+                        title="Also has a Merchant account under this email"
+                      >
+                        Also Merchant
                       </span>
                     )}
                   </p>
