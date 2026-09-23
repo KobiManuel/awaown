@@ -31,6 +31,7 @@ const AUDIENCES = [
   { id: "customers", label: "Customers" },
   { id: "merchants", label: "Merchants" },
   { id: "partners", label: "Partners" },
+  { id: "subscribers", label: "Newsletter Subscribers" },
 ];
 
 export default function AdminMarketingPage() {
@@ -40,8 +41,10 @@ export default function AdminMarketingPage() {
   const { data: coupons, isLoading: couponsLoading } = useGetAdminCouponsQuery();
   const [saveCoupon, saveCouponState] = useSaveAdminCouponMutation();
   const [deleteCoupon] = useDeleteAdminCouponMutation();
+  // Sending runs in the background - a light poll while this page is open
+  // means progress updates on its own instead of needing a manual refresh.
   const { data: campaigns, isLoading: campaignsLoading } =
-    useGetAdminCampaignsQuery();
+    useGetAdminCampaignsQuery(undefined, { pollingInterval: 5000 });
   const [sendCampaign, sendState] = useSendAdminCampaignMutation();
   const { upload, uploading } = useMediaUpload("campaigns");
 
@@ -65,6 +68,7 @@ export default function AdminMarketingPage() {
     if (id === "merchants") return kpis.merchants;
     if (id === "partners") return kpis.partners;
     if (id === "customers") return kpis.customers;
+    if (id === "subscribers") return kpis.subscribers ?? 0;
     return kpis.customers + kpis.merchants + kpis.partners;
   };
 
@@ -136,14 +140,21 @@ export default function AdminMarketingPage() {
     e.preventDefault();
     if (!subject.trim() || !body.trim()) return;
     try {
-      const count = audienceCount(audience);
-      await sendCampaign({
+      // Sending happens in the background after this resolves - the
+      // freshly-created campaign (most recent) carries the real,
+      // server-computed recipient count, not the client-side KPI estimate.
+      const result = await sendCampaign({
         subject: subject.trim(),
         body: body.trim(),
         audience,
         images: campaignImages,
       }).unwrap();
-      showToast(`Campaign sent to ${count.toLocaleString()} recipients`);
+      const count = result?.[0]?.recipientCount ?? audienceCount(audience);
+      showToast(
+        count
+          ? `Campaign queued for ${count.toLocaleString()} recipients`
+          : "No recipients found for that audience",
+      );
       setSubject("");
       setBody("");
       setCampaignImages([]);
@@ -163,10 +174,10 @@ export default function AdminMarketingPage() {
           <button
             type="button"
             onClick={() => setFormOpen((v) => !v)}
-            aria-label="New coupon"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-shop-accent-1-light text-shop-accent-1"
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
+            New Coupon
           </button>
         }
       />
@@ -430,7 +441,12 @@ export default function AdminMarketingPage() {
                   </div>
                 )}
                 <p className="text-[10.5px] text-shop-text/50">
-                  Sent to {c.recipientCount.toLocaleString()} recipients ·{" "}
+                  {c.status === "sending"
+                    ? `Sending… ${c.sentCount.toLocaleString()} of ${c.recipientCount.toLocaleString()} sent`
+                    : c.status === "failed"
+                      ? `Stopped after ${c.sentCount.toLocaleString()} of ${c.recipientCount.toLocaleString()} sent`
+                      : `Sent to ${c.recipientCount.toLocaleString()} recipient${c.recipientCount === 1 ? "" : "s"}`}
+                  {" · "}
                   {new Date(c.sentAt).toLocaleDateString("en-NG", {
                     day: "numeric",
                     month: "short",

@@ -1,19 +1,27 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
+import { useSubscribeNewsletterMutation } from "@/lib/api/storefrontApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [subscribe, { isLoading }] = useSubscribeNewsletterMutation();
 
-  // No newsletter-subscription endpoint exists yet - this at least stops the
-  // bare <form> from doing a native full-page submit/reload to nowhere.
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
-    setSubmitted(true);
-    setEmail("");
+    setError("");
+    try {
+      await subscribe(email.trim()).unwrap();
+      setSubmitted(true);
+      setEmail("");
+    } catch (err) {
+      setError(errorMessage(err, "Couldn't subscribe - try again"));
+    }
   };
 
   return (
@@ -39,25 +47,32 @@ const Newsletter = () => {
               Thanks - we&apos;ll be in touch!
             </p>
           ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="mt-1 flex w-full max-w-[420px] overflow-hidden rounded-[4px]"
-            >
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="h-12 w-full flex-1 bg-white px-4 text-[14px] text-shop-heading outline-none"
-              />
-              <button
-                type="submit"
-                className="h-12 shrink-0 bg-shop-accent-1 px-6 text-[13px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-shop-accent-1-dark"
+            <>
+              <form
+                onSubmit={handleSubmit}
+                className="mt-1 flex w-full max-w-[420px] overflow-hidden rounded-[4px]"
               >
-                Subscribe
-              </button>
-            </form>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="h-12 w-full flex-1 bg-white px-4 text-[14px] text-shop-heading outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex h-12 shrink-0 items-center gap-1.5 bg-shop-accent-1 px-6 text-[13px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-shop-accent-1-dark disabled:opacity-70"
+                >
+                  {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Subscribe
+                </button>
+              </form>
+              {error && (
+                <p className="text-[12.5px] font-medium text-white/90">{error}</p>
+              )}
+            </>
           )}
         </div>
       </div>
