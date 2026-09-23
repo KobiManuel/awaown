@@ -122,6 +122,10 @@ export default function AdminMerchantDetailPage() {
           label="Business"
           value={<span className="text-[12.5px]">{m.businessName || "-"}</span>}
         />
+        <Stat
+          label="Category"
+          value={<span className="text-[12.5px]">{m.category || "-"}</span>}
+        />
       </div>
 
       {(m.phone || m.state || m.address) && (
