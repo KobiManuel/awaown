@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { statusMeta } from "@/lib/order-status";
 import { useGetGuestOrderDetailQuery, useGuestConfirmDeliveryMutation } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 export default function PartnerStoreOrderDetailPage() {
   const { code, reference } = useParams();
@@ -23,6 +24,19 @@ export default function PartnerStoreOrderDetailPage() {
     { reference, phone },
     { skip: !phone },
   );
+
+  const purchaseTracked = useRef(false);
+  useEffect(() => {
+    if (!justPlaced || !order || purchaseTracked.current) return;
+    purchaseTracked.current = true;
+    trackMetaEvent("Purchase", {
+      content_ids: order.items.map((i) => i.productId ?? i.id),
+      content_type: "product",
+      num_items: order.items.length,
+      value: order.total,
+      currency: "NGN",
+    });
+  }, [justPlaced, order]);
 
   const handleConfirmDelivery = async () => {
     setConfirmMsg("");

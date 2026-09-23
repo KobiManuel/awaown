@@ -17,6 +17,7 @@ import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 const FIELD =
   "w-full rounded-[8px] border border-shop-border bg-shop-surface px-3 py-2.5 text-[13.5px] outline-none focus:border-shop-accent-1";
@@ -103,6 +104,13 @@ export default function PartnerStoreCheckoutPage() {
     if (busy || !isValid || !cart.items.length || shippingLoading) return;
     setError("");
     setBusy(true);
+    trackMetaEvent("InitiateCheckout", {
+      content_ids: cart.items.map((i) => i.productId),
+      content_type: "product",
+      num_items: cart.items.length,
+      value: total,
+      currency: "NGN",
+    });
     try {
       const res = await guestCheckout({
         storeCode: code,

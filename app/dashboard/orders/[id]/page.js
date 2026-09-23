@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
 import {
@@ -30,6 +30,7 @@ import {
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 const DEV = process.env.NODE_ENV !== "production";
 
@@ -64,6 +65,18 @@ function OrderDetailContent() {
   const showToast = useToast();
 
   const { data: order, isLoading, isError } = useGetOrderQuery(id);
+  const purchaseTracked = useRef(false);
+  useEffect(() => {
+    if (!justPlaced || !order || purchaseTracked.current) return;
+    purchaseTracked.current = true;
+    trackMetaEvent("Purchase", {
+      content_ids: order.items.map((i) => i.productId ?? i.id),
+      content_type: "product",
+      num_items: order.items.length,
+      value: order.total,
+      currency: "NGN",
+    });
+  }, [justPlaced, order]);
   const [confirmDelivery, confirmState] = useConfirmDeliveryMutation();
   const [confirmPayment] = useConfirmPaymentMutation();
   const [disputeOrder, disputeState] = useDisputeOrderMutation();

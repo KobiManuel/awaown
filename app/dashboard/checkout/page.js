@@ -22,6 +22,7 @@ import { openPaystackPopup } from "@/lib/paystack";
 import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 // Shown only while the real quote is loading, or if it fails - the actual
 // charge always comes from the backend's own computeShipping() at order
@@ -191,6 +192,15 @@ export default function CheckoutPage() {
     if (busy || !items.length) return;
     setError("");
     setBusy(true);
+    trackMetaEvent("InitiateCheckout", {
+      content_ids: isBuyNow
+        ? [buyNow.productId]
+        : items.map((i) => i.productId ?? i.id),
+      content_type: "product",
+      num_items: items.length,
+      value: total,
+      currency: "NGN",
+    });
     try {
       const res = await checkout({
         addressId,

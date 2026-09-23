@@ -6,6 +6,7 @@ import PublicCommerceGate from "@/app/Components/Providers/PublicCommerceGate";
 import PublicWhatsAppButton from "@/app/Components/Providers/PublicWhatsAppButton";
 import StoreContextTracker from "@/app/Components/Providers/StoreContextTracker";
 import GoogleAnalytics from "@/app/Components/Providers/GoogleAnalytics";
+import MetaPixel from "@/app/Components/Providers/MetaPixel";
 import ModalRoot from "@/app/Components/Modals/ModalRoot";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={null}>
             <StoreContextTracker />
             <GoogleAnalytics />
+            <MetaPixel />
           </Suspense>
           {children}
           <PublicWhatsAppButton />

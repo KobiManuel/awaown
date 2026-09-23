@@ -52,6 +52,7 @@ import {
 import { useCommerce } from "@/lib/useCommerce";
 import { usePartnerCart } from "@/lib/usePartnerCart";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 function ProductDetail() {
   const { id } = useParams();
@@ -101,6 +102,17 @@ function ProductDetail() {
       setSelected(defaultVariantSelection(product));
     }
   }, [product]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!product) return;
+    trackMetaEvent("ViewContent", {
+      content_ids: [product.productId ?? product.id],
+      content_type: "product",
+      content_name: product.title,
+      value: product.price ?? 0,
+      currency: "NGN",
+    });
+  }, [product]);
 
   const resolved = useMemo(
     () => (product ? resolveVariant(product, selected) : null),
