@@ -225,12 +225,10 @@ function ProductDetail() {
   const stockLeft = needsSelection ? null : resolved.maxQty;
   const outOfStock = !needsSelection && resolved.inStock === false;
   const canAlert = outOfStock && product.backInStockAlerts;
-  // Delivery coverage is currently Lagos and Abuja only - AwaOwn's own stock
-  // isn't a "merchant" and isn't subject to this.
-  const outOfCoverage =
-    product.sellerType === "MERCHANT" &&
-    !!product.location &&
-    !["Lagos", "Abuja"].includes(product.location);
+  // Delivery coverage is currently Lagos and Abuja only, plus a named
+  // merchant exemption the backend knows about - mirrors the actual
+  // cart/checkout gate instead of re-deriving it from `location` here.
+  const outOfCoverage = !!product.outOfCoverage;
 
   const handleAlert = async () => {
     if (!authed) return requireLogin();
