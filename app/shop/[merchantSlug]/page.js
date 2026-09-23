@@ -100,10 +100,13 @@ export default function PublicMerchantStorePage() {
                 </span>
               )}
               {store.phone && (
-                <span className="flex items-center gap-1">
+                <a
+                  href={`tel:${store.phone.replace(/[^\d+]/g, "")}`}
+                  className="flex items-center gap-1 tracking-wide hover:text-shop-accent-1"
+                >
                   <Phone className="h-3.5 w-3.5" />
                   {store.phone}
-                </span>
+                </a>
               )}
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
