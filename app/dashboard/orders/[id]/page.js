@@ -69,13 +69,17 @@ function OrderDetailContent() {
   useEffect(() => {
     if (!justPlaced || !order || purchaseTracked.current) return;
     purchaseTracked.current = true;
-    trackMetaEvent("Purchase", {
-      content_ids: order.items.map((i) => i.productId ?? i.id),
-      content_type: "product",
-      num_items: order.items.length,
-      value: order.total,
-      currency: "NGN",
-    });
+    trackMetaEvent(
+      "Purchase",
+      {
+        content_ids: order.items.map((i) => i.productId ?? i.id),
+        content_type: "product",
+        num_items: order.items.length,
+        value: order.total,
+        currency: "NGN",
+      },
+      `purchase-${order.reference}`,
+    );
   }, [justPlaced, order]);
   const [confirmDelivery, confirmState] = useConfirmDeliveryMutation();
   const [confirmPayment] = useConfirmPaymentMutation();
