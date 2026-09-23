@@ -2,10 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, Download, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useAdminExport } from "@/lib/useAdminExport";
 import {
   useGetAdminCustomersQuery,
   useGetAdminComplaintsQuery,
@@ -18,10 +20,19 @@ const FILTERS = [
 ];
 
 export default function AdminCustomersPage() {
+  const showToast = useToast();
   const { data, isLoading } = useGetAdminCustomersQuery();
   const { data: complaintsData } = useGetAdminComplaintsQuery();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
+  const { download: exportCsv, isLoading: exporting } = useAdminExport(
+    "/admin/customers/export",
+    "awaown-customers",
+  );
+  const handleExport = async () => {
+    const ok = await exportCsv();
+    showToast(ok ? "Customers exported" : "Couldn't export customers");
+  };
 
   const allCustomers = data?.items ?? [];
   const byFilter =
@@ -39,7 +50,25 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Customers" backHref="/admin" />
+      <AppHeader
+        title="Customers"
+        backHref="/admin"
+        right={
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1 disabled:opacity-60"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Export CSV
+          </button>
+        }
+      />
 
       <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:mx-8">
         <Search className="h-4 w-4 text-shop-text/50" />

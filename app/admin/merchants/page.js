@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, Play, ChevronRight, Trash2, MapPin, Search } from "lucide-react";
+import { BadgeCheck, Ban, Play, ChevronRight, Trash2, MapPin, Search, Download, Loader2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useAdminExport } from "@/lib/useAdminExport";
 import {
   useGetAdminMerchantsQuery,
   useSetAdminMerchantStatusMutation,
@@ -28,6 +29,14 @@ export default function AdminMerchantsPage() {
   const [setStatus] = useSetAdminMerchantStatusMutation();
   const [reviewKyc] = useReviewAdminMerchantKycMutation();
   const [q, setQ] = useState("");
+  const { download: exportCsv, isLoading: exporting } = useAdminExport(
+    "/admin/merchants/export",
+    "awaown-merchants",
+  );
+  const handleExport = async () => {
+    const ok = await exportCsv();
+    showToast(ok ? "Merchants exported" : "Couldn't export merchants");
+  };
 
   const allMerchants = data?.items ?? [];
   const merchants = allMerchants.filter(
@@ -114,7 +123,25 @@ export default function AdminMerchantsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Merchants" backHref="/admin" />
+      <AppHeader
+        title="Merchants"
+        backHref="/admin"
+        right={
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1 disabled:opacity-60"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Export CSV
+          </button>
+        }
+      />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Onboarding, verification, performance, payouts, products and account status.
       </p>

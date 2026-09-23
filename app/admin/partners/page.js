@@ -2,12 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, Play, ChevronRight, Trash2, Search } from "lucide-react";
+import { BadgeCheck, Ban, Play, ChevronRight, Trash2, Search, Download, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useAdminExport } from "@/lib/useAdminExport";
 import {
   useGetAdminPartnersQuery,
   useSetAdminPartnerStatusMutation,
@@ -29,6 +30,14 @@ export default function AdminPartnersPage() {
   const [setStatus] = useSetAdminPartnerStatusMutation();
   const [reviewKyc] = useReviewAdminPartnerKycMutation();
   const [q, setQ] = useState("");
+  const { download: exportCsv, isLoading: exporting } = useAdminExport(
+    "/admin/partners/export",
+    "awaown-partners",
+  );
+  const handleExport = async () => {
+    const ok = await exportCsv();
+    showToast(ok ? "Partners exported" : "Couldn't export partners");
+  };
 
   const allPartners = data?.items ?? [];
   const partners = allPartners.filter(
@@ -109,7 +118,25 @@ export default function AdminPartnersPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
-      <AppHeader title="Partners" backHref="/admin" />
+      <AppHeader
+        title="Partners"
+        backHref="/admin"
+        right={
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1 disabled:opacity-60"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Export CSV
+          </button>
+        }
+      />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
         Onboarding, verification, profit, withdrawals, referrals and performance.
       </p>
