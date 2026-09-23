@@ -17,6 +17,7 @@ const FILTERS = [
   { id: "all", label: "All" },
   { id: "registered", label: "Registered" },
   { id: "guest", label: "Partner Store Guests" },
+  { id: "pure", label: "Customers Only" },
 ];
 
 export default function AdminCustomersPage() {
@@ -38,7 +39,11 @@ export default function AdminCustomersPage() {
   const byFilter =
     filter === "all"
       ? allCustomers
-      : allCustomers.filter((c) => (filter === "guest" ? c.isGuest : !c.isGuest));
+      : filter === "guest"
+        ? allCustomers.filter((c) => c.isGuest)
+        : filter === "pure"
+          ? allCustomers.filter((c) => !c.alsoPartner && !c.alsoMerchant)
+          : allCustomers.filter((c) => !c.isGuest);
   const customers = byFilter.filter(
     (c) =>
       !q ||
@@ -46,6 +51,9 @@ export default function AdminCustomersPage() {
       c.email.toLowerCase().includes(q.toLowerCase()),
   );
   const guestCount = allCustomers.filter((c) => c.isGuest).length;
+  const pureCount = data?.summary?.pure ?? allCustomers.filter(
+    (c) => !c.alsoPartner && !c.alsoMerchant,
+  ).length;
   const complaints = (complaintsData?.items ?? []).slice(0, 6);
   const summary = data?.summary;
 
@@ -112,6 +120,7 @@ export default function AdminCustomersPage() {
             >
               {f.label}
               {f.id === "guest" && guestCount > 0 ? ` (${guestCount})` : ""}
+              {f.id === "pure" ? ` (${pureCount})` : ""}
             </button>
           ))}
         </div>
