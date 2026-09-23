@@ -28,7 +28,13 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"] }
 const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"] });
 const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500"] });
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700"] });
+// Single weight only - Turbopack's Google Fonts resolver fails to build
+// Montserrat with more than one weight requested ("next/font/google queries
+// have exactly one entry"), a bug specific to this font's metadata under
+// Turbopack. Every other font in this file uses 2+ weights fine. Only ever
+// used for the "Geometric" theme's heading text, always rendered bold, so
+// this has no visible effect.
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["700"] });
 const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500"] });
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700"] });
 const outfit = Outfit({ subsets: ["latin"], weight: ["500", "600"] });
