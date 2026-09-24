@@ -77,7 +77,7 @@ function EditProductForm({ product, onSaved, onCancel }) {
             className="rounded-[8px] border border-shop-border px-3 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
           />
         </label>
-        {!product.variants?.length && (
+        {!product.variants?.length && product.deliveryType !== "DIGITAL" && (
           <label className="flex flex-1 flex-col gap-1.5">
             <span className="text-[12px] font-semibold text-shop-heading">Stock</span>
             <input
@@ -349,6 +349,11 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
                   </div>
                 ))}
               </div>
+            </div>
+          ) : product.deliveryType === "DIGITAL" ? (
+            <div className="rounded-[10px] bg-shop-bg p-3">
+              <p className="text-shop-text/60">Inventory</p>
+              <p className="font-semibold text-shop-heading">Unlimited (digital)</p>
             </div>
           ) : (
             <div className="rounded-[10px] bg-shop-bg p-3">

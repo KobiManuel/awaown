@@ -342,24 +342,30 @@ export default function MerchantProductsPage() {
                       </span>
                     )}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenStockId((cur) =>
-                        cur === product.productId ? null : product.productId,
-                      )
-                    }
-                    className="flex items-center gap-1 text-[11.5px] text-shop-accent-1"
-                  >
-                    {product.stock <= 0
-                      ? "Out of stock"
-                      : `${product.stock} in inventory${product.hideStock ? " (hidden)" : ""}`}
-                    <ChevronDown
-                      className={`h-3 w-3 transition-transform ${
-                        openStockId === product.productId ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
+                  {product.deliveryType === "DIGITAL" ? (
+                    <p className="text-[11.5px] text-shop-text/60">
+                      Digital product · unlimited copies
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenStockId((cur) =>
+                          cur === product.productId ? null : product.productId,
+                        )
+                      }
+                      className="flex items-center gap-1 text-[11.5px] text-shop-accent-1"
+                    >
+                      {product.stock <= 0
+                        ? "Out of stock"
+                        : `${product.stock} in inventory${product.hideStock ? " (hidden)" : ""}`}
+                      <ChevronDown
+                        className={`h-3 w-3 transition-transform ${
+                          openStockId === product.productId ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  )}
                   {product.category && (
                     <p className="text-[11px] text-shop-text/60">
                       {categoryLabel(product.category)}
@@ -444,27 +450,30 @@ export default function MerchantProductsPage() {
                     "Not in Partner Program"
                   )}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => toggleHideStock(product)}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-shop-text hover:text-shop-accent-1"
-                >
-                  {product.hideStock ? (
-                    <EyeOff className="h-3.5 w-3.5" />
-                  ) : (
-                    <Eye className="h-3.5 w-3.5" />
-                  )}
-                  {product.hideStock ? "Inventory hidden" : "Inventory visible"}
-                </button>
+                {product.deliveryType !== "DIGITAL" && (
+                  <button
+                    type="button"
+                    onClick={() => toggleHideStock(product)}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-shop-text hover:text-shop-accent-1"
+                  >
+                    {product.hideStock ? (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
+                    {product.hideStock ? "Inventory hidden" : "Inventory visible"}
+                  </button>
+                )}
               </div>
 
-              {openStockId === product.productId && (
-                <StockEditor
-                  product={product}
-                  onSave={saveStock}
-                  saving={updating}
-                />
-              )}
+              {openStockId === product.productId &&
+                product.deliveryType !== "DIGITAL" && (
+                  <StockEditor
+                    product={product}
+                    onSave={saveStock}
+                    saving={updating}
+                  />
+                )}
 
               <div className="flex flex-col gap-1.5 border-t border-shop-border pt-3">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium text-shop-text">
