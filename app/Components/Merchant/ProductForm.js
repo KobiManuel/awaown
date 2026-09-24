@@ -18,6 +18,7 @@ import {
   Loader2,
   Tag,
   MapPin,
+  CheckCircle2,
 } from "lucide-react";
 import {
   formatPrice,
@@ -477,7 +478,12 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     if (url) {
       setDigitalFile(url);
       setDigitalFileName(file.name);
+      showToast(`"${file.name}" attached`);
     } else showToast("File upload failed");
+  };
+  const removeDigitalFile = () => {
+    setDigitalFile(null);
+    setDigitalFileName(null);
   };
 
   const addBundleItem = () => {
@@ -560,6 +566,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   }
   if (deliveryType === "digital" && !(basePrice > 0))
     problems.push("Set the price.");
+  if (deliveryType === "digital" && !digitalFile)
+    problems.push("Upload the file buyers receive after purchase.");
   if (isGroup && bundleItems.length < 2)
     problems.push("A bundle needs at least 2 items.");
   if (hasVariants) {
@@ -762,37 +770,59 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           )}
           {deliveryType === "digital" ? (
             <>
-              <label className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
-                {digitalUploadProgress != null ? (
+              {digitalUploadProgress != null ? (
+                <div className="flex h-16 w-full flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-shop-border bg-shop-bg px-4">
                   <span className="flex items-center gap-2 text-[12.5px] font-medium text-shop-heading">
                     <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
                     Uploading… {digitalUploadProgress}%
                   </span>
-                ) : digitalFile ? (
-                  <span className="flex items-center gap-2 text-[12.5px] font-medium text-shop-heading">
-                    <FileDown className="h-4 w-4 text-shop-accent-1" />
-                    {digitalFileName || "File attached"}
-                  </span>
-                ) : (
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-shop-accent-1 transition-[width]"
+                      style={{ width: `${digitalUploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : digitalFile ? (
+                <div className="flex items-center gap-3 rounded-[10px] border border-emerald-300 bg-emerald-50 p-3.5">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12.5px] font-semibold text-emerald-800" title={digitalFileName || undefined}>
+                      {digitalFileName || "File attached"}
+                    </p>
+                    <p className="text-[11px] text-emerald-700">
+                      This is what buyers get after they pay.
+                    </p>
+                  </div>
+                  <label className="shrink-0 cursor-pointer text-[11.5px] font-semibold text-shop-accent-1 hover:underline">
+                    Replace
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleDigitalFileChange}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={removeDigitalFile}
+                    aria-label="Remove file"
+                    className="shrink-0 text-emerald-700 hover:text-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
                   <span className="flex items-center gap-2 text-[12px] text-shop-text/60">
                     <FileDown className="h-4 w-4" />
                     Upload the file buyers receive after purchase
                   </span>
-                )}
-                <input
-                  type="file"
-                  className="hidden"
-                  disabled={digitalUploading}
-                  onChange={handleDigitalFileChange}
-                />
-              </label>
-              {digitalUploadProgress != null && (
-                <div className="h-1 w-full overflow-hidden rounded-full bg-shop-bg">
-                  <div
-                    className="h-full rounded-full bg-shop-accent-1 transition-[width]"
-                    style={{ width: `${digitalUploadProgress}%` }}
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleDigitalFileChange}
                   />
-                </div>
+                </label>
               )}
               <p className="text-[11px] text-shop-text/60">
                 Any file type is accepted: PDF, ZIP, MP3, video, or anything
@@ -855,12 +885,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           </div>
         )}
 
-        {/* ── Media (after the type choice) ── */}
-        {deliveryType !== "digital" && (
-          <div className="flex flex-col gap-2.5">
-            <p className="text-[13px] font-semibold text-shop-heading">
-              Product Photos
-            </p>
+        {/* ── Media (after the type choice) - photos apply to both delivery
+             types (a digital product still needs a cover image/thumbnail);
+             video and weight are physical-only, gated further below. ── */}
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[13px] font-semibold text-shop-heading">
+            Product Photos
+          </p>
 
             {/* <div className="flex items-start gap-2 rounded-[10px] bg-amber-50 p-3 text-[11.5px] leading-[16px] text-amber-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
@@ -983,69 +1014,72 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               </div>
             </div>
 
-            <p className="mt-1 text-[13px] font-semibold text-shop-heading">
-              Product Video{" "}
-              <span className="font-normal text-shop-text">(optional)</span>
-            </p>
-            <label className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
-              {video ? (
-                <>
-                  <video
-                    src={video}
-                    className="h-full w-full object-cover"
-                    muted
+            {deliveryType !== "digital" && (
+              <>
+                <p className="mt-1 text-[13px] font-semibold text-shop-heading">
+                  Product Video{" "}
+                  <span className="font-normal text-shop-text">(optional)</span>
+                </p>
+                <label className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
+                  {video ? (
+                    <>
+                      <video
+                        src={video}
+                        className="h-full w-full object-cover"
+                        muted
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setVideo(null);
+                        }}
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="flex flex-col items-center gap-1.5 text-shop-text/60">
+                      <Video className="h-5 w-5" />
+                      <span className="text-[11.5px]">
+                        Tap to upload a short video
+                      </span>
+                    </span>
+                  )}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleVideoChange}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setVideo(null);
-                    }}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              ) : (
-                <span className="flex flex-col items-center gap-1.5 text-shop-text/60">
-                  <Video className="h-5 w-5" />
-                  <span className="text-[11.5px]">
-                    Tap to upload a short video
-                  </span>
-                </span>
-              )}
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={handleVideoChange}
-              />
-            </label>
+                </label>
 
-            <label className="mt-1 flex flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-shop-heading">
-                Weight (kg)
-              </span>
-              <span className="-mt-1 text-[11px] text-shop-text/70">
-                Used to price and book delivery. An estimate is fine if you
-                aren&apos;t sure of the exact weight - round up.
-              </span>
-              <input
-                value={weight}
-                onChange={(e) =>
-                  setWeight(
-                    e.target.value
-                      .replace(/[^0-9.]/g, "")
-                      .replace(/(\..*)\./g, "$1"),
-                  )
-                }
-                inputMode="decimal"
-                placeholder="e.g. 0.05"
-                className={`w-full max-w-[180px] ${FIELD}`}
-              />
-            </label>
+                <label className="mt-1 flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-shop-heading">
+                    Weight (kg)
+                  </span>
+                  <span className="-mt-1 text-[11px] text-shop-text/70">
+                    Used to price and book delivery. An estimate is fine if you
+                    aren&apos;t sure of the exact weight - round up.
+                  </span>
+                  <input
+                    value={weight}
+                    onChange={(e) =>
+                      setWeight(
+                        e.target.value
+                          .replace(/[^0-9.]/g, "")
+                          .replace(/(\..*)\./g, "$1"),
+                      )
+                    }
+                    inputMode="decimal"
+                    placeholder="e.g. 0.05"
+                    className={`w-full max-w-[180px] ${FIELD}`}
+                  />
+                </label>
+              </>
+            )}
           </div>
-        )}
 
         {/* ── Pricing / type-specific ── */}
         {isGroup ? (

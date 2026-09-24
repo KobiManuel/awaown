@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2 } from "lucide-react";
+import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2, FileDown } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
@@ -16,6 +16,7 @@ import {
   useGetAdminProductsQuery,
   useSetAdminProductApprovalMutation,
   useEditAdminProductMutation,
+  useLazyGetAdminProductDigitalFileQuery,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -139,9 +140,19 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
   const [editProduct, editState] = useEditAdminProductMutation();
   const [activeImage, setActiveImage] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [fetchDigitalFile, digitalFileState] = useLazyGetAdminProductDigitalFileQuery();
   useBodyScrollLock(!!product);
   if (!product) return null;
   const images = product.images?.length ? product.images : [];
+
+  const viewDigitalFile = async () => {
+    try {
+      const res = await fetchDigitalFile(product.id).unwrap();
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   const deleteImage = async (index) => {
     const res = await confirm({
@@ -351,6 +362,31 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
               <p className="font-semibold text-shop-heading">
                 Enrolled · {formatPrice(product.partnerProfitAmount)} profit per sale
               </p>
+            </div>
+          )}
+          {product.deliveryType === "DIGITAL" && (
+            <div className="col-span-2 rounded-[10px] bg-shop-bg p-3">
+              <p className="mb-1.5 text-shop-text/60">Digital File</p>
+              {product.hasDigitalFile ? (
+                <button
+                  type="button"
+                  onClick={viewDigitalFile}
+                  disabled={digitalFileState.isFetching}
+                  className="flex items-center gap-1.5 rounded-[8px] bg-shop-accent-1 px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-70"
+                >
+                  {digitalFileState.isFetching ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <FileDown className="h-3.5 w-3.5" />
+                  )}
+                  View / download file
+                </button>
+              ) : (
+                <p className="font-semibold text-shop-accent-3">
+                  No file uploaded yet - the merchant can&apos;t be paid for
+                  this until they add one.
+                </p>
+              )}
             </div>
           )}
           {product.rejectionReason && (
