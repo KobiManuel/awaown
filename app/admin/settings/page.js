@@ -19,12 +19,9 @@ import {
   useUpdateAdminSettingsMutation,
 } from "@/lib/api/adminApi";
 
-const GATEWAYS = [
-  { id: "paystack", label: "Paystack" },
-  { id: "flutterwave", label: "Flutterwave" },
-  { id: "opay", label: "OPay" },
-  { id: "stripe", label: "Stripe" },
-];
+// Paystack is the only gateway actually integrated (see backend/src/payments) -
+// don't list ones that would silently do nothing if "enabled".
+const GATEWAYS = [{ id: "paystack", label: "Paystack" }];
 
 const Toggle = ({ on, onClick }) => (
   <button
@@ -121,8 +118,7 @@ export default function AdminSettingsPage() {
               Payment Gateways
             </span>
             <p className="text-[11px] text-shop-text/60">
-              More than one can be active at once, e.g. a fallback for cards the primary
-              provider declines.
+              The only gateway currently integrated.
             </p>
             <div className="flex flex-wrap gap-2">
               {GATEWAYS.map((g) => {

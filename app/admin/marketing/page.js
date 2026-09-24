@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2, Trash2 } from "lucide-react";
+import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2, Trash2, Pencil } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -49,11 +49,13 @@ export default function AdminMarketingPage() {
   const { upload, uploading } = useMediaUpload("campaigns");
 
   const [formOpen, setFormOpen] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState(null);
   const [code, setCode] = useState("");
   const [type, setType] = useState("percent");
   const [value, setValue] = useState("");
   const [minSpend, setMinSpend] = useState("");
   const [usageLimit, setUsageLimit] = useState("");
+  const [startsAt, setStartsAt] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
   const [campaignOpen, setCampaignOpen] = useState(false);
@@ -72,26 +74,58 @@ export default function AdminMarketingPage() {
     return kpis.customers + kpis.merchants + kpis.partners;
   };
 
-  const createCoupon = async (e) => {
+  const resetCouponForm = () => {
+    setEditingCouponId(null);
+    setCode("");
+    setType("percent");
+    setValue("");
+    setMinSpend("");
+    setUsageLimit("");
+    setStartsAt("");
+    setExpiresAt("");
+    setFormOpen(false);
+  };
+
+  const openCreateCoupon = () => {
+    resetCouponForm();
+    setFormOpen((v) => !v);
+  };
+
+  const openEditCoupon = (c) => {
+    setEditingCouponId(c.id);
+    setCode(c.code);
+    setType(c.type);
+    setValue(String(c.value));
+    setMinSpend(c.minSpend ? String(c.minSpend) : "");
+    setUsageLimit(c.usageLimit ? String(c.usageLimit) : "");
+    setStartsAt(c.startsAt ? c.startsAt.slice(0, 10) : "");
+    setExpiresAt(c.expiresAt ? c.expiresAt.slice(0, 10) : "");
+    setFormOpen(true);
+  };
+
+  const saveCouponSubmit = async (e) => {
     e.preventDefault();
     if (!code.trim() || !value) return;
     try {
       await saveCoupon({
+        id: editingCouponId || undefined,
         code: code.trim().toUpperCase(),
         type,
         value: Number(value),
         minSpend: Number(minSpend) || 0,
-        usageLimit: Number(usageLimit) || undefined,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-        status: "ACTIVE",
+        // null (not undefined) so clearing the field during an edit actually
+        // clears it server-side, instead of leaving the old value in place.
+        usageLimit: Number(usageLimit) || null,
+        startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        ...(editingCouponId ? {} : { status: "ACTIVE" }),
       }).unwrap();
-      showToast(`Coupon "${code.toUpperCase()}" created`);
-      setCode("");
-      setValue("");
-      setMinSpend("");
-      setUsageLimit("");
-      setExpiresAt("");
-      setFormOpen(false);
+      showToast(
+        editingCouponId
+          ? `Coupon "${code.toUpperCase()}" updated`
+          : `Coupon "${code.toUpperCase()}" created`,
+      );
+      resetCouponForm();
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -173,7 +207,7 @@ export default function AdminMarketingPage() {
         right={
           <button
             type="button"
-            onClick={() => setFormOpen((v) => !v)}
+            onClick={openCreateCoupon}
             className="flex items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -187,9 +221,14 @@ export default function AdminMarketingPage() {
 
       {formOpen && (
         <form
-          onSubmit={createCoupon}
+          onSubmit={saveCouponSubmit}
           className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border bg-shop-bg p-4 lg:mx-8"
         >
+          {editingCouponId && (
+            <p className="text-[12px] font-semibold text-shop-accent-1">
+              Editing {code}
+            </p>
+          )}
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -212,38 +251,83 @@ export default function AdminMarketingPage() {
               className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
             />
           </div>
-          <MoneyInput
-            value={minSpend}
-            onChange={setMinSpend}
-            placeholder="Minimum spend (optional)"
-            className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
-          />
-          <div className="flex gap-2">
-            <input
-              type="number"
-              min="1"
-              value={usageLimit}
-              onChange={(e) => setUsageLimit(e.target.value)}
-              placeholder="Usage limit (optional)"
-              className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+          <div>
+            <MoneyInput
+              value={minSpend}
+              onChange={setMinSpend}
+              placeholder="Minimum spend (optional)"
+              className="w-full rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
             />
-            <input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-text outline-none focus:border-shop-accent-1"
-            />
+            <p className="mt-1 text-[11px] text-shop-text/50">
+              The cart subtotal has to reach this before the coupon applies -
+              e.g. 10,000 means it only works on orders of ₦10,000+. Leave
+              blank to allow any order size.
+            </p>
           </div>
-          <p className="-mt-1 text-[11px] text-shop-text/50">
-            Leave usage limit or expiry blank for unlimited / no expiry.
-          </p>
-          <button
-            type="submit"
-            disabled={saveCouponState.isLoading}
-            className="rounded-[8px] bg-shop-accent-1 py-2.5 text-[13px] font-semibold text-white disabled:opacity-70"
-          >
-            Create Coupon
-          </button>
+          <div>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="1"
+                value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
+                placeholder="Usage limit (optional)"
+                className="flex-1 rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] outline-none focus:border-shop-accent-1"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-shop-text/50">
+              How many times this code can be redeemed in total, across every
+              customer - e.g. 100 means it stops working after the 100th
+              successful use. Leave blank for unlimited uses.
+            </p>
+          </div>
+          <div>
+            <div className="flex gap-2">
+              <label className="flex flex-1 flex-col gap-1">
+                <span className="text-[10.5px] font-medium text-shop-text/60">
+                  Starts
+                </span>
+                <input
+                  type="date"
+                  value={startsAt}
+                  onChange={(e) => setStartsAt(e.target.value)}
+                  className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-text outline-none focus:border-shop-accent-1"
+                />
+              </label>
+              <label className="flex flex-1 flex-col gap-1">
+                <span className="text-[10.5px] font-medium text-shop-text/60">
+                  Expires
+                </span>
+                <input
+                  type="date"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[13px] text-shop-text outline-none focus:border-shop-accent-1"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-[11px] text-shop-text/50">
+              Leave either blank for no start delay / no expiry.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {editingCouponId && (
+              <button
+                type="button"
+                onClick={resetCouponForm}
+                className="rounded-[8px] border border-shop-border px-4 py-2.5 text-[13px] font-semibold text-shop-heading"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={saveCouponState.isLoading}
+              className="flex-1 rounded-[8px] bg-shop-accent-1 py-2.5 text-[13px] font-semibold text-white disabled:opacity-70"
+            >
+              {editingCouponId ? "Save Changes" : "Create Coupon"}
+            </button>
+          </div>
         </form>
       )}
 
@@ -270,6 +354,9 @@ export default function AdminMarketingPage() {
                     {c.minSpend ? ` · min ₦${c.minSpend.toLocaleString()}` : ""} ·{" "}
                     {c.usageCount}
                     {c.usageLimit ? `/${c.usageLimit}` : ""} uses
+                    {c.startsAt
+                      ? ` · starts ${new Date(c.startsAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}`
+                      : ""}
                     {c.expiresAt
                       ? ` · expires ${new Date(c.expiresAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}`
                       : ""}
@@ -283,6 +370,14 @@ export default function AdminMarketingPage() {
                     className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize disabled:cursor-not-allowed ${STATUS_TONE[c.status]}`}
                   >
                     {c.status.toLowerCase()}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Edit coupon ${c.code}`}
+                    onClick={() => openEditCoupon(c)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-shop-text/50 hover:bg-shop-bg hover:text-shop-accent-1"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
