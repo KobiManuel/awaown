@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Wallet, Banknote, AlertTriangle, Check, X } from "lucide-react";
+import React, { useRef, useState } from "react";
+import Link from "next/link";
+import { Wallet, Banknote, AlertTriangle, Check, X, TrendingUp } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -15,6 +16,80 @@ import {
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
+const BREAKDOWN_COPY = {
+  escrow: {
+    title: "Escrow Balance by Merchant",
+    field: "escrowBalance",
+    empty: "No merchant currently has a balance held in escrow.",
+  },
+  wallet: {
+    title: "Merchant Wallets",
+    field: "walletBalance",
+    empty: "No merchant currently has a wallet balance.",
+  },
+};
+
+function BalanceBreakdownModal({ kind, merchantBalances, onClose }) {
+  const copy = BREAKDOWN_COPY[kind];
+  const rows = merchantBalances
+    .filter((m) => m[copy.field] > 0)
+    .sort((a, b) => b[copy.field] - a[copy.field]);
+  const total = rows.reduce((s, m) => s + m[copy.field], 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[80vh] w-full max-w-[440px] flex-col rounded-t-[20px] bg-white p-5 lg:rounded-[16px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[14px] font-semibold text-shop-heading">
+            {copy.title}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
+          >
+            <X className="h-4 w-4 text-shop-heading" />
+          </button>
+        </div>
+        <p className="mt-1 text-[12px] text-shop-text/70">
+          {rows.length} merchant{rows.length === 1 ? "" : "s"} ·{" "}
+          {formatPrice(total)} total
+        </p>
+        <div className="mt-3 flex flex-col gap-2 overflow-y-auto">
+          {rows.length === 0 ? (
+            <p className="py-6 text-center text-[12px] text-shop-text/60">
+              {copy.empty}
+            </p>
+          ) : (
+            rows.map((m) => (
+              <Link
+                key={m.id}
+                href={`/admin/merchants/${m.id}`}
+                onClick={onClose}
+                className="flex items-center justify-between gap-3 rounded-[12px] border border-shop-border p-3 hover:bg-shop-bg"
+              >
+                <span className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
+                  {m.storeName}
+                </span>
+                <span className="shrink-0 text-[12.5px] font-semibold text-shop-heading">
+                  {formatPrice(m[copy.field])}
+                </span>
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminFinancePage() {
   const showToast = useToast();
   const confirm = useConfirm();
@@ -22,6 +97,12 @@ export default function AdminFinancePage() {
   const [decide] = useDecideRefundMutation();
   const [decidePayout] = useDecidePayoutMutation();
   const [decideWithdrawal] = useDecideWithdrawalMutation();
+
+  const [breakdown, setBreakdown] = useState(null); // "escrow" | "wallet" | null
+  const failedPaymentsRef = useRef(null);
+  const refundsRef = useRef(null);
+  const scrollTo = (ref) =>
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const run = async (fn, ok) => {
     try {
@@ -86,6 +167,11 @@ export default function AdminFinancePage() {
   const payouts = data?.payouts ?? [];
   const withdrawals = data?.withdrawals ?? [];
   const failedPayments = data?.failedPayments ?? [];
+  const platformRevenue = data?.platformRevenue ?? {
+    pending: 0,
+    realized: 0,
+    reversed: 0,
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -95,7 +181,11 @@ export default function AdminFinancePage() {
       </p>
 
       <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:px-8">
-        <div className="flex flex-col gap-2 rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-4 text-white">
+        <button
+          type="button"
+          onClick={() => setBreakdown("escrow")}
+          className="flex flex-col gap-2 rounded-[14px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-4 text-left text-white transition-transform hover:scale-[1.02]"
+        >
           <Wallet className="h-4.5 w-4.5" strokeWidth={1.75} />
           {isLoading ? (
             <Skeleton className="h-5 w-24 bg-white/30" />
@@ -103,8 +193,12 @@ export default function AdminFinancePage() {
             <p className="text-[15px] font-bold">{formatPrice(data?.escrowBalance ?? 0)}</p>
           )}
           <p className="text-[11px] text-white/75">Total Escrow Balance</p>
-        </div>
-        <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setBreakdown("wallet")}
+          className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4 text-left transition-colors hover:bg-shop-bg"
+        >
           <Banknote className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
           {isLoading ? (
             <Skeleton className="h-5 w-24" />
@@ -114,8 +208,12 @@ export default function AdminFinancePage() {
             </p>
           )}
           <p className="text-[11px] text-shop-text">Merchant Wallets</p>
-        </div>
-        <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollTo(failedPaymentsRef)}
+          className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4 text-left transition-colors hover:bg-shop-bg"
+        >
           <AlertTriangle className="h-4.5 w-4.5 text-amber-600" strokeWidth={1.75} />
           {isLoading ? (
             <Skeleton className="h-5 w-10" />
@@ -123,8 +221,12 @@ export default function AdminFinancePage() {
             <p className="text-[15px] font-bold text-shop-heading">{failedPayments.length}</p>
           )}
           <p className="text-[11px] text-shop-text">Failed Payments</p>
-        </div>
-        <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollTo(refundsRef)}
+          className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4 text-left transition-colors hover:bg-shop-bg"
+        >
           <Wallet className="h-4.5 w-4.5 text-shop-accent-1" strokeWidth={1.75} />
           {isLoading ? (
             <Skeleton className="h-5 w-10" />
@@ -134,6 +236,64 @@ export default function AdminFinancePage() {
             </p>
           )}
           <p className="text-[11px] text-shop-text">Refunds Pending</p>
+        </button>
+      </div>
+
+      {breakdown && (
+        <BalanceBreakdownModal
+          kind={breakdown}
+          merchantBalances={data?.merchantBalances ?? []}
+          onClose={() => setBreakdown(null)}
+        />
+      )}
+
+      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
+          <TrendingUp className="h-4 w-4 text-shop-accent-1" />
+          Platform Revenue
+        </p>
+        <p className="-mt-1 text-[11.5px] text-shop-text/60">
+          AwaOwn&rsquo;s own cut of a partner sale&rsquo;s profit share -
+          the only revenue the platform takes for itself, separate from
+          merchant and partner money passing through escrow.
+        </p>
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3">
+            {isLoading ? (
+              <Skeleton className="h-5 w-16" />
+            ) : (
+              <p className="text-[14px] font-bold text-shop-heading">
+                {formatPrice(platformRevenue.realized)}
+              </p>
+            )}
+            <p className="text-[10.5px] text-shop-text/70">
+              Realized (escrow released)
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3">
+            {isLoading ? (
+              <Skeleton className="h-5 w-16" />
+            ) : (
+              <p className="text-[14px] font-bold text-shop-heading">
+                {formatPrice(platformRevenue.pending)}
+              </p>
+            )}
+            <p className="text-[10.5px] text-shop-text/70">
+              Pending (still in escrow)
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3">
+            {isLoading ? (
+              <Skeleton className="h-5 w-16" />
+            ) : (
+              <p className="text-[14px] font-bold text-shop-heading">
+                {formatPrice(platformRevenue.reversed)}
+              </p>
+            )}
+            <p className="text-[10.5px] text-shop-text/70">
+              Reversed (refunded orders)
+            </p>
+          </div>
         </div>
       </div>
 
@@ -185,7 +345,7 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+      <div ref={refundsRef} className="flex flex-col gap-2.5 px-4 lg:px-8">
         <p className="text-[13px] font-semibold text-shop-heading">Refund Requests</p>
         <div className="flex flex-col gap-2">
           {isLoading ? (
@@ -256,7 +416,7 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
+      <div ref={failedPaymentsRef} className="flex flex-col gap-2.5 px-4 lg:px-8">
         <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           Failed Payments
