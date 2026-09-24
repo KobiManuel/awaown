@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,6 +24,7 @@ import {
 import ListItem from "./list-item";
 import { categories } from "./categories";
 import logo from "@/public/images/logo.png";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 import homeThumb from "@/public/assets/images/how-it-works_home.png";
 import shopThumb from "@/public/assets/images/how-it-works.png";
@@ -101,13 +102,7 @@ const MenuIcon = ({ active, onClick }) => (
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen((v) => !v);
-
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "auto";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   return (
     <header className="fixed top-4 inset-x-0 z-50 flex justify-center px-4">

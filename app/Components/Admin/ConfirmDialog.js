@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 /**
  * Imperative confirm dialog for admin actions.
@@ -29,6 +30,7 @@ export function ConfirmProvider({ children }) {
   const [opts, setOpts] = useState(null);
   const [reason, setReason] = useState("");
   const resolver = useRef(null);
+  useBodyScrollLock(!!opts);
 
   const confirm = useCallback((options) => {
     setReason("");

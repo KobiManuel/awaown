@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 /**
  * Blocking full-screen overlay for short unavoidable waits (e.g. resolving the
@@ -9,6 +10,7 @@ import { Loader2 } from "lucide-react";
  * checkout). Render it conditionally; it covers everything at z-[200].
  */
 export default function FullScreenLoader({ label = "One moment" }) {
+  useBodyScrollLock(true);
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-3 bg-white/85 font-shop backdrop-blur-sm">
       <Loader2 className="h-8 w-8 animate-spin text-shop-accent-1" />

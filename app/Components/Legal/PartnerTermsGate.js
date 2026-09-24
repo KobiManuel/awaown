@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ScrollText } from "lucide-react";
 import LegalDocument from "./LegalDocument";
 import { LEGAL_DOCUMENTS, PARTNER_TERMS_DOC_IDS } from "@/lib/legal-content";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const partnerDocs = LEGAL_DOCUMENTS.filter((d) => PARTNER_TERMS_DOC_IDS.includes(d.id));
 
@@ -14,6 +15,7 @@ const partnerDocs = LEGAL_DOCUMENTS.filter((d) => PARTNER_TERMS_DOC_IDS.includes
  */
 export default function PartnerTermsGate({ onAccept, submitting, error }) {
   const [checked, setChecked] = useState(false);
+  useBodyScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col bg-white font-shop">

@@ -15,6 +15,7 @@ import {
   useDecideWithdrawalMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const BREAKDOWN_COPY = {
   escrow: {
@@ -30,6 +31,7 @@ const BREAKDOWN_COPY = {
 };
 
 function BalanceBreakdownModal({ kind, merchantBalances, onClose }) {
+  useBodyScrollLock(true);
   const copy = BREAKDOWN_COPY[kind];
   const rows = merchantBalances
     .filter((m) => m[copy.field] > 0)

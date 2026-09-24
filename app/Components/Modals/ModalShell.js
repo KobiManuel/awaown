@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { closeModal } from "@/lib/store/modalSlice";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 // variant: "sheet" slides up from the bottom (mobile-app style), "popup" fades/scales
 // in centered on screen. Both are always centered at max-w-[480px] so they line up
@@ -10,6 +11,7 @@ import { closeModal } from "@/lib/store/modalSlice";
 const ModalShell = ({ variant = "popup", children }) => {
   const dispatch = useDispatch();
   const [visible, setVisible] = useState(false);
+  useBodyScrollLock(true);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 20);

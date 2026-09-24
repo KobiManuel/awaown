@@ -9,6 +9,7 @@ import {
   useGetMerchantProductsQuery,
   useUpdateMerchantProductMutation,
 } from "@/lib/api/merchantApi";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 /**
  * Some Partner Program products were enrolled back when the old merchant
@@ -38,8 +39,10 @@ export default function PartnerProgramComplianceGate() {
       ),
     [data],
   );
+  const showGate = !isLoading && flagged.length > 0;
+  useBodyScrollLock(showGate);
 
-  if (isLoading || flagged.length === 0) return null;
+  if (!showGate) return null;
 
   const draftFor = (p) => drafts[p.productId] ?? String(p.partnerProfitAmount ?? "");
   const isValid = (p) => Number(draftFor(p)) >= PARTNER_PROGRAM_MIN_PROFIT;

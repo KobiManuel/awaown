@@ -7,11 +7,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, ChevronDown } from "lucide-react";
 import { navLinks } from "@/lib/shop-data";
 import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const MobileMenu = ({ open, onClose }) => {
   const { data: categories } = useGetCategoriesQuery();
   const list = categories ?? [];
   const [expanded, setExpanded] = useState(null);
+  useBodyScrollLock(open);
 
   return (
     <AnimatePresence>

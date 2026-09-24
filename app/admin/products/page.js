@@ -18,6 +18,7 @@ import {
   useEditAdminProductMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 function EditProductForm({ product, onSaved, onCancel }) {
   const showToast = useToast();
@@ -138,6 +139,7 @@ function ProductDetailModal({ product, onClose, onApprove, onReject, onRemove, t
   const [editProduct, editState] = useEditAdminProductMutation();
   const [activeImage, setActiveImage] = useState(0);
   const [editing, setEditing] = useState(false);
+  useBodyScrollLock(!!product);
   if (!product) return null;
   const images = product.images?.length ? product.images : [];
 

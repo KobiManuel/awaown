@@ -8,6 +8,7 @@ import ReactCrop, {
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Loader2, RotateCcw } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 /**
  * Photo-editor style cropper. The full image is shown and the user drags /
@@ -45,6 +46,7 @@ export default function ImageCropModal({
   const [completedCrop, setCompletedCrop] = useState(null);
   const [busy, setBusy] = useState(false);
   const imgRef = useRef(null);
+  useBodyScrollLock(true);
 
   useEffect(() => {
     // syncing an object-URL to the picked File is a legit external-resource effect

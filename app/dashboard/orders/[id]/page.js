@@ -33,6 +33,7 @@ import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { useDigitalDownload } from "@/lib/useDigitalDownload";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const DEV = process.env.NODE_ENV !== "production";
 
@@ -582,6 +583,7 @@ function DisputeModal({ onClose, onSubmit, submitting }) {
   const [description, setDescription] = useState("");
   const [images, setImages] = useState([]);
   const { pickAndCrop, uploading, modal } = useImageCropUpload("disputes");
+  useBodyScrollLock(true);
 
   const addImage = async (e) => {
     const file = e.target.files?.[0];
