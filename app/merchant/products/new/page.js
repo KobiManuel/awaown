@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import ProductForm from "@/app/Components/Merchant/ProductForm";
-import RequireStoreAddress from "@/app/Components/Merchant/RequireStoreAddress";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useCreateMerchantProductMutation } from "@/lib/api/merchantApi";
 import { errorMessage } from "@/lib/api/errorMessage";
@@ -26,9 +25,5 @@ export default function NewMerchantProductPage() {
     }
   };
 
-  return (
-    <RequireStoreAddress>
-      <ProductForm submitting={isLoading} onSubmit={handleSubmit} />
-    </RequireStoreAddress>
-  );
+  return <ProductForm submitting={isLoading} onSubmit={handleSubmit} />;
 }

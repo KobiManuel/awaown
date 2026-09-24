@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Camera,
   Video,
@@ -16,6 +17,7 @@ import {
   Info,
   Loader2,
   Tag,
+  MapPin,
 } from "lucide-react";
 import {
   formatPrice,
@@ -26,6 +28,7 @@ import {
   partnerPayoutSuggestion,
 } from "@/lib/merchant-data";
 import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useGetMerchantOverviewQuery } from "@/lib/api/merchantApi";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -342,6 +345,20 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const showToast = useToast();
   const init = useMemo(() => seed(product), []); // eslint-disable-line
 
+  // A physical product needs a real pickup address on file (Fez collects
+  // from it, buyers see the seller's state on the listing) - a digital
+  // product ships nothing, so a merchant who only sells digital goods never
+  // needs to fill this in. Mirrors the same check the backend enforces in
+  // merchant.service.ts's createProduct/updateProduct.
+  const { data: overview, isLoading: overviewLoading } =
+    useGetMerchantOverviewQuery();
+  const storeProfile = overview?.profile;
+  const hasStoreAddress = !!(
+    storeProfile?.state &&
+    storeProfile?.address &&
+    storeProfile?.phone
+  );
+
   const {
     pickAndCrop: cropProductImage,
     uploading: imageUploading,
@@ -534,6 +551,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   if (deliveryType !== "digital" && !(Number(weight) > 0)) {
     problems.push("Add the item weight in kg (an estimate is fine).");
   }
+  const addressBlocked =
+    deliveryType !== "digital" && !overviewLoading && !hasStoreAddress;
+  if (addressBlocked) {
+    problems.push(
+      "Add your store address before you can list a physical product.",
+    );
+  }
   if (deliveryType === "digital" && !(basePrice > 0))
     problems.push("Set the price.");
   if (isGroup && bundleItems.length < 2)
@@ -715,6 +739,27 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               description="A file or access link delivered instantly, no shipping."
             />
           </div>
+          {addressBlocked && (
+            <div className="flex items-start gap-3 rounded-[10px] border border-dashed border-shop-accent-1/40 bg-shop-accent-1-light p-3.5">
+              <MapPin className="h-4 w-4 shrink-0 text-shop-accent-1" strokeWidth={1.75} />
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[12.5px] font-medium text-shop-heading">
+                  Add your store address to list physical products
+                </p>
+                <p className="text-[11.5px] leading-[16px] text-shop-text">
+                  We need your state, address and phone number to show
+                  shoppers where this ships from and to arrange courier
+                  pickup. Digital products don&apos;t need this.
+                </p>
+                <Link
+                  href="/merchant/account"
+                  className="w-fit text-[12px] font-semibold text-shop-accent-1 hover:underline"
+                >
+                  Add store address →
+                </Link>
+              </div>
+            </div>
+          )}
           {deliveryType === "digital" ? (
             <>
               <label className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
@@ -1498,7 +1543,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 submitting ||
                 imageUploading ||
                 fileUploading ||
-                digitalUploading
+                digitalUploading ||
+                addressBlocked
               }
               className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
             >
