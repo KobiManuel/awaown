@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck, X, Minus, Plus, PackageSearch } from "lucide-react";
+import { Loader2, ShieldCheck, X, Minus, Plus, PackageSearch, Zap } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { NIGERIAN_STATES, CITIES_BY_STATE } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
@@ -62,13 +62,18 @@ export default function PartnerStoreCheckoutPage() {
   };
   const cityOptions = CITIES_BY_STATE[form.state] ?? [];
 
+  // Nothing to ship at all - no address to collect, no Fez quote to fetch.
+  const isDigitalOnly =
+    cart.items.length > 0 &&
+    cart.items.every((i) => i.deliveryType === "DIGITAL");
+
   const phoneValid = isValidNigerianPhone(form.phone);
   const isValid =
     form.name.trim().length > 1 &&
     phoneValid &&
     /\S+@\S+\.\S+/.test(form.email) &&
-    form.line1.trim().length > 3 &&
-    form.city.trim().length > 1;
+    (isDigitalOnly ||
+      (form.line1.trim().length > 3 && form.city.trim().length > 1));
 
   const { data: shippingQuote, isFetching: shippingLoading } = useGetGuestShippingQuoteQuery(
     {
@@ -79,9 +84,9 @@ export default function PartnerStoreCheckoutPage() {
       })),
       state: form.state,
     },
-    { skip: !cart.items.length },
+    { skip: isDigitalOnly || !cart.items.length },
   );
-  const shipping = cart.items.length
+  const shipping = cart.items.length && !isDigitalOnly
     ? (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK)
     : 0;
   const total = cart.subtotal + shipping;
@@ -123,9 +128,13 @@ export default function PartnerStoreCheckoutPage() {
           name: form.name.trim(),
           phone: form.phone.trim(),
           email: form.email.trim(),
-          line1: form.line1.trim(),
-          city: form.city.trim(),
-          state: form.state,
+          ...(isDigitalOnly
+            ? {}
+            : {
+                line1: form.line1.trim(),
+                city: form.city.trim(),
+                state: form.state,
+              }),
         },
         paymentMethod: payment,
       }).unwrap();
@@ -227,32 +236,43 @@ export default function PartnerStoreCheckoutPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-3 rounded-[10px] bg-shop-surface p-4">
-              <p className="text-[13px] font-semibold">Delivery address</p>
-              <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={FIELD} />
-              <div className="flex gap-3">
-                <select value={form.state} onChange={setAddressState} className={FIELD}>
-                  {NIGERIAN_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={form.city}
-                  onChange={set("city")}
-                  disabled={!form.state}
-                  className={`${FIELD} disabled:cursor-not-allowed disabled:opacity-50`}
-                >
-                  <option value="">{form.state ? "City" : "Select state first"}</option>
-                  {cityOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+            {isDigitalOnly ? (
+              <div className="flex items-start gap-3 rounded-[10px] bg-shop-bg p-3.5">
+                <Zap className="h-4.5 w-4.5 shrink-0 text-shop-accent-1" />
+                <p className="text-[11.5px] leading-[17px] opacity-80">
+                  This order is entirely digital - no shipping address
+                  needed. You&apos;ll get a download link right after
+                  payment.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-3 rounded-[10px] bg-shop-surface p-4">
+                <p className="text-[13px] font-semibold">Delivery address</p>
+                <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={FIELD} />
+                <div className="flex gap-3">
+                  <select value={form.state} onChange={setAddressState} className={FIELD}>
+                    {NIGERIAN_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={form.city}
+                    onChange={set("city")}
+                    disabled={!form.state}
+                    className={`${FIELD} disabled:cursor-not-allowed disabled:opacity-50`}
+                  >
+                    <option value="">{form.state ? "City" : "Select state first"}</option>
+                    {cityOptions.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col gap-2 rounded-[10px] bg-shop-surface p-4">
               <p className="mb-1 text-[13px] font-semibold">Payment Method</p>
@@ -277,7 +297,9 @@ export default function PartnerStoreCheckoutPage() {
               ))}
             </div>
 
-            <FezDeliveryBanner status="Nationwide tracked delivery" />
+            {!isDigitalOnly && (
+              <FezDeliveryBanner status="Nationwide tracked delivery" />
+            )}
           </div>
 
           <div className="mt-4 flex flex-col gap-4 lg:mt-0">
@@ -332,18 +354,20 @@ export default function PartnerStoreCheckoutPage() {
                   <span>Subtotal</span>
                   <span className="font-medium">{formatPrice(cart.subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Shipping</span>
-                  <span className="font-medium">
-                    {shippingLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin opacity-60" />
-                    ) : freeShipping ? (
-                      <span className="text-emerald-600">Free</span>
-                    ) : (
-                      formatPrice(shipping)
-                    )}
-                  </span>
-                </div>
+                {!isDigitalOnly && (
+                  <div className="flex items-center justify-between">
+                    <span>Shipping</span>
+                    <span className="font-medium">
+                      {shippingLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin opacity-60" />
+                      ) : freeShipping ? (
+                        <span className="text-emerald-600">Free</span>
+                      ) : (
+                        formatPrice(shipping)
+                      )}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t border-shop-border pt-1.5 text-[14px] font-semibold">
                   <span>Total</span>
                   <span>{formatPrice(total)}</span>

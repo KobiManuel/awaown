@@ -75,6 +75,7 @@ export default function CheckoutPage() {
       id: "buynow",
       title: bnProduct.title,
       location: bnProduct.location,
+      deliveryType: bnProduct.deliveryType,
       qty,
       lineTotal: unitPrice * qty,
     };
@@ -85,6 +86,9 @@ export default function CheckoutPage() {
   const subtotal = isBuyNow
     ? (buyNowLine?.lineTotal ?? 0)
     : (cart?.subtotal ?? 0);
+  // Nothing to ship at all - no address to collect, no Fez quote to fetch.
+  const isDigitalOnly =
+    items.length > 0 && items.every((i) => i.deliveryType === "DIGITAL");
 
   const { data: shippingQuote, isFetching: shippingLoading } =
     useGetShippingQuoteQuery(
@@ -94,9 +98,9 @@ export default function CheckoutPage() {
           ? { productId: buyNow.productId, qty: Math.max(1, buyNow.qty || 1) }
           : undefined,
       },
-      { skip: !addressId || !items.length },
+      { skip: isDigitalOnly || !addressId || !items.length },
     );
-  const shipping = !items.length
+  const shipping = !items.length || isDigitalOnly
     ? 0
     : (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK);
   // Only the backend's explicit flag means "actually free" (an admin-set
@@ -136,10 +140,10 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    if (!addressId && addresses?.length) {
+    if (!isDigitalOnly && !addressId && addresses?.length) {
       setAddressId(addresses.find((a) => a.isDefault)?.id || addresses[0].id);
     }
-  }, [addresses, addressId]);
+  }, [addresses, addressId, isDigitalOnly]);
 
   useEffect(() => {
     if (busy || loading) return;
@@ -203,7 +207,7 @@ export default function CheckoutPage() {
     });
     try {
       const res = await checkout({
-        addressId,
+        addressId: isDigitalOnly ? undefined : addressId,
         paymentMethod: payment,
         couponCode: appliedCoupon?.code || undefined,
         buyNow: isBuyNow
@@ -258,68 +262,78 @@ export default function CheckoutPage() {
 
       <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-8 lg:px-8">
         <div className="flex flex-col gap-5 lg:col-span-2">
-          <div className="flex flex-col gap-2.5 px-4 lg:px-0">
-            <div className="flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-shop-heading">
-                Delivery Address
+          {isDigitalOnly ? (
+            <div className="mx-4 flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5 lg:mx-0">
+              <Zap className="h-4.5 w-4.5 shrink-0 text-shop-accent-1" strokeWidth={1.75} />
+              <p className="text-[12px] leading-[18px] text-shop-text">
+                This order is entirely digital - no shipping address needed.
+                You&apos;ll get a download link right after payment.
               </p>
-              <Link
-                href="/dashboard/addresses"
-                className="text-[12px] font-semibold text-shop-accent-1"
-              >
-                Manage
-              </Link>
             </div>
-            {addrLoading ? (
-              <Skeleton className="h-20 w-full rounded-[12px]" />
-            ) : addresses?.length === 0 ? (
-              <Link
-                href="/dashboard/addresses"
-                className="rounded-[12px] border border-dashed border-shop-border p-4 text-center text-[12.5px] text-shop-accent-1"
-              >
-                + Add a delivery address
-              </Link>
-            ) : (
-              addresses.map((addr) => {
-                const active = addressId === addr.id;
-                return (
-                  <button
-                    key={addr.id}
-                    type="button"
-                    onClick={() => setAddressId(addr.id)}
-                    className={`flex items-start gap-3 rounded-[12px] border p-3.5 text-left transition-colors ${
-                      active
-                        ? "border-shop-accent-1 bg-shop-accent-1-light"
-                        : "border-shop-border"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                        active ? "bg-white" : "bg-shop-bg"
+          ) : (
+            <div className="flex flex-col gap-2.5 px-4 lg:px-0">
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-semibold text-shop-heading">
+                  Delivery Address
+                </p>
+                <Link
+                  href="/dashboard/addresses"
+                  className="text-[12px] font-semibold text-shop-accent-1"
+                >
+                  Manage
+                </Link>
+              </div>
+              {addrLoading ? (
+                <Skeleton className="h-20 w-full rounded-[12px]" />
+              ) : addresses?.length === 0 ? (
+                <Link
+                  href="/dashboard/addresses"
+                  className="rounded-[12px] border border-dashed border-shop-border p-4 text-center text-[12.5px] text-shop-accent-1"
+                >
+                  + Add a delivery address
+                </Link>
+              ) : (
+                addresses.map((addr) => {
+                  const active = addressId === addr.id;
+                  return (
+                    <button
+                      key={addr.id}
+                      type="button"
+                      onClick={() => setAddressId(addr.id)}
+                      className={`flex items-start gap-3 rounded-[12px] border p-3.5 text-left transition-colors ${
+                        active
+                          ? "border-shop-accent-1 bg-shop-accent-1-light"
+                          : "border-shop-border"
                       }`}
                     >
-                      <MapPin
-                        className="h-4 w-4 text-shop-accent-1"
-                        strokeWidth={1.75}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-semibold text-shop-heading">
-                        {addr.label} · {addr.name}
-                      </p>
-                      <p className="text-[12px] leading-[18px] text-shop-text">
-                        {addr.line1}, {addr.city}, {addr.state}
-                      </p>
-                      <p className="text-[12px] text-shop-text/70">{addr.phone}</p>
-                    </div>
-                    {active && (
-                      <Check className="mt-1 h-4 w-4 shrink-0 text-shop-accent-1" />
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
+                      <div
+                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                          active ? "bg-white" : "bg-shop-bg"
+                        }`}
+                      >
+                        <MapPin
+                          className="h-4 w-4 text-shop-accent-1"
+                          strokeWidth={1.75}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[13px] font-semibold text-shop-heading">
+                          {addr.label} · {addr.name}
+                        </p>
+                        <p className="text-[12px] leading-[18px] text-shop-text">
+                          {addr.line1}, {addr.city}, {addr.state}
+                        </p>
+                        <p className="text-[12px] text-shop-text/70">{addr.phone}</p>
+                      </div>
+                      {active && (
+                        <Check className="mt-1 h-4 w-4 shrink-0 text-shop-accent-1" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-2.5 px-4 lg:px-0">
             <p className="text-[13px] font-semibold text-shop-heading">
@@ -484,36 +498,40 @@ export default function CheckoutPage() {
                 <span className="font-medium">-{formatPrice(discount)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between text-[13px] text-shop-text">
-              <span>Shipping</span>
-              <span className="font-medium text-shop-heading">
-                {shippingLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-shop-text/50" />
-                ) : freeShipping ? (
-                  <span className="text-emerald-600">Free</span>
-                ) : (
-                  formatPrice(shipping)
-                )}
-              </span>
-            </div>
+            {!isDigitalOnly && (
+              <div className="flex items-center justify-between text-[13px] text-shop-text">
+                <span>Shipping</span>
+                <span className="font-medium text-shop-heading">
+                  {shippingLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-shop-text/50" />
+                  ) : freeShipping ? (
+                    <span className="text-emerald-600">Free</span>
+                  ) : (
+                    formatPrice(shipping)
+                  )}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-t border-shop-border pt-2 text-[14px] font-semibold text-shop-heading">
               <span>Total</span>
               <span>{formatPrice(total)}</span>
             </div>
           </div>
 
-          {/* The banner carries its own mx-4 (for pages with no parent padding);
-              this sidebar column already has px-4, so cancel it out here rather
-              than leave the banner more indented than the cards around it. */}
-          <div className="-mx-4">
-            <FezDeliveryBanner
-              status={
-                shippingQuote?.eta
-                  ? `Estimated delivery: ${shippingQuote.eta}`
-                  : "Nationwide tracked delivery"
-              }
-            />
-          </div>
+          {!isDigitalOnly && (
+            // The banner carries its own mx-4 (for pages with no parent padding);
+            // this sidebar column already has px-4, so cancel it out here rather
+            // than leave the banner more indented than the cards around it.
+            <div className="-mx-4">
+              <FezDeliveryBanner
+                status={
+                  shippingQuote?.eta
+                    ? `Estimated delivery: ${shippingQuote.eta}`
+                    : "Nationwide tracked delivery"
+                }
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-[13px] font-medium text-red-600">{error}</p>
@@ -527,7 +545,7 @@ export default function CheckoutPage() {
               checkoutState.isLoading ||
               shippingLoading ||
               !items.length ||
-              !addressId ||
+              (!isDigitalOnly && !addressId) ||
               walletShort
             }
             className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:opacity-70"

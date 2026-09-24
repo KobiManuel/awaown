@@ -11,6 +11,7 @@ import {
   KeyRound,
   X,
   ImagePlus,
+  Download,
 } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
 import { statusMeta, ORDER_STEPS } from "@/lib/order-status";
@@ -31,6 +32,7 @@ import {
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { useDigitalDownload } from "@/lib/useDigitalDownload";
 
 const DEV = process.env.NODE_ENV !== "production";
 
@@ -86,6 +88,16 @@ function OrderDetailContent() {
   const [disputeOrder, disputeState] = useDisputeOrderMutation();
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [simulate, simState] = useSimulateFulfilmentMutation();
+  const { download: downloadDigital, progress: downloadProgress, downloadingId } =
+    useDigitalDownload();
+
+  const handleDownload = async (item) => {
+    const res = await downloadDigital(
+      `/orders/${order.reference}/items/${item.id}/download`,
+      { itemId: item.id },
+    );
+    if (!res.ok) showToast(res.message);
+  };
   const [retryPayment] = useRetryPaymentMutation();
   const [cancelOrder, cancelState] = useCancelOrderMutation();
   const [payBusy, setPayBusy] = useState(false);
@@ -447,44 +459,78 @@ function OrderDetailContent() {
 
       <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4">
         <p className="text-[13px] font-semibold text-shop-heading">Items</p>
-        {order.items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
-              {item.image && (
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  fill
-                  className="object-contain p-1.5"
-                  sizes="56px"
-                />
+        {order.items.map((item) => {
+          const isDownloading = downloadingId === item.id;
+          return (
+            <div key={item.id} className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
+                  {item.image && (
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      className="object-contain p-1.5"
+                      sizes="56px"
+                    />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
+                    {item.title}
+                  </p>
+                  {item.variantLabel && (
+                    <p className="text-[11px] text-shop-text/70">
+                      {item.variantLabel}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-shop-text/70">Qty: {item.qty}</p>
+                </div>
+                <span className="text-[12.5px] font-semibold text-shop-heading">
+                  {formatPrice(item.price * item.qty)}
+                </span>
+              </div>
+              {item.canDownload && (
+                <div className="flex flex-col gap-1.5 pl-[68px]">
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(item)}
+                    disabled={isDownloading}
+                    className="flex w-fit items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1 disabled:opacity-70"
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {isDownloading
+                      ? `Downloading… ${downloadProgress ?? 0}%`
+                      : "Download file"}
+                  </button>
+                  {isDownloading && downloadProgress != null && (
+                    <div className="h-1 w-40 overflow-hidden rounded-full bg-shop-bg">
+                      <div
+                        className="h-full rounded-full bg-shop-accent-1 transition-[width]"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-            <div className="flex-1">
-              <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
-                {item.title}
-              </p>
-              {item.variantLabel && (
-                <p className="text-[11px] text-shop-text/70">
-                  {item.variantLabel}
-                </p>
-              )}
-              <p className="text-[11px] text-shop-text/70">Qty: {item.qty}</p>
-            </div>
-            <span className="text-[12.5px] font-semibold text-shop-heading">
-              {formatPrice(item.price * item.qty)}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mx-4 flex flex-col gap-2 rounded-[14px] border border-shop-border p-4 text-[12.5px]">
-        <div className="flex justify-between text-shop-text">
-          <span>Delivery Address</span>
-          <span className="max-w-[60%] text-right font-medium text-shop-heading">
-            {order.address?.line1}, {order.address?.city}
-          </span>
-        </div>
+        {order.address && (
+          <div className="flex justify-between text-shop-text">
+            <span>Delivery Address</span>
+            <span className="max-w-[60%] text-right font-medium text-shop-heading">
+              {order.address.line1}, {order.address.city}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between text-shop-text">
           <span>Payment Method</span>
           <span className="font-medium capitalize text-shop-heading">

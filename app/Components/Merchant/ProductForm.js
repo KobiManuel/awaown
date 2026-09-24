@@ -43,6 +43,10 @@ import {
 } from "@/lib/variant-options";
 
 const MAX_AXES = 3;
+// Mirrors the server-side cap in backend/src/media/media.service.ts - checked
+// here too so a merchant finds out immediately, not after an upload attempt.
+const MAX_DIGITAL_FILE_MB = 50;
+const MAX_DIGITAL_FILE_BYTES = MAX_DIGITAL_FILE_MB * 1024 * 1024;
 
 function axisFromApi(ax) {
   const isPreset =
@@ -345,6 +349,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   } = useImageCropUpload("products");
   const { upload: uploadProductFile, uploading: fileUploading } =
     useMediaUpload("products");
+  const { upload: uploadDigitalFile, uploading: digitalUploading } =
+    useMediaUpload("digital-products");
 
   const [title, setTitle] = useState(init.title);
   const [description, setDescription] = useState(init.description);
@@ -352,6 +358,8 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const [deliveryType, setDeliveryType] = useState(init.deliveryType);
   const [processingTime, setProcessingTime] = useState(init.processingTime);
   const [digitalFile, setDigitalFile] = useState(init.digitalFile);
+  const [digitalFileName, setDigitalFileName] = useState(null);
+  const [digitalUploadProgress, setDigitalUploadProgress] = useState(null);
   const [images, setImages] = useState(init.images);
   const [video, setVideo] = useState(init.video);
 
@@ -439,9 +447,20 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    const url = await uploadProductFile(file, { image: false });
-    if (url) setDigitalFile(url);
-    else showToast("File upload failed");
+    if (file.size > MAX_DIGITAL_FILE_BYTES) {
+      showToast(`That file is too large - digital products are capped at ${MAX_DIGITAL_FILE_MB}MB`);
+      return;
+    }
+    setDigitalUploadProgress(0);
+    const url = await uploadDigitalFile(file, {
+      image: false,
+      onProgress: setDigitalUploadProgress,
+    });
+    setDigitalUploadProgress(null);
+    if (url) {
+      setDigitalFile(url);
+      setDigitalFileName(file.name);
+    } else showToast("File upload failed");
   };
 
   const addBundleItem = () => {
@@ -554,7 +573,7 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const isCreate = !product;
   const isDraft = isCreate || product.status === "DRAFT";
   const primaryLabel =
-    imageUploading || fileUploading
+    imageUploading || fileUploading || digitalUploading
       ? "Uploading…"
       : isCreate
         ? "Submit for Review"
@@ -699,10 +718,15 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           {deliveryType === "digital" ? (
             <>
               <label className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-shop-border bg-shop-bg">
-                {digitalFile ? (
+                {digitalUploadProgress != null ? (
+                  <span className="flex items-center gap-2 text-[12.5px] font-medium text-shop-heading">
+                    <Loader2 className="h-4 w-4 animate-spin text-shop-accent-1" />
+                    Uploading… {digitalUploadProgress}%
+                  </span>
+                ) : digitalFile ? (
                   <span className="flex items-center gap-2 text-[12.5px] font-medium text-shop-heading">
                     <FileDown className="h-4 w-4 text-shop-accent-1" />
-                    File attached
+                    {digitalFileName || "File attached"}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2 text-[12px] text-shop-text/60">
@@ -713,12 +737,21 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                 <input
                   type="file"
                   className="hidden"
+                  disabled={digitalUploading}
                   onChange={handleDigitalFileChange}
                 />
               </label>
+              {digitalUploadProgress != null && (
+                <div className="h-1 w-full overflow-hidden rounded-full bg-shop-bg">
+                  <div
+                    className="h-full rounded-full bg-shop-accent-1 transition-[width]"
+                    style={{ width: `${digitalUploadProgress}%` }}
+                  />
+                </div>
+              )}
               <p className="text-[11px] text-shop-text/60">
                 Any file type is accepted: PDF, ZIP, MP3, video, or anything
-                else buyers need.
+                else buyers need. Max {MAX_DIGITAL_FILE_MB}MB.
               </p>
             </>
           ) : (
@@ -1444,7 +1477,13 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
         <div className="flex flex-col gap-2.5 sm:flex-row-reverse">
           <button
             type="submit"
-            disabled={!isValid || submitting || imageUploading || fileUploading}
+            disabled={
+              !isValid ||
+              submitting ||
+              imageUploading ||
+              fileUploading ||
+              digitalUploading
+            }
             className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-shop-accent-1 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-shop-accent-1-dark disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -1455,7 +1494,11 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
               type="button"
               onClick={() => submit(true)}
               disabled={
-                !title.trim() || submitting || imageUploading || fileUploading
+                !title.trim() ||
+                submitting ||
+                imageUploading ||
+                fileUploading ||
+                digitalUploading
               }
               className="flex-1 rounded-[10px] border border-shop-border py-3.5 text-[14px] font-semibold text-shop-heading transition-colors hover:bg-shop-bg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
             >

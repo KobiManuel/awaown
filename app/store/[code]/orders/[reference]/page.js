@@ -4,13 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Loader2, MapPin, PackageCheck } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, PackageCheck, Download } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { statusMeta } from "@/lib/order-status";
 import { useGetGuestOrderDetailQuery, useGuestConfirmDeliveryMutation } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { useDigitalDownload } from "@/lib/useDigitalDownload";
 
 export default function PartnerStoreOrderDetailPage() {
   const { code, reference } = useParams();
@@ -51,6 +52,19 @@ export default function PartnerStoreOrderDetailPage() {
     } catch (err) {
       setConfirmMsg(errorMessage(err));
     }
+  };
+
+  const { download: downloadDigital, progress: downloadProgress, downloadingId } =
+    useDigitalDownload();
+  const [downloadError, setDownloadError] = useState("");
+
+  const handleDownload = async (item) => {
+    setDownloadError("");
+    const res = await downloadDigital(
+      `/orders/guest/${reference}/items/${item.id}/download?phone=${encodeURIComponent(phone)}`,
+      { auth: false, itemId: item.id },
+    );
+    if (!res.ok) setDownloadError(res.message);
   };
 
   if (!phone) {
@@ -126,19 +140,54 @@ export default function PartnerStoreOrderDetailPage() {
         </div>
 
         <div className="mt-5 flex flex-col gap-2.5 rounded-[12px] bg-shop-surface p-4">
-          {order.items.map((i) => (
-            <div key={i.id} className="flex items-center gap-3">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
-                {i.image && <Image src={i.image} alt={i.title} fill className="object-contain p-1.5" sizes="56px" />}
+          {order.items.map((i) => {
+            const isDownloading = downloadingId === i.id;
+            return (
+              <div key={i.id} className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
+                    {i.image && <Image src={i.image} alt={i.title} fill className="object-contain p-1.5" sizes="56px" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-1 text-[13px] font-medium">{i.title}</p>
+                    {i.variantLabel && <p className="text-[11.5px] opacity-70">{i.variantLabel}</p>}
+                    <p className="text-[11.5px] opacity-70">Qty {i.qty}</p>
+                  </div>
+                  <p className="shrink-0 text-[13px] font-semibold">{formatPrice(i.price * i.qty)}</p>
+                </div>
+                {i.canDownload && (
+                  <div className="flex flex-col gap-1.5 pl-[68px]">
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(i)}
+                      disabled={isDownloading}
+                      className="flex w-fit items-center gap-1.5 rounded-full bg-shop-accent-1-light px-3 py-1.5 text-[11.5px] font-semibold text-shop-accent-1 disabled:opacity-70"
+                    >
+                      {isDownloading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      {isDownloading
+                        ? `Downloading… ${downloadProgress ?? 0}%`
+                        : "Download file"}
+                    </button>
+                    {isDownloading && downloadProgress != null && (
+                      <div className="h-1 w-40 overflow-hidden rounded-full bg-shop-bg">
+                        <div
+                          className="h-full rounded-full bg-shop-accent-1 transition-[width]"
+                          style={{ width: `${downloadProgress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-1 text-[13px] font-medium">{i.title}</p>
-                {i.variantLabel && <p className="text-[11.5px] opacity-70">{i.variantLabel}</p>}
-                <p className="text-[11.5px] opacity-70">Qty {i.qty}</p>
-              </div>
-              <p className="shrink-0 text-[13px] font-semibold">{formatPrice(i.price * i.qty)}</p>
-            </div>
-          ))}
+            );
+          })}
+          {downloadError && (
+            <p className="text-[11.5px] font-medium text-red-500">{downloadError}</p>
+          )}
           <div className="mt-1 flex flex-col gap-1 border-t border-shop-border pt-2 text-[13px]">
             <div className="flex justify-between opacity-80">
               <span>Subtotal</span>
@@ -155,14 +204,20 @@ export default function PartnerStoreOrderDetailPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-start gap-2.5 rounded-[12px] bg-shop-surface p-4">
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
-          <div className="text-[12.5px] leading-[19px] opacity-80">
-            <p className="font-medium">{order.address.name}</p>
-            <p>{order.address.line1}, {order.address.city}, {order.address.state}</p>
-            <p>{order.address.phone}</p>
+        {order.address ? (
+          <div className="mt-4 flex items-start gap-2.5 rounded-[12px] bg-shop-surface p-4">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+            <div className="text-[12.5px] leading-[19px] opacity-80">
+              <p className="font-medium">{order.address.name}</p>
+              <p>{order.address.line1}, {order.address.city}, {order.address.state}</p>
+              <p>{order.address.phone}</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 rounded-[12px] bg-shop-surface p-4 text-[12.5px] opacity-70">
+            Digital order - nothing to ship.
+          </div>
+        )}
 
         {order.tracking && (
           <div className="mt-4 rounded-[12px] bg-shop-surface p-4 text-[12.5px]">
@@ -173,7 +228,7 @@ export default function PartnerStoreOrderDetailPage() {
           </div>
         )}
 
-        {order.status === "SHIPPED" && (
+        {["SHIPPED", "DELIVERED"].includes(order.status) && (
           <div className="mt-4 flex flex-col items-center gap-2.5 rounded-[12px] bg-shop-surface p-5 text-center">
             <p className="text-[13px] font-medium">Received your order?</p>
             <p className="max-w-[380px] text-[11.5px] opacity-70">
