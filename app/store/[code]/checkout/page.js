@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck, X, Minus, Plus, PackageSearch, Zap } from "lucide-react";
+import { Loader2, ShieldCheck, X, Minus, Plus, PackageSearch, Zap, Tag } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { NIGERIAN_STATES, CITIES_BY_STATE } from "@/lib/merchant-data";
 import { isValidNigerianPhone } from "@/lib/phone";
@@ -12,6 +12,7 @@ import {
   useGuestCheckoutMutation,
   useGuestConfirmPaymentMutation,
   useGetGuestShippingQuoteQuery,
+  useGuestPreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import { openPaystackPopup } from "@/lib/paystack";
@@ -34,9 +35,21 @@ const SHIPPING_FEE_FALLBACK = 5000;
 export default function PartnerStoreCheckoutPage() {
   const { code } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const cart = usePartnerCart(code);
+  // "Buy Now" adds the one item to this store's cart, same as normal, but
+  // checks out only that item - everything else already in the cart (if
+  // anything) is left untouched, not swept into this order.
+  const onlyItemId = searchParams.get("item");
+  const checkoutItems = onlyItemId
+    ? cart.items.filter((i) => i.id === onlyItemId)
+    : cart.items;
+  const checkoutSubtotal = onlyItemId
+    ? checkoutItems.reduce((s, i) => s + i.price * i.qty, 0)
+    : cart.subtotal;
   const [guestCheckout, checkoutState] = useGuestCheckoutMutation();
   const [guestConfirmPayment] = useGuestConfirmPaymentMutation();
+  const [previewCoupon, previewCouponState] = useGuestPreviewCouponMutation();
 
   const [form, setForm] = useState({
     name: "",
@@ -49,6 +62,9 @@ export default function PartnerStoreCheckoutPage() {
   const [payment, setPayment] = useState("CARD");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [couponError, setCouponError] = useState("");
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setAddressState = (e) => {
@@ -64,8 +80,8 @@ export default function PartnerStoreCheckoutPage() {
 
   // Nothing to ship at all - no address to collect, no Fez quote to fetch.
   const isDigitalOnly =
-    cart.items.length > 0 &&
-    cart.items.every((i) => i.deliveryType === "DIGITAL");
+    checkoutItems.length > 0 &&
+    checkoutItems.every((i) => i.deliveryType === "DIGITAL");
 
   const phoneValid = isValidNigerianPhone(form.phone);
   const isValid =
@@ -77,23 +93,55 @@ export default function PartnerStoreCheckoutPage() {
 
   const { data: shippingQuote, isFetching: shippingLoading } = useGetGuestShippingQuoteQuery(
     {
-      items: cart.items.map((i) => ({
+      items: checkoutItems.map((i) => ({
         productId: i.productId,
         variantId: i.variantId || undefined,
         qty: i.qty,
       })),
       state: form.state,
     },
-    { skip: isDigitalOnly || !cart.items.length },
+    { skip: isDigitalOnly || !checkoutItems.length },
   );
-  const shipping = cart.items.length && !isDigitalOnly
+  const shipping = checkoutItems.length && !isDigitalOnly
     ? (shippingQuote?.shipping ?? SHIPPING_FEE_FALLBACK)
     : 0;
-  const total = cart.subtotal + shipping;
+  const discount = appliedCoupon?.discount ?? 0;
+  const total = Math.max(0, checkoutSubtotal - discount) + shipping;
   // Only the backend's explicit flag means "actually free" (an admin-set
   // free-shipping rule matched) - a merely-zero quote for some other reason
   // shouldn't get mislabelled as a free-shipping win.
   const freeShipping = !!shippingQuote?.freeShipping;
+
+  const applyCoupon = async () => {
+    const code = coupon.trim().toUpperCase();
+    if (!code) return;
+    setCouponError("");
+    try {
+      const res = await previewCoupon({
+        couponCode: code,
+        items: checkoutItems.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId || undefined,
+          qty: i.qty,
+        })),
+      }).unwrap();
+      if (res.valid) {
+        setAppliedCoupon({ code: res.couponCode ?? code, discount: res.discount });
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(res.message || "That coupon code is not valid");
+      }
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponError(errorMessage(err));
+    }
+  };
+
+  const onCouponChange = (value) => {
+    setCoupon(value.toUpperCase());
+    if (appliedCoupon) setAppliedCoupon(null);
+    if (couponError) setCouponError("");
+  };
 
   const finishOrder = async (reference) => {
     try {
@@ -101,25 +149,28 @@ export default function PartnerStoreCheckoutPage() {
     } catch {
       // payment may still be settling - the order lookup page shows the real state
     }
-    cart.clear();
+    // A "Buy Now" only clears the one item it checked out - anything else
+    // already in the cart is untouched and still there afterwards.
+    if (onlyItemId) cart.remove(onlyItemId);
+    else cart.clear();
     router.push(`/store/${code}/orders/${reference}?phone=${encodeURIComponent(form.phone)}&placed=true`);
   };
 
   const placeOrder = async () => {
-    if (busy || !isValid || !cart.items.length || shippingLoading) return;
+    if (busy || !isValid || !checkoutItems.length || shippingLoading) return;
     setError("");
     setBusy(true);
     trackMetaEvent("InitiateCheckout", {
-      content_ids: cart.items.map((i) => i.productId),
+      content_ids: checkoutItems.map((i) => i.productId),
       content_type: "product",
-      num_items: cart.items.length,
+      num_items: checkoutItems.length,
       value: total,
       currency: "NGN",
     });
     try {
       const res = await guestCheckout({
         storeCode: code,
-        items: cart.items.map((i) => ({
+        items: checkoutItems.map((i) => ({
           productId: i.productId,
           variantId: i.variantId || undefined,
           qty: i.qty,
@@ -137,6 +188,7 @@ export default function PartnerStoreCheckoutPage() {
               }),
         },
         paymentMethod: payment,
+        couponCode: appliedCoupon?.code || undefined,
       }).unwrap();
 
       const reference = res.reference;
@@ -173,7 +225,7 @@ export default function PartnerStoreCheckoutPage() {
     }
   };
 
-  if (!cart.items.length) {
+  if (!checkoutItems.length) {
     return (
       <StoreThemeShell cartButton={false}>
         <div className="mx-auto flex min-h-screen w-full max-w-[500px] flex-col items-center justify-center gap-4 px-4 text-center font-shop">
@@ -297,6 +349,52 @@ export default function PartnerStoreCheckoutPage() {
               ))}
             </div>
 
+            <div className="flex flex-col gap-2 rounded-[10px] bg-shop-surface p-4">
+              <p className="mb-1 text-[13px] font-semibold">Coupon code</p>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-1 items-center gap-2 rounded-[8px] border border-shop-border px-3 py-2.5">
+                  <Tag className="h-4 w-4 opacity-50" />
+                  <input
+                    value={coupon}
+                    onChange={(e) => onCouponChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        applyCoupon();
+                      }
+                    }}
+                    placeholder="WELCOME10"
+                    className="w-full bg-transparent text-[13.5px] uppercase outline-none placeholder:opacity-40"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={
+                    !coupon.trim() ||
+                    previewCouponState.isLoading ||
+                    appliedCoupon?.code === coupon.trim().toUpperCase()
+                  }
+                  className="shrink-0 rounded-[8px] bg-shop-accent-1 px-4 py-2.5 text-[12.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {previewCouponState.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </button>
+              </div>
+              {couponError && (
+                <p className="text-[12px] font-medium text-red-500">{couponError}</p>
+              )}
+              {appliedCoupon && (
+                <p className="text-[12px] font-medium text-emerald-600">
+                  &ldquo;{appliedCoupon.code}&rdquo; applied - you save{" "}
+                  {formatPrice(appliedCoupon.discount)}.
+                </p>
+              )}
+            </div>
+
             {!isDigitalOnly && (
               <FezDeliveryBanner status="Nationwide tracked delivery" />
             )}
@@ -313,7 +411,7 @@ export default function PartnerStoreCheckoutPage() {
 
             <div className="flex flex-col gap-2 rounded-[10px] bg-shop-surface p-4">
               <p className="mb-1 text-[13px] font-semibold">Order Summary</p>
-              {cart.items.map((i) => (
+              {checkoutItems.map((i) => (
                 <div key={i.id} className="flex items-center gap-2 text-[12.5px]">
                   <span className="line-clamp-1 flex-1 pr-2">{i.title}</span>
                   <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-shop-border px-1.5 py-0.5">
@@ -352,8 +450,14 @@ export default function PartnerStoreCheckoutPage() {
               <div className="mt-1 flex flex-col gap-1 border-t border-shop-border pt-2 text-[13px]">
                 <div className="flex items-center justify-between">
                   <span>Subtotal</span>
-                  <span className="font-medium">{formatPrice(cart.subtotal)}</span>
+                  <span className="font-medium">{formatPrice(checkoutSubtotal)}</span>
                 </div>
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between text-emerald-600">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span className="font-medium">-{formatPrice(discount)}</span>
+                  </div>
+                )}
                 {!isDigitalOnly && (
                   <div className="flex items-center justify-between">
                     <span>Shipping</span>

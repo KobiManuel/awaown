@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, Check, ShoppingCart, Star, MapPin } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { smartTitle } from "@/lib/text-format";
@@ -98,6 +99,7 @@ const ProductCard = ({
   const productHref = `${hrefBase}/${p.id}${hrefExtra}`;
   const showToast = useToast();
 
+  const router = useRouter();
   const commerce = useCommerce();
   const isWishlisted = commerce.isWishlisted(p);
   // refCode is only ever passed by a partner store's own pages - that's the
@@ -121,6 +123,16 @@ const ProductCard = ({
   const handleAddToCart = async (e) => {
     e.preventDefault();
     if (busy || !p.productId) return;
+    // A quick-add from the card only ever sends qty:1 with no variant chosen -
+    // fine for a simple product, but a variable one needs a real pick first.
+    // Silently adding it anyway used to let an incomplete line sit in the
+    // cart with nothing to flag it, only surfacing as a confusing checkout
+    // failure much later - send the shopper to the product page to choose
+    // instead of ever accepting an incomplete line here.
+    if (product.hasVariants) {
+      router.push(productHref);
+      return;
+    }
     setBusy(true);
     try {
       if (refCode) {

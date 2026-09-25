@@ -291,20 +291,24 @@ function ProductDetail() {
   // Buy Now goes straight to checkout for THIS item only - it never touches the
   // cart. The item is stashed for the checkout page (survives the login hop).
   // Inside a partner store there's no login hop to survive - it's simplest to
-  // add the one item to that store's own cart and go straight to its checkout.
+  // add the one item to that store's own cart, then tell its checkout page to
+  // check out only this item's id, leaving anything else already in that
+  // cart untouched rather than sweeping it all into this order.
   const buyNow = () => {
     if (needsSelection || outOfStock) return;
     setNavigating(true);
     if (storeThemed && storeTheme) {
+      const variantId = resolved.variantId ?? null;
       partnerCart.add(
         { ...product, price: resolved.price, image: resolved.image },
-        {
-          qty,
-          variantId: resolved.variantId ?? null,
-          variantLabel: resolved.variantLabel ?? null,
-        },
+        { qty, variantId, variantLabel: resolved.variantLabel ?? null },
       );
-      router.push(`/store/${storeTheme.code}/checkout`);
+      const itemId = variantId
+        ? `${product.productId}::${variantId}`
+        : product.productId;
+      router.push(
+        `/store/${storeTheme.code}/checkout?item=${encodeURIComponent(itemId)}`,
+      );
       return;
     }
     setBuyNowItem({
