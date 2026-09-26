@@ -20,6 +20,7 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetAdminOrderQuery,
   useAdvanceAdminOrderMutation,
+  useDecideRefundMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
@@ -35,6 +36,24 @@ export default function AdminOrderDetailPage() {
   const confirm = useConfirm();
   const { data: order, isLoading, isError } = useGetAdminOrderQuery(id);
   const [advance, advanceState] = useAdvanceAdminOrderMutation();
+  const [decideRefund, decideState] = useDecideRefundMutation();
+  const decide = async (approve) => {
+    const res = await confirm({
+      title: approve ? `Approve refund for ${id}?` : `Decline refund for ${id}?`,
+      message: approve
+        ? `${formatPrice(order.refund.amount)} goes back to the customer (card or wallet) and escrow is released.`
+        : "The customer is notified and escrow proceeds as normal.",
+      confirmLabel: approve ? "Approve refund" : "Decline",
+      tone: approve ? undefined : "danger",
+    });
+    if (!res) return;
+    try {
+      await decideRefund({ id: order.refund.id, approve }).unwrap();
+      showToast(approve ? "Refund approved & customer credited" : "Refund declined");
+    } catch (e) {
+      showToast(errorMessage(e));
+    }
+  };
   const step = async (to, tracking) => {
     const res = await confirm({
       title: `Move ${id} to "${to.toLowerCase().replace(/_/g, " ")}"?`,
@@ -110,9 +129,9 @@ export default function AdminOrderDetailPage() {
       </div>
 
       {/* Escrow / refund status */}
-      <div className="mx-4 flex items-center gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
+      <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
         {hasRefund ? (
-          <>
+          <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" strokeWidth={1.75} />
             <div>
               <p className="text-[13px] font-medium text-shop-heading">
@@ -123,9 +142,9 @@ export default function AdminOrderDetailPage() {
                 {order.refund.reason ? ` · ${order.refund.reason}` : ""}
               </p>
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="flex items-center gap-3">
             <ShieldCheck
               className={`h-5 w-5 shrink-0 ${escrowReleased ? "text-emerald-600" : "text-amber-600"}`}
               strokeWidth={1.75}
@@ -144,7 +163,28 @@ export default function AdminOrderDetailPage() {
                   : "Released automatically once delivery is confirmed."}
               </p>
             </div>
-          </>
+          </div>
+        )}
+
+        {hasRefund && order.refund.status === "pending" && (
+          <div className="flex gap-2 border-t border-shop-border pt-3">
+            <button
+              type="button"
+              disabled={decideState.isLoading}
+              onClick={() => decide(false)}
+              className="flex-1 rounded-[8px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading disabled:opacity-60"
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              disabled={decideState.isLoading}
+              onClick={() => decide(true)}
+              className="flex-1 rounded-[8px] bg-shop-accent-1 py-2.5 text-[12.5px] font-semibold text-white disabled:opacity-60"
+            >
+              Approve refund
+            </button>
+          </div>
         )}
       </div>
 
