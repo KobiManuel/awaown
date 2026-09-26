@@ -208,10 +208,10 @@ function ProductDetail() {
             This product couldn&apos;t be found.
           </p>
           <Link
-            href="/"
+            href={storeTheme ? storeTheme.storeHref : "/"}
             className="mt-3 inline-block rounded-full bg-shop-accent-1 px-5 py-2.5 text-[13px] font-semibold text-white"
           >
-            Back to AwaOwn
+            {storeTheme ? "Back to the store" : "Back to AwaOwn"}
           </Link>
         </div>
       </PageShell>
