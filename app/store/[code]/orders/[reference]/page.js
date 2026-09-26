@@ -7,11 +7,26 @@ import Link from "next/link";
 import { CheckCircle2, Loader2, MapPin, PackageCheck, Download } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { statusMeta } from "@/lib/order-status";
-import { useGetGuestOrderDetailQuery, useGuestConfirmDeliveryMutation } from "@/lib/api/ordersApi";
+import {
+  useGetGuestOrderDetailQuery,
+  useGuestConfirmDeliveryMutation,
+  useGuestDisputeOrderMutation,
+} from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
+import DisputeModal from "@/app/Components/Orders/DisputeModal";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { useDigitalDownload } from "@/lib/useDigitalDownload";
+
+// Same list requestRefund() accepts server-side - kept in sync manually since
+// there's no shared constant on this boundary.
+const REFUNDABLE_STATUSES = [
+  "ESCROW_HELD",
+  "AWAITING_CONFIRMATION",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+];
 
 export default function PartnerStoreOrderDetailPage() {
   const { code, reference } = useParams();
@@ -20,6 +35,8 @@ export default function PartnerStoreOrderDetailPage() {
   const justPlaced = search.get("placed") === "true";
   const [confirmDelivery, confirmState] = useGuestConfirmDeliveryMutation();
   const [confirmMsg, setConfirmMsg] = useState("");
+  const [disputeOrder, disputeState] = useGuestDisputeOrderMutation();
+  const [disputeOpen, setDisputeOpen] = useState(false);
 
   const { data: order, isLoading, isError, refetch } = useGetGuestOrderDetailQuery(
     { reference, phone },
@@ -51,6 +68,19 @@ export default function PartnerStoreOrderDetailPage() {
       refetch();
     } catch (err) {
       setConfirmMsg(errorMessage(err));
+    }
+  };
+
+  const [disputeMsg, setDisputeMsg] = useState("");
+  const submitDispute = async ({ reason, description }) => {
+    setDisputeMsg("");
+    try {
+      await disputeOrder({ reference, phone, reason, description }).unwrap();
+      setDisputeOpen(false);
+      setDisputeMsg("Reported. Our team will review it and get back to you.");
+      refetch();
+    } catch (err) {
+      setDisputeMsg(errorMessage(err));
     }
   };
 
@@ -99,8 +129,11 @@ export default function PartnerStoreOrderDetailPage() {
       <StoreThemeShell>
         <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col items-center justify-center gap-3 px-4 text-center font-shop">
           <p className="text-[14px] font-semibold">Order not found</p>
-          <p className="text-[12.5px] opacity-70">
-            Double check the phone number matches the one used at checkout.
+          <p className="max-w-[380px] text-[12.5px] leading-[18px] opacity-70">
+            We don&apos;t have this order on file for that phone number. Check
+            the confirmation email we sent you - it has the exact phone
+            number on file for this order, in case there was a typo. Copy it
+            from there and try again.
           </p>
         </div>
       </StoreThemeShell>
@@ -252,10 +285,32 @@ export default function PartnerStoreOrderDetailPage() {
           </div>
         )}
 
+        {REFUNDABLE_STATUSES.includes(order.status) && (
+          <div className="mt-4 flex flex-col items-center gap-2 rounded-[12px] bg-shop-surface p-4 text-center">
+            <button
+              type="button"
+              onClick={() => setDisputeOpen(true)}
+              className="text-[12.5px] font-semibold text-shop-accent-1 hover:underline"
+            >
+              Report a problem with this order
+            </button>
+            {disputeMsg && <p className="text-[11.5px] opacity-80">{disputeMsg}</p>}
+          </div>
+        )}
+
         <p className="mt-6 text-center text-[11.5px] opacity-60">
           Your payment is held securely and released to the seller once delivery is
           confirmed.
         </p>
+
+        {disputeOpen && (
+          <DisputeModal
+            allowPhotos={false}
+            submitting={disputeState.isLoading}
+            onClose={() => setDisputeOpen(false)}
+            onSubmit={submitDispute}
+          />
+        )}
       </div>
     </StoreThemeShell>
   );

@@ -75,8 +75,11 @@ export default function PartnerStoreOrdersLookupPage() {
         )}
 
         {!isFetching && submittedPhone && data && data.length === 0 && (
-          <p className="mt-8 text-center text-[13px] opacity-70">
-            No orders found for that phone number at this store.
+          <p className="mx-auto mt-8 max-w-[420px] text-center text-[13px] leading-[19px] opacity-70">
+            We don&apos;t have any orders on file for that number. If you
+            checked out recently, check the confirmation email we sent you -
+            it has the exact phone number on file for this order, in case
+            there was a typo. Copy it from there and try again.
           </p>
         )}
 
