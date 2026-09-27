@@ -1047,6 +1047,12 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                       </span>
                     </span>
                   )}
+                  {fileUploading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-white/80 text-[10.5px] font-medium text-shop-text">
+                      <Loader2 className="h-5 w-5 animate-spin text-shop-accent-1" />
+                      Uploading…
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="video/*"
