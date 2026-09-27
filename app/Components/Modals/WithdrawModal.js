@@ -3,14 +3,15 @@
 import React, { useState } from "react";
 import { X, Loader2, CheckCircle2, CalendarClock, ShieldAlert } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
-import { PAYOUT_BANKS } from "@/lib/payout-banks";
-import { BANK_LOGOS } from "@/app/Components/Icons/BrandLogos";
 import {
   useGetPartnerWithdrawalsQuery,
   useRequestWithdrawalMutation,
 } from "@/lib/api/partnerApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
+import BankAccountFields, {
+  useBankAccountFields,
+} from "@/app/Components/Payments/BankAccountFields";
 import ModalShell from "./ModalShell";
 
 const MIN_WITHDRAWAL = 1000;
@@ -23,17 +24,14 @@ const WithdrawModal = () => {
 
   const [step, setStep] = useState("amount"); // amount | processing | success
   const [amount, setAmount] = useState("");
-  const [bank, setBank] = useState(PAYOUT_BANKS[0].id);
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
+  const bankFields = useBankAccountFields();
   const [error, setError] = useState("");
 
   const numericAmount = amount ? Number(amount) : 0;
   const isValid =
     numericAmount >= MIN_WITHDRAWAL &&
     numericAmount <= balance &&
-    accountNumber.length >= 10 &&
-    accountName.trim().length > 1;
+    bankFields.ready;
 
   if (!verified) {
     return (
@@ -74,9 +72,10 @@ const WithdrawModal = () => {
     try {
       await requestWithdrawal({
         amount: numericAmount,
-        bankName: PAYOUT_BANKS.find((b) => b.id === bank)?.label ?? bank,
-        accountNumber,
-        accountName: accountName.trim(),
+        bankName: bankFields.bankName,
+        bankCode: bankFields.bankCode,
+        accountNumber: bankFields.accountNumber,
+        accountName: bankFields.resolvedName,
       }).unwrap();
       setStep("success");
     } catch (err) {
@@ -140,52 +139,7 @@ const WithdrawModal = () => {
               <p className="mb-2 text-[12.5px] font-semibold text-shop-heading">
                 Withdraw To
               </p>
-              <div className="mb-6 flex flex-col gap-2">
-                {PAYOUT_BANKS.map((b) => {
-                  const active = bank === b.id;
-                  const BankLogo = BANK_LOGOS[b.id];
-                  return (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setBank(b.id)}
-                      className={`flex items-center justify-between rounded-[10px] border px-3.5 py-3 text-left transition-colors ${
-                        active ? "border-shop-accent-1 bg-shop-accent-1-light" : "border-shop-border"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2 text-[13px] font-medium text-shop-heading">
-                        {BankLogo && <BankLogo className="h-6 w-6 shrink-0" />}
-                        {b.label}
-                      </span>
-                      <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                          active ? "border-shop-accent-1" : "border-shop-border"
-                        }`}
-                      >
-                        {active && <span className="h-2.5 w-2.5 rounded-full bg-shop-accent-1" />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <input
-                value={accountNumber}
-                onChange={(e) =>
-                  setAccountNumber(
-                    e.target.value.replace(/[^0-9]/g, "").slice(0, 10),
-                  )
-                }
-                placeholder="Account number"
-                inputMode="numeric"
-                className="mb-2 w-full rounded-[10px] border border-shop-border px-3.5 py-3 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-              />
-              <input
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                placeholder="Account name"
-                className="mb-5 w-full rounded-[10px] border border-shop-border px-3.5 py-3 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
-              />
+              <BankAccountFields fields={bankFields} />
 
               {error && (
                 <p className="mb-3 text-[12.5px] font-medium text-red-600">
