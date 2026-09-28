@@ -216,7 +216,7 @@ export default function AdminMarketingPage() {
         }
       />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
-        Coupons, campaigns, flash sales, email, SMS and push notifications.
+        Coupons, campaigns, flash sales, email and push notifications.
       </p>
 
       {formOpen && (
