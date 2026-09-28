@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Loader2, MapPin, PackageCheck, Download } from "lucide-react";
@@ -30,9 +30,27 @@ const REFUNDABLE_STATUSES = [
 
 export default function PartnerStoreOrderDetailPage() {
   const { code, reference } = useParams();
+  const router = useRouter();
   const search = useSearchParams();
-  const phone = search.get("phone") || "";
-  const justPlaced = search.get("placed") === "true";
+  // Captured once, before the URL is scrubbed below - the phone number is
+  // this guest's only credential for the order, so it shouldn't linger in
+  // the address bar/browser history/referrer any longer than it takes to
+  // read it once.
+  const [phone] = useState(() => search.get("phone") || "");
+  const [justPlaced] = useState(() => search.get("placed") === "true");
+
+  useEffect(() => {
+    // Strip the phone (and any other query params) from the visible URL as
+    // early as possible. Left in place, it rides along in the Meta Pixel's
+    // automatic PageView (which reports document.location.href regardless
+    // of what we pass to trackMetaEvent) and in browser history if this
+    // page is ever bookmarked, screen-shared, or the link forwarded.
+    if (search.toString()) {
+      router.replace(`/store/${code}/orders/${reference}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [confirmDelivery, confirmState] = useGuestConfirmDeliveryMutation();
   const [confirmMsg, setConfirmMsg] = useState("");
   const [disputeOrder, disputeState] = useGuestDisputeOrderMutation();
