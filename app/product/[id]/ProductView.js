@@ -85,6 +85,36 @@ function ProductDetail() {
   });
   const moreFromStore = (partnerStore?.products ?? []).filter((p) => p.id !== id);
 
+  // Inside a partner's store, the buyer's price is (server-side, at
+  // checkout) always product.price minus whatever flat discount that
+  // partner set on this specific listing - but this page fetches the
+  // product via the same plain useGetProductQuery every non-partner view
+  // uses, which knows nothing about that discount. Without this, the price
+  // shown/added-to-cart/bought-now here is the undiscounted price even
+  // though Paystack only ever charges the discounted one - a customer
+  // reaching this page from a normal product link (not the store's own
+  // grid, which already applies it) sees a total that doesn't match what
+  // they're actually charged. moreFromStore's un-filtered source list is
+  // reused here rather than a second request.
+  const storeListing = (partnerStore?.products ?? []).find((p) => p.id === id);
+  const partnerDiscount = storeListing
+    ? Math.max(0, storeListing.listPrice - storeListing.price)
+    : 0;
+  const displayProduct = useMemo(() => {
+    if (!product || !partnerDiscount) return product;
+    return {
+      ...product,
+      price: Math.max(0, product.price - partnerDiscount),
+      compareAt: product.compareAt
+        ? Math.max(0, product.compareAt - partnerDiscount)
+        : product.compareAt,
+      variants: (product.variants ?? []).map((v) => ({
+        ...v,
+        price: Math.max(0, v.price - partnerDiscount),
+      })),
+    };
+  }, [product, partnerDiscount]);
+
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -104,19 +134,19 @@ function ProductDetail() {
   }, [product]); // eslint-disable-line
 
   useEffect(() => {
-    if (!product) return;
+    if (!displayProduct) return;
     trackMetaEvent("ViewContent", {
-      content_ids: [product.productId ?? product.id],
+      content_ids: [displayProduct.productId ?? displayProduct.id],
       content_type: "product",
-      content_name: product.title,
-      value: product.price ?? 0,
+      content_name: displayProduct.title,
+      value: displayProduct.price ?? 0,
       currency: "NGN",
     });
-  }, [product]);
+  }, [displayProduct]);
 
   const resolved = useMemo(
-    () => (product ? resolveVariant(product, selected) : null),
-    [product, selected],
+    () => (displayProduct ? resolveVariant(displayProduct, selected) : null),
+    [displayProduct, selected],
   );
 
   const pickAxis = (key, value) =>
@@ -218,8 +248,8 @@ function ProductDetail() {
     );
   }
 
-  const discount = product.compareAt
-    ? Math.round((1 - product.price / product.compareAt) * 100)
+  const discount = displayProduct.compareAt
+    ? Math.round((1 - displayProduct.price / displayProduct.compareAt) * 100)
     : null;
   // per-combination once the shopper has picked every axis, otherwise the roll-up
   const stockLeft = needsSelection ? null : resolved.maxQty;
@@ -535,12 +565,12 @@ function ProductDetail() {
             <div className="flex items-center gap-2">
               <span className="text-[24px] font-bold text-shop-heading">
                 {needsSelection
-                  ? `From ${formatPrice(product.price)}`
+                  ? `From ${formatPrice(displayProduct.price)}`
                   : formatPrice(resolved.price)}
               </span>
-              {product.compareAt && (
+              {displayProduct.compareAt && (
                 <span className="text-[14px] text-shop-text/50 line-through">
-                  {formatPrice(product.compareAt)}
+                  {formatPrice(displayProduct.compareAt)}
                 </span>
               )}
             </div>
