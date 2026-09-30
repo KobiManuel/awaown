@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 
-const THREE_DAYS_MS = 1000 * 60 * 60 * 24 * 3;
-
 const getTimeLeft = (target) => {
   const diff = Math.max(0, target - Date.now());
   return {
@@ -14,22 +12,26 @@ const getTimeLeft = (target) => {
   };
 };
 
-const Countdown = () => {
+// target: the deal's real endsAt, as epoch ms - set by the admin, not this
+// component. The caller (DealOfWeek/main.js) already only renders this once
+// it's confirmed the deal is still active, so target is always in the future
+// on mount.
+const Countdown = ({ target }) => {
   // Server and client render at slightly different instants, so computing
-  // "now + 3 days" (or reading Date.now()) during the initial render would
-  // mismatch between SSR and hydration. Render a static placeholder first,
-  // then compute the real countdown client-side after mount.
+  // the time left during the initial render would mismatch between SSR and
+  // hydration. Render a static placeholder first, then compute the real
+  // countdown client-side after mount.
   const [time, setTime] = useState(null);
 
   useEffect(() => {
-    const target = Date.now() + THREE_DAYS_MS;
+    if (!target) return;
     setTime(getTimeLeft(target));
     const id = setInterval(() => setTime(getTimeLeft(target)), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [target]);
 
   const units = [
-    { label: "Days", value: time?.days ?? 3 },
+    { label: "Days", value: time?.days ?? 0 },
     { label: "Hours", value: time?.hours ?? 0 },
     { label: "Min", value: time?.minutes ?? 0 },
     { label: "Sec", value: time?.seconds ?? 0 },

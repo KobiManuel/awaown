@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Loader2, ImagePlus, Plus, Trash2, Quote } from "lucide-react";
+import { Loader2, ImagePlus, Plus, Trash2, Quote, X, Search } from "lucide-react";
 import {
   formatPrice,
   homepageContentDefaults,
@@ -13,6 +13,7 @@ import {
   useGetHomepageCmsQuery,
   useSaveHomepageCmsMutation,
   useGetAdminMerchantsQuery,
+  useGetAdminProductsQuery,
 } from "@/lib/api/adminApi";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -268,68 +269,205 @@ function ThreeBannerEditor({ data, onChange, visible, onToggleVisible }) {
   );
 }
 
+// Lists every live product so an admin can pick the one to feature as this
+// week's deal, instead of retyping its details by hand. Search is
+// client-side over the same list the Products page already fetches.
+function ProductPickerModal({ onPick, onClose }) {
+  const { data, isLoading } = useGetAdminProductsQuery();
+  const products = data?.items ?? [];
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const filtered = needle
+    ? products.filter((p) =>
+        `${p.title} ${p.storeName || p.vendor || ""}`.toLowerCase().includes(needle),
+      )
+    : products;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[80vh] w-full max-w-[560px] flex-col rounded-t-[20px] bg-white p-5 lg:rounded-[16px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[14px] font-semibold text-shop-heading">
+            Choose a product
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-shop-bg"
+          >
+            <X className="h-4 w-4 text-shop-heading" />
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-shop-border px-3 py-2.5 focus-within:border-shop-accent-1">
+          <Search className="h-4 w-4 shrink-0 text-shop-text/50" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by title or store..."
+            className="w-full bg-transparent text-[13px] text-shop-heading outline-none placeholder:text-shop-text/40"
+            autoFocus
+          />
+        </div>
+
+        <div className="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto">
+          {isLoading ? (
+            <p className="py-8 text-center text-[12px] text-shop-text/60">
+              Loading products…
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="py-8 text-center text-[12px] text-shop-text/60">
+              No products match.
+            </p>
+          ) : (
+            filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onPick(p)}
+                className="flex items-center gap-3 rounded-[10px] border border-shop-border p-2.5 text-left hover:bg-shop-bg"
+              >
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] bg-shop-bg">
+                  {p.image && (
+                    <Image src={p.image} alt="" fill className="object-cover" sizes="48px" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
+                    {p.title}
+                  </p>
+                  <p className="text-[11px] text-shop-text/60">
+                    {p.storeName || p.vendor} · {formatPrice(p.price)}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// datetime-local wants "YYYY-MM-DDTHH:mm" in the browser's local time, not
+// the UTC ISO string the backend stores - converts one to the other without
+// drifting a day/hour off from what the admin actually picked.
+function toDatetimeLocalValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange, visible, onToggleVisible }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // Same list the picker modal shows - reused here (RTK Query dedupes the
+  // request) just to render the live preview card for whatever is already
+  // picked, without a second endpoint.
+  const { data } = useGetAdminProductsQuery();
+  const products = data?.items ?? [];
+  const selected = products.find((p) => p.id === deal.productId);
+
+  const handlePick = (p) => {
+    onDealChange({ productId: p.id, slug: p.slug, discountAmount: 0 });
+    setPickerOpen(false);
+  };
+
+  const discount = Number(deal.discountAmount) || 0;
+  const dealPrice = selected ? Math.max(0, selected.price - discount) : 0;
+
   return (
     <SectionShell title="Deal of the Week & Featured Products" visible={visible} onToggleVisible={onToggleVisible}>
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex w-full flex-col gap-3 rounded-[10px] bg-shop-bg p-4 lg:w-[280px] lg:shrink-0">
-          <div className="group relative aspect-square w-full overflow-hidden rounded-[8px] bg-white">
-            <Image src={deal.image} alt="" fill className="object-cover" />
-            <ImageEditButton onPick={(url) => onDealChange({ image: url })} aspect={1} />
-          </div>
-          <DimensionHint text="800 × 800 px (square, 1:1)" />
-          <InlineText
-            value={deal.vendor}
-            onChange={(v) => onDealChange({ vendor: v })}
-            className="w-fit rounded-full bg-shop-accent-1-light px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-shop-accent-1"
-            placeholder="Vendor / badge"
-          />
-          <InlineText
-            value={deal.title}
-            onChange={(v) => onDealChange({ title: v })}
-            className="text-[16px] font-semibold leading-[22px] text-shop-heading"
-            placeholder="Product title"
-            multiline
-          />
-          <div className="flex items-center gap-3">
-            <InlineText
-              value={String(deal.price)}
-              onChange={(v) => onDealChange({ price: Number(v.replace(/[^0-9.]/g, "")) || 0 })}
-              className="w-20 text-[18px] font-semibold text-shop-heading"
-              placeholder="Price"
-            />
-            <InlineText
-              value={String(deal.compareAt)}
-              onChange={(v) => onDealChange({ compareAt: Number(v.replace(/[^0-9.]/g, "")) || 0 })}
-              className="w-20 text-[13px] text-shop-text/60 line-through"
-              placeholder="Compare-at"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className={LABEL}>Rating</span>
-              <select
-                value={deal.rating}
-                onChange={(e) => onDealChange({ rating: Number(e.target.value) })}
-                className="rounded-[6px] border border-shop-border px-2 py-1 text-[12px] text-shop-heading outline-none"
+          {selected ? (
+            <>
+              <div className="relative aspect-square w-full overflow-hidden rounded-[8px] bg-white">
+                {selected.image && (
+                  <Image src={selected.image} alt="" fill className="object-cover" />
+                )}
+              </div>
+              <span className="w-fit rounded-full bg-shop-accent-1-light px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-shop-accent-1">
+                {selected.storeName || selected.vendor}
+              </span>
+              <p className="text-[16px] font-semibold leading-[22px] text-shop-heading">
+                {selected.title}
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-[18px] font-semibold text-shop-heading">
+                  {formatPrice(dealPrice)}
+                </span>
+                {discount > 0 && (
+                  <span className="text-[13px] text-shop-text/60 line-through">
+                    {formatPrice(selected.price)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className={LABEL}>Discount (₦ off)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={deal.discountAmount ? String(deal.discountAmount) : ""}
+                  onChange={(e) =>
+                    onDealChange({
+                      discountAmount: Number(e.target.value.replace(/[^0-9]/g, "")) || 0,
+                    })
+                  }
+                  placeholder="0"
+                  className="rounded-[6px] border border-shop-border bg-white px-2.5 py-1.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+                <span className="text-[10.5px] text-shop-text/50">
+                  Honored for real at checkout - this is exactly what the buyer pays.
+                  The seller is still paid the product&apos;s full price either way.
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className={LABEL}>Deal ends</span>
+                <input
+                  type="datetime-local"
+                  value={toDatetimeLocalValue(deal.endsAt)}
+                  onChange={(e) =>
+                    onDealChange({
+                      endsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                    })
+                  }
+                  className="rounded-[6px] border border-shop-border bg-white px-2.5 py-1.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+                />
+                <span className="text-[10.5px] text-shop-text/50">
+                  The card (and the discount) disappear once this passes - nothing to
+                  turn off by hand.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="w-fit text-[11.5px] font-semibold text-shop-accent-1 hover:underline"
               >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={LABEL}>Reviews</span>
-              <InlineText
-                value={String(deal.reviews)}
-                onChange={(v) => onDealChange({ reviews: Number(v.replace(/[^0-9]/g, "")) || 0 })}
-                className="w-14 text-[12px] text-shop-text/70"
-                placeholder="0"
-              />
-            </div>
-          </div>
+                Change product
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[8px] border-2 border-dashed border-shop-border bg-white text-shop-text/60 hover:border-shop-accent-1 hover:text-shop-accent-1"
+            >
+              <ImagePlus className="h-6 w-6" />
+              <span className="text-[12px] font-medium">Choose a product</span>
+            </button>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col gap-2">
@@ -345,6 +483,10 @@ function DealOfWeekEditor({ deal, featured, onDealChange, onFeaturedChange, visi
           </p>
         </div>
       </div>
+
+      {pickerOpen && (
+        <ProductPickerModal onPick={handlePick} onClose={() => setPickerOpen(false)} />
+      )}
     </SectionShell>
   );
 }
