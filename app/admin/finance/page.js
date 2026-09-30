@@ -173,9 +173,15 @@ export default function AdminFinancePage() {
     );
   };
 
-  const submitPayoutOtp = (p) => {
+  const submitPayoutOtp = async (p) => {
     const otp = (otpDrafts[p.id] || "").trim();
     if (!otp) return;
+    const res = await confirm({
+      title: `Release ₦${formatPrice(p.net)} to ${p.merchant}?`,
+      message: "This confirms the code and sends the money - it can't be undone from here.",
+      confirmLabel: "Confirm and send",
+    });
+    if (!res) return;
     run(
       () => finalizePayoutOtp({ reference: p.id, otp }).unwrap(),
       "Code confirmed - Paystack will settle the payout shortly",
@@ -183,9 +189,15 @@ export default function AdminFinancePage() {
     setOtpDrafts((d) => ({ ...d, [p.id]: "" }));
   };
 
-  const submitWithdrawalOtp = (w) => {
+  const submitWithdrawalOtp = async (w) => {
     const otp = (otpDrafts[w.id] || "").trim();
     if (!otp) return;
+    const res = await confirm({
+      title: `Release ₦${formatPrice(w.amount)} to ${w.partner}?`,
+      message: "This confirms the code and sends the money - it can't be undone from here.",
+      confirmLabel: "Confirm and send",
+    });
+    if (!res) return;
     run(
       () => finalizeWithdrawalOtp({ reference: w.id, otp }).unwrap(),
       "Code confirmed - Paystack will settle the withdrawal shortly",

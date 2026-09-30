@@ -77,6 +77,23 @@ export default function AdminTeamPage() {
     }
   };
 
+  const handleRoleChange = async (member, newRole) => {
+    if (newRole === member.teamRole) return;
+    const res = await confirm({
+      title: `Change ${member.user.fullName}'s access to ${roleLabel(newRole)}?`,
+      message: "This changes what they can do in the admin panel immediately.",
+      confirmLabel: "Change role",
+      tone: isSuperRole(newRole) || isSuperRole(member.teamRole) ? "danger" : undefined,
+    });
+    if (!res) return;
+    try {
+      await setRole({ id: member.id, teamRole: newRole }).unwrap();
+      showToast(`${member.user.fullName} is now ${roleLabel(newRole)}`);
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[900px]">
       <AppHeader
@@ -159,14 +176,7 @@ export default function AdminTeamPage() {
                 <select
                   value={member.teamRole}
                   disabled={!amSuper && isSuperRole(member.teamRole)}
-                  onChange={(e) => {
-                    setRole({ id: member.id, teamRole: e.target.value })
-                      .unwrap()
-                      .then(() =>
-                        showToast(`${member.user.fullName} is now ${roleLabel(e.target.value)}`),
-                      )
-                      .catch((err) => showToast(errorMessage(err)));
-                  }}
+                  onChange={(e) => handleRoleChange(member, e.target.value)}
                   className="rounded-[8px] border border-shop-border bg-white px-3 py-2 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1 disabled:opacity-60"
                 >
                   {assignableRoles.map((r) => (
