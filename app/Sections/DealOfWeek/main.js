@@ -36,7 +36,10 @@ const DealOfWeek = () => {
     dealEndsAt > Date.now(); // eslint-disable-line react-hooks/purity
   const { data: dealProduct } = useGetProductQuery(deal.slug, { skip: !dealLive });
 
-  const { data, isLoading } = useGetProductsQuery({ featured: true, limit: 6 });
+  // No real cap on how many products a merchant/admin can mark "featured" -
+  // 100 is just a safety ceiling against a pathological case, not a UI
+  // limit. The carousel arrows below scroll through all of them.
+  const { data, isLoading } = useGetProductsQuery({ featured: true, limit: 100 });
   const featured = data?.items ?? [];
 
   const showDeal = visibility.dealOfWeek && dealLive && !!dealProduct;
@@ -113,16 +116,16 @@ const DealOfWeek = () => {
             </SectionHeader>
             <div
               data-featured-track
-              className="hide-scrollbar grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto sm:grid-cols-2 lg:grid-flow-row lg:grid-cols-2"
+              className="hide-scrollbar grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-2"
             >
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="w-[210px] sm:w-auto">
+                    <div key={i} className="w-[210px]">
                       <SkeletonProductCard />
                     </div>
                   ))
-                : featured.slice(0, 4).map((prod) => (
-                    <div key={prod.id} className="w-[210px] sm:w-auto">
+                : featured.map((prod) => (
+                    <div key={prod.id} className="w-[210px]">
                       <ProductCard product={prod} />
                     </div>
                   ))}
