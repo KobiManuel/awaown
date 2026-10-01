@@ -38,9 +38,21 @@ const DealOfWeek = () => {
 
   // No real cap on how many products a merchant/admin can mark "featured" -
   // 100 is just a safety ceiling against a pathological case, not a UI
-  // limit. The carousel arrows below scroll through all of them.
+  // limit. The arrows below page through them 4 at a time.
   const { data, isLoading } = useGetProductsQuery({ featured: true, limit: 100 });
   const featured = data?.items ?? [];
+
+  const FEATURED_PAGE_SIZE = 4;
+  const [featuredPage, setFeaturedPage] = useState(0);
+  const featuredPageCount = Math.max(1, Math.ceil(featured.length / FEATURED_PAGE_SIZE));
+  // Clamped here rather than synced back with an effect - if the list
+  // shrinks (a product gets unfeatured) while sitting on a now out-of-range
+  // page, this just quietly shows the last real page instead of a blank one.
+  const currentFeaturedPage = Math.min(featuredPage, featuredPageCount - 1);
+  const visibleFeatured = featured.slice(
+    currentFeaturedPage * FEATURED_PAGE_SIZE,
+    currentFeaturedPage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE,
+  );
 
   const showDeal = visibility.dealOfWeek && dealLive && !!dealProduct;
   const showFeatured = visibility.featuredProducts && (isLoading || featured.length > 0);
@@ -112,22 +124,20 @@ const DealOfWeek = () => {
         {showFeatured && (
           <div className="flex-1">
             <SectionHeader title={content.featuredProducts?.sectionTitle || "Featured Products"}>
-              <CarouselArrows targetSelector="[data-featured-track]" />
+              <CarouselArrows
+                onPrev={() => setFeaturedPage((p) => Math.max(0, p - 1))}
+                onNext={() =>
+                  setFeaturedPage((p) => Math.min(featuredPageCount - 1, p + 1))
+                }
+                prevDisabled={currentFeaturedPage === 0}
+                nextDisabled={currentFeaturedPage >= featuredPageCount - 1}
+              />
             </SectionHeader>
-            <div
-              data-featured-track
-              className="hide-scrollbar grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-2"
-            >
+            <div className="grid grid-cols-2 gap-4">
               {isLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="w-[210px]">
-                      <SkeletonProductCard />
-                    </div>
-                  ))
-                : featured.map((prod) => (
-                    <div key={prod.id} className="w-[210px]">
-                      <ProductCard product={prod} />
-                    </div>
+                ? Array.from({ length: 4 }).map((_, i) => <SkeletonProductCard key={i} />)
+                : visibleFeatured.map((prod) => (
+                    <ProductCard key={prod.id} product={prod} />
                   ))}
             </div>
           </div>
