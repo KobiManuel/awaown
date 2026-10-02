@@ -32,7 +32,7 @@ export default function PartnerStoreOrdersLookupPage() {
 
   return (
     <StoreThemeShell>
-      <div className="mx-auto w-full max-w-[560px] px-4 py-10 font-shop md:py-16">
+      <div className="mx-auto min-h-screen w-full max-w-[560px] px-4 py-10 font-shop md:py-16">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <PackageSearch className="h-8 w-8 text-shop-accent-1" strokeWidth={1.5} />
           <h1 className="text-[20px] font-semibold">Your Orders</h1>
