@@ -185,6 +185,17 @@ export default function AdminMerchantsPage() {
                 </div>
               </Link>
 
+              <div className="flex shrink-0 items-center text-[11.5px] text-shop-text/70">
+                <a
+                  href={`/shop/${m.storeSlug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-shop-accent-1 hover:underline"
+                >
+                  Shop Link
+                </a>
+              </div>
+
               <div className="flex flex-wrap items-center gap-1.5">
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize ${
