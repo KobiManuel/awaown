@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { formatPrice } from "@/lib/partner-data";
+import { isValidNigerianPhone } from "@/lib/phone";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -66,6 +67,25 @@ export default function PartnerAccountPage() {
       await saveCustomization({ storeName: name }).unwrap();
       showToast("Store name updated");
       setEditingStore(false);
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
+
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  const savePhone = async () => {
+    const phone = phoneDraft.trim();
+    if (!isValidNigerianPhone(phone)) {
+      setPhoneError("Enter a valid Nigerian phone number.");
+      return;
+    }
+    try {
+      await saveCustomization({ phone }).unwrap();
+      showToast("Phone number updated");
+      setEditingPhone(false);
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -124,6 +144,61 @@ export default function PartnerAccountPage() {
                 setEditingStore(true);
               }}
               aria-label="Edit store name"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-shop-bg"
+            >
+              <Pencil className="h-4 w-4 text-shop-text/60" />
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="mx-4 flex items-center justify-between gap-3 rounded-[14px] border border-shop-border bg-white p-3.5 lg:mx-0">
+        {editingPhone ? (
+          <div className="flex flex-1 flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <input
+                type="tel"
+                value={phoneDraft}
+                onChange={(e) => {
+                  setPhoneDraft(e.target.value.replace(/[^\d+]/g, ""));
+                  setPhoneError("");
+                }}
+                placeholder="+234 803 000 0000"
+                className="w-full rounded-[8px] border border-shop-border px-3 py-2 text-[13px] text-shop-heading outline-none focus:border-shop-accent-1"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={savePhone}
+                disabled={saveState.isLoading}
+                aria-label="Save phone number"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-shop-accent-1 text-white disabled:opacity-60"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </div>
+            {phoneError && (
+              <p className="text-[11.5px] text-shop-accent-3">{phoneError}</p>
+            )}
+          </div>
+        ) : (
+          <>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-shop-text/60">
+                Phone Number
+              </p>
+              <p className="text-[14px] font-semibold text-shop-heading">
+                {p?.phone || "Not set"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPhoneDraft(p?.phone ?? "");
+                setPhoneError("");
+                setEditingPhone(true);
+              }}
+              aria-label="Edit phone number"
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-shop-bg"
             >
               <Pencil className="h-4 w-4 text-shop-text/60" />

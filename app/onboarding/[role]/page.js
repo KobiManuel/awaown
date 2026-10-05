@@ -112,7 +112,7 @@ function OnboardingForm() {
     e.preventDefault();
     setFormError("");
     if (
-      (role === "customer" || role === "merchant") &&
+      (role === "customer" || role === "merchant" || role === "partner") &&
       !isValidNigerianPhone(form.phone)
     ) {
       setFormError("Enter a valid Nigerian phone number.");
@@ -127,7 +127,11 @@ function OnboardingForm() {
         phone: form.phone?.trim(),
         category: form.category || undefined,
       };
-    else body = { displayName: form.displayName?.trim() };
+    else
+      body = {
+        displayName: form.displayName?.trim(),
+        phone: form.phone?.trim(),
+      };
 
     try {
       await complete(body).unwrap();
@@ -230,6 +234,16 @@ function OnboardingForm() {
                 value={form.displayName || ""}
                 onChange={set("displayName")}
                 placeholder="Ada Recommends"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Phone number">
+              <input
+                type="tel"
+                required
+                value={form.phone || ""}
+                onChange={set("phone")}
+                placeholder="+234 803 000 0000"
                 className={inputCls}
               />
             </Field>
