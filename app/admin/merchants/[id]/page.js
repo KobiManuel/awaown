@@ -3,13 +3,14 @@
 import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Store, Package, ShoppingBag, IdCard, Phone, MapPin, Home } from "lucide-react";
+import { Store, Package, ShoppingBag, Phone, MapPin, Home } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import { statusMeta } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetAdminMerchantQuery } from "@/lib/api/adminApi";
 import ModerationActions from "@/app/Components/Admin/ModerationActions";
+import VerificationDocuments from "@/app/Components/Admin/VerificationDocuments";
 
 const VERIFICATION_TONE = {
   VERIFIED: "bg-emerald-100 text-emerald-700",
@@ -17,19 +18,6 @@ const VERIFICATION_TONE = {
   REJECTED: "bg-red-50 text-shop-accent-3",
   UNVERIFIED: "bg-shop-bg text-shop-text",
 };
-
-const DocSlot = ({ label, image }) => (
-  <div className="flex flex-col gap-1.5">
-    <span className="text-[11px] font-semibold text-shop-text/60">{label}</span>
-    <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-[10px] bg-shop-bg">
-      {image ? (
-        <Image src={image} alt={label} fill className="object-cover" sizes="200px" />
-      ) : (
-        <span className="text-[11px] text-shop-text/40">Not submitted</span>
-      )}
-    </div>
-  </div>
-);
 
 const Stat = ({ label, value }) => (
   <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3.5">
@@ -142,27 +130,7 @@ export default function AdminMerchantDetailPage() {
         </div>
       )}
 
-      {v && (
-        <div className="mx-4 flex flex-col gap-2.5 lg:mx-8">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
-            <IdCard className="h-4 w-4 text-shop-accent-1" />
-            Verification Documents · {v.status}
-          </p>
-          {(v.idType || v.idNumber) && (
-            <p className="text-[12px] text-shop-text">
-              {[v.idType, v.idNumber].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          <div className="grid grid-cols-3 gap-3">
-            <DocSlot label="ID Front" image={v.idFrontUrl} />
-            <DocSlot label="ID Back" image={v.idBackUrl} />
-            <DocSlot label="Selfie Holding ID" image={v.selfieUrl} />
-          </div>
-          {v.reviewNote && (
-            <p className="text-[11.5px] text-shop-accent-3">Review note: {v.reviewNote}</p>
-          )}
-        </div>
-      )}
+      <VerificationDocuments verification={v} />
 
       <ModerationActions
         kind="merchant"
