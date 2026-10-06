@@ -63,6 +63,7 @@ export default function GuestCommerceMerge() {
             qty: it.qty,
             variantId: it.variantId ?? undefined,
             variantLabel: it.variantLabel ?? undefined,
+            ref: it.ref ?? undefined,
           }).unwrap();
         } catch {
           /* skip items that no longer exist / are out of stock */

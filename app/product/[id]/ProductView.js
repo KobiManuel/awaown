@@ -4,6 +4,8 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import {
   Heart,
   Star,
@@ -60,6 +62,7 @@ function ProductDetail() {
   const pathname = usePathname();
   const search = useSearchParams();
   const showToast = useToast();
+  const dispatch = useDispatch();
 
   const { authed } = useAuthBootstrap("customer");
   // A partner's storefront presents the partner as the seller, not the
@@ -326,8 +329,8 @@ function ProductDetail() {
   // cart untouched rather than sweeping it all into this order.
   const buyNow = () => {
     if (needsSelection || outOfStock) return;
-    setNavigating(true);
     if (storeThemed && storeTheme) {
+      setNavigating(true);
       const variantId = resolved.variantId ?? null;
       partnerCart.add(
         { ...product, price: resolved.price, image: resolved.image },
@@ -349,10 +352,17 @@ function ProductDetail() {
       ref: refCode ?? null,
     });
     if (commerce.authed) {
+      setNavigating(true);
       router.push("/dashboard/checkout?mode=buynow");
     } else {
-      router.push(
-        `/login/customer?next=${encodeURIComponent("/dashboard/checkout?mode=buynow")}`,
+      dispatch(
+        openModal({
+          modalType: MODAL_TYPES.GUEST_OR_SIGNIN,
+          modalProps: {
+            guestHref: "/checkout?mode=buynow",
+            signInNext: "/dashboard/checkout?mode=buynow",
+          },
+        }),
       );
     }
   };

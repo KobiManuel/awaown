@@ -4,16 +4,18 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/shop-data";
 import { useCommerce } from "@/lib/useCommerce";
 import SectionHeader from "@/app/Components/Section/SectionHeader";
 import { useStoreTheme } from "@/lib/useStoreTheme";
+import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 
 const CartClient = () => {
   const items = useSelector((state) => state.cart.items);
   const router = useRouter();
+  const dispatch = useDispatch();
   const commerce = useCommerce();
   // Inside a partner's storefront, "continue shopping" must stay inside that
   // store, never bounce out to the main site's homepage.
@@ -24,12 +26,15 @@ const CartClient = () => {
     if (commerce.authed) {
       router.push("/dashboard/checkout");
     } else {
-      try {
-        localStorage.setItem("awaown_merge_guest", "1");
-      } catch {
-        /* ignore */
-      }
-      router.push("/login/customer?next=/dashboard/checkout");
+      dispatch(
+        openModal({
+          modalType: MODAL_TYPES.GUEST_OR_SIGNIN,
+          modalProps: {
+            guestHref: "/checkout",
+            signInNext: "/dashboard/checkout",
+          },
+        }),
+      );
     }
   };
 
@@ -163,7 +168,7 @@ const CartClient = () => {
           </button>
           {!commerce.authed && (
             <p className="mt-2 text-center text-[11.5px] text-shop-text/60">
-              You&apos;ll sign in at checkout - your cart comes with you.
+              Check out as a guest, or sign in - your cart comes with you.
             </p>
           )}
         </div>
