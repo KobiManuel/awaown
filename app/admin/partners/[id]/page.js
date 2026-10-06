@@ -69,6 +69,9 @@ export default function AdminPartnerDetailPage() {
               year: "numeric",
             })}
           </p>
+          <p className="text-[11px] text-shop-text/60">
+            {p.phone || "No phone on file"}
+          </p>
         </div>
       </div>
 
