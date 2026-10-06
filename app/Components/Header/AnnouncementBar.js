@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import AuthNavLink from "./AuthNavLink";
 
 const AnnouncementBar = () => {
   return (
@@ -24,9 +27,7 @@ const AnnouncementBar = () => {
           >
             Become a Partner
           </Link>
-          <Link href="/login" className="px-2 hover:text-shop-accent-1">
-            Login
-          </Link>
+          <AuthNavLink variant="bar" />
         </div>
       </div>
     </div>

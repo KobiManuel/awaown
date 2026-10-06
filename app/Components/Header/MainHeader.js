@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Search, Heart, ShoppingCart, Menu, Phone } from "lucide-react";
+import { Search, Heart, ShoppingCart, Menu, Phone, PackageSearch } from "lucide-react";
 import ThemeToggle from "@/app/Components/Dashboard/ThemeToggle";
 import ThemedLogo from "@/app/Components/Header/ThemedLogo";
 import { SUPPORT_PHONE_DISPLAY } from "@/lib/site-config";
@@ -79,6 +79,13 @@ const MainHeader = ({ onMenuClick }) => {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <Link
+              href="/orders/track"
+              aria-label="Track an order"
+              className="hidden sm:block"
+            >
+              <PackageSearch className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
+            </Link>
             <Link href={wishlistHref} aria-label="Wishlist" className="relative">
               <Heart className="h-6 w-6 text-shop-heading" strokeWidth={1.5} />
               <span className="absolute -right-2 -top-2 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-shop-accent-1 text-[10px] text-white">

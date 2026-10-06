@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ChevronDown } from "lucide-react";
+import { X, ChevronDown, PackageSearch } from "lucide-react";
 import { navLinks } from "@/lib/shop-data";
 import { useGetCategoriesQuery } from "@/lib/api/catalogApi";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import AuthNavLink from "./AuthNavLink";
 
 const MobileMenu = ({ open, onClose }) => {
   const { data: categories } = useGetCategoriesQuery();
@@ -63,6 +64,14 @@ const MobileMenu = ({ open, onClose }) => {
                 className="border-b border-shop-border/60 py-3 text-[15px] font-medium text-shop-heading"
               >
                 Help Centre
+              </Link>
+              <Link
+                href="/orders/track"
+                onClick={onClose}
+                className="flex items-center gap-1.5 border-b border-shop-border/60 py-3 text-[15px] font-medium text-shop-heading"
+              >
+                <PackageSearch className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+                Track an Order
               </Link>
             </nav>
 
@@ -130,13 +139,7 @@ const MobileMenu = ({ open, onClose }) => {
               >
                 Become a Partner
               </Link>
-              <Link
-                href="/login"
-                onClick={onClose}
-                className="w-full py-2 text-center text-[14px] font-semibold text-shop-heading"
-              >
-                Login
-              </Link>
+              <AuthNavLink variant="menu" onClick={onClose} />
             </div>
           </motion.div>
         </>
