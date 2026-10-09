@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PackageSearch } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import { statusMeta } from "@/lib/order-status";
@@ -9,9 +10,22 @@ import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useGetAdminOrdersQuery } from "@/lib/api/adminApi";
 
-export default function AdminOrdersPage() {
-  const { data, isLoading } = useGetAdminOrdersQuery();
+const FILTERS = [
+  { value: "", label: "All" },
+  { value: "PENDING", label: "Pending" },
+];
+
+function AdminOrdersInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const status = searchParams.get("status") === "PENDING" ? "PENDING" : "";
+
+  const { data, isLoading } = useGetAdminOrdersQuery(status || undefined);
   const items = data?.items ?? [];
+
+  const setFilter = (value) => {
+    router.replace(value ? `/admin/orders?status=${value}` : "/admin/orders");
+  };
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -20,6 +34,23 @@ export default function AdminOrdersPage() {
         Complete order lifecycle: payment status, escrow, delivery and refunds.
       </p>
 
+      <div className="flex gap-2 px-4 lg:px-8">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setFilter(f.value)}
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+              status === f.value
+                ? "bg-shop-accent-1 text-white"
+                : "bg-shop-bg text-shop-text hover:bg-shop-accent-1-light"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="px-4 lg:px-8">
           <SkeletonRows count={5} />
@@ -27,7 +58,9 @@ export default function AdminOrdersPage() {
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <PackageSearch className="h-7 w-7 text-shop-text/40" strokeWidth={1.5} />
-          <p className="text-[14px] font-semibold text-shop-heading">No orders yet</p>
+          <p className="text-[14px] font-semibold text-shop-heading">
+            {status === "PENDING" ? "No pending orders" : "No orders yet"}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2 px-4 lg:px-8">
@@ -59,5 +92,13 @@ export default function AdminOrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOrdersInner />
+    </Suspense>
   );
 }

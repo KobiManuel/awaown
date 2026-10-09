@@ -247,13 +247,14 @@ export default function AdminHome() {
         <p className="text-[14px] font-semibold text-shop-heading">Business Overview</p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {isLoading || !kpis ? (
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-[14px]" />
             ))
           ) : (
             <>
               <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(kpis.revenueToday)} href="/admin/finance" />
-              <KPI icon={ShoppingBag} label="Pending Orders" value={kpis.pendingOrders} href="/admin/orders" />
+              <KPI icon={ShoppingBag} label="New Orders" value={kpis.newOrders} href="/admin/orders" />
+              <KPI icon={Package} label="Pending Orders" value={kpis.pendingOrders} href="/admin/orders?status=PENDING" />
               <KPI icon={Users} label="Customers" value={kpis.customers.toLocaleString()} href="/admin/customers" />
               <KPI icon={Store} label="Merchants" value={kpis.merchants} href="/admin/merchants" />
               <KPI icon={Users2} label="Partners" value={kpis.partners} href="/admin/partners" />
