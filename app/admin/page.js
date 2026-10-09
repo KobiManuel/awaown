@@ -253,7 +253,7 @@ export default function AdminHome() {
           ) : (
             <>
               <KPI icon={TrendingUp} label="Revenue Today" value={formatPrice(kpis.revenueToday)} href="/admin/finance" />
-              <KPI icon={ShoppingBag} label="Orders Today" value={kpis.ordersToday} href="/admin/orders" />
+              <KPI icon={ShoppingBag} label="Pending Orders" value={kpis.pendingOrders} href="/admin/orders" />
               <KPI icon={Users} label="Customers" value={kpis.customers.toLocaleString()} href="/admin/customers" />
               <KPI icon={Store} label="Merchants" value={kpis.merchants} href="/admin/merchants" />
               <KPI icon={Users2} label="Partners" value={kpis.partners} href="/admin/partners" />
@@ -277,7 +277,7 @@ export default function AdminHome() {
             <div>
               <p className="text-shop-text/60">Orders</p>
               <p className="font-semibold text-shop-heading">
-                {todaysSnapshot?.orders ?? kpis?.ordersToday ?? 0}
+                {todaysSnapshot?.orders ?? 0}
               </p>
             </div>
             <div>
