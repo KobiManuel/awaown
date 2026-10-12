@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronRight, Download, Loader2 } from "lucide-react";
+import { Search, ChevronRight, Download, Loader2, Users, UserCheck, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -10,19 +10,21 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { useAdminExport } from "@/lib/useAdminExport";
 import {
   useGetAdminCustomersQuery,
+  useGetAdminGuestCustomersQuery,
+  useGetAdminPurchasingCustomersQuery,
   useGetAdminComplaintsQuery,
 } from "@/lib/api/adminApi";
 
 const FILTERS = [
   { id: "all", label: "All" },
-  { id: "registered", label: "Registered" },
-  { id: "guest", label: "Partner Store Guests" },
   { id: "pure", label: "Customers Only" },
 ];
 
 export default function AdminCustomersPage() {
   const showToast = useToast();
   const { data, isLoading } = useGetAdminCustomersQuery();
+  const { data: guestData } = useGetAdminGuestCustomersQuery();
+  const { data: purchasingData } = useGetAdminPurchasingCustomersQuery();
   const { data: complaintsData } = useGetAdminComplaintsQuery();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
@@ -37,25 +39,22 @@ export default function AdminCustomersPage() {
 
   const allCustomers = data?.items ?? [];
   const byFilter =
-    filter === "all"
-      ? allCustomers
-      : filter === "guest"
-        ? allCustomers.filter((c) => c.isGuest)
-        : filter === "pure"
-          ? allCustomers.filter((c) => !c.alsoPartner && !c.alsoMerchant)
-          : allCustomers.filter((c) => !c.isGuest);
+    filter === "pure"
+      ? allCustomers.filter((c) => !c.alsoPartner && !c.alsoMerchant)
+      : allCustomers;
   const customers = byFilter.filter(
     (c) =>
       !q ||
       c.name.toLowerCase().includes(q.toLowerCase()) ||
       c.email.toLowerCase().includes(q.toLowerCase()),
   );
-  const guestCount = allCustomers.filter((c) => c.isGuest).length;
   const pureCount = data?.summary?.pure ?? allCustomers.filter(
     (c) => !c.alsoPartner && !c.alsoMerchant,
   ).length;
   const complaints = (complaintsData?.items ?? []).slice(0, 6);
   const summary = data?.summary;
+  const guestCount = guestData?.items?.length ?? 0;
+  const purchasingCount = purchasingData?.items?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-6 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -78,6 +77,30 @@ export default function AdminCustomersPage() {
           </button>
         }
       />
+
+      <div className="grid grid-cols-3 gap-2.5 px-4 lg:px-8">
+        <div className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5">
+          <Users className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+          <p className="text-[15px] font-bold text-shop-heading">{summary?.total ?? allCustomers.length}</p>
+          <p className="text-[11px] text-shop-text">Customers</p>
+        </div>
+        <Link
+          href="/admin/customers/guests"
+          className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5 hover:border-shop-accent-1"
+        >
+          <ShoppingBag className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+          <p className="text-[15px] font-bold text-shop-heading">{guestCount}</p>
+          <p className="text-[11px] text-shop-text">Guests</p>
+        </Link>
+        <Link
+          href="/admin/customers/purchasers"
+          className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5 hover:border-shop-accent-1"
+        >
+          <UserCheck className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
+          <p className="text-[15px] font-bold text-shop-heading">{purchasingCount}</p>
+          <p className="text-[11px] text-shop-text">Purchasers</p>
+        </Link>
+      </div>
 
       {summary && (summary.alsoPartner > 0 || summary.alsoMerchant > 0) && (
         <p className="mx-4 text-[11px] leading-snug text-shop-text/60 lg:mx-8">
@@ -119,7 +142,6 @@ export default function AdminCustomersPage() {
               }`}
             >
               {f.label}
-              {f.id === "guest" && guestCount > 0 ? ` (${guestCount})` : ""}
               {f.id === "pure" ? ` (${pureCount})` : ""}
             </button>
           ))}
@@ -136,12 +158,12 @@ export default function AdminCustomersPage() {
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
                     {c.name}
-                    {c.isGuest && (
+                    {c.isLegacy && (
                       <span
-                        className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10px] font-semibold text-shop-accent-1"
-                        title="No AwaOwn account - checked out as a guest through a partner store"
+                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
+                        title="Migrated from the old WordPress/Dokan site"
                       >
-                        Guest{c.guestStoreName ? ` · ${c.guestStoreName}` : ""}
+                        Legacy
                       </span>
                     )}
                     {c.alsoPartner && (
@@ -164,9 +186,6 @@ export default function AdminCustomersPage() {
                   <p className="text-[11.5px] text-shop-text/70">{c.email}</p>
                   {c.phone && (
                     <p className="text-[11.5px] text-shop-text/70">{c.phone}</p>
-                  )}
-                  {c.isGuest && c.address && (
-                    <p className="line-clamp-1 text-[11px] text-shop-text/60">{c.address}</p>
                   )}
                   <p className="text-[11px] text-shop-text/60">
                     {c.orders} orders · wallet {formatPrice(c.walletBalance)}
