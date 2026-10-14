@@ -52,8 +52,9 @@ export default function AdminPurchasingCustomersPage() {
         }
       />
       <p className="px-4 text-[11.5px] text-shop-text/60 lg:px-8">
-        Registered customer accounts that have actually completed a purchase - a
-        subset of Customers.
+        Everyone whose order actually went through - account holders and
+        anonymous guest checkouts alike. An attempt that was abandoned or
+        auto-cancelled before payment doesn&rsquo;t appear here.
       </p>
 
       <div className="mx-4 flex items-center gap-2 rounded-full bg-shop-bg px-4 py-2.5 lg:mx-8">
@@ -85,28 +86,12 @@ export default function AdminPurchasingCustomersPage() {
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
                     {c.name}
-                    {c.isLegacy && (
+                    {c.isGuest && (
                       <span
-                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
-                        title="Migrated from the old WordPress/Dokan site"
+                        className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10px] font-semibold text-shop-accent-1"
+                        title="No AwaOwn account"
                       >
-                        Legacy
-                      </span>
-                    )}
-                    {c.alsoPartner && (
-                      <span
-                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
-                        title="Also has a Partner account under this email"
-                      >
-                        Also Partner
-                      </span>
-                    )}
-                    {c.alsoMerchant && (
-                      <span
-                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
-                        title="Also has a Merchant account under this email"
-                      >
-                        Also Merchant
+                        Guest{c.guestStoreName ? ` · ${c.guestStoreName}` : ""}
                       </span>
                     )}
                   </p>
@@ -114,9 +99,10 @@ export default function AdminPurchasingCustomersPage() {
                   {c.phone && (
                     <p className="text-[11.5px] text-shop-text/70">{c.phone}</p>
                   )}
-                  <p className="text-[11px] text-shop-text/60">
-                    {c.orders} orders · wallet {formatPrice(c.walletBalance)}
-                  </p>
+                  {c.address && (
+                    <p className="line-clamp-1 text-[11px] text-shop-text/60">{c.address}</p>
+                  )}
+                  <p className="text-[11px] text-shop-text/60">{c.orders} orders</p>
                 </div>
                 <span className="shrink-0 text-[13px] font-semibold text-shop-heading">
                   {formatPrice(c.totalSpend)}

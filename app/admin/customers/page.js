@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronRight, Download, Loader2, Users, UserCheck, ShoppingBag } from "lucide-react";
+import { Search, ChevronRight, Download, Loader2, Users, UserCheck } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -10,7 +10,6 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { useAdminExport } from "@/lib/useAdminExport";
 import {
   useGetAdminCustomersQuery,
-  useGetAdminGuestCustomersQuery,
   useGetAdminPurchasingCustomersQuery,
   useGetAdminComplaintsQuery,
 } from "@/lib/api/adminApi";
@@ -23,7 +22,6 @@ const FILTERS = [
 export default function AdminCustomersPage() {
   const showToast = useToast();
   const { data, isLoading } = useGetAdminCustomersQuery();
-  const { data: guestData } = useGetAdminGuestCustomersQuery();
   const { data: purchasingData } = useGetAdminPurchasingCustomersQuery();
   const { data: complaintsData } = useGetAdminComplaintsQuery();
   const [q, setQ] = useState("");
@@ -53,7 +51,6 @@ export default function AdminCustomersPage() {
   ).length;
   const complaints = (complaintsData?.items ?? []).slice(0, 6);
   const summary = data?.summary;
-  const guestCount = guestData?.items?.length ?? 0;
   const purchasingCount = purchasingData?.items?.length ?? 0;
 
   return (
@@ -78,20 +75,12 @@ export default function AdminCustomersPage() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-2.5 px-4 lg:px-8">
+      <div className="grid grid-cols-2 gap-2.5 px-4 lg:px-8">
         <div className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5">
           <Users className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
           <p className="text-[15px] font-bold text-shop-heading">{summary?.total ?? allCustomers.length}</p>
-          <p className="text-[11px] text-shop-text">Customers</p>
+          <p className="text-[11px] text-shop-text">Signed Up</p>
         </div>
-        <Link
-          href="/admin/customers/guests"
-          className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5 hover:border-shop-accent-1"
-        >
-          <ShoppingBag className="h-4 w-4 text-shop-accent-1" strokeWidth={1.75} />
-          <p className="text-[15px] font-bold text-shop-heading">{guestCount}</p>
-          <p className="text-[11px] text-shop-text">Guests</p>
-        </Link>
         <Link
           href="/admin/customers/purchasers"
           className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5 hover:border-shop-accent-1"
@@ -106,9 +95,8 @@ export default function AdminCustomersPage() {
         <p className="mx-4 text-[11px] leading-snug text-shop-text/60 lg:mx-8">
           Of {summary.total} total, {summary.pure} are customers only.{" "}
           {summary.alsoPartner} also have a Partner account and{" "}
-          {summary.alsoMerchant} also have a Merchant account (mostly
-          zero-order shopper identities carried over from the old site&rsquo;s
-          migration, not double-counted real customers).
+          {summary.alsoMerchant} also have a Merchant account under the same
+          email (not double-counted real customers).
         </p>
       )}
 
@@ -158,14 +146,6 @@ export default function AdminCustomersPage() {
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-shop-heading">
                     {c.name}
-                    {c.isLegacy && (
-                      <span
-                        className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
-                        title="Migrated from the old WordPress/Dokan site"
-                      >
-                        Legacy
-                      </span>
-                    )}
                     {c.alsoPartner && (
                       <span
                         className="shrink-0 rounded-full bg-shop-bg px-2 py-0.5 text-[10px] font-semibold text-shop-text/70"
