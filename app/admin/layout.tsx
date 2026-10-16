@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import AppFrame from "@/app/Components/Dashboard/AppFrame";
 import { ConfirmProvider } from "@/app/Components/Admin/ConfirmDialog";
+import DesktopPushNotifications from "@/app/Components/Dashboard/DesktopPushNotifications";
 import { useGetAdminOverviewQuery } from "@/lib/api/adminApi";
 
 export default function AdminLayout({
@@ -42,7 +43,10 @@ export default function AdminLayout({
 
   return (
     <AppFrame navItems={navItems} loginHref="/login/admin" roleLabel="Admin">
-      <ConfirmProvider>{children}</ConfirmProvider>
+      <ConfirmProvider>
+        <DesktopPushNotifications />
+        {children}
+      </ConfirmProvider>
     </AppFrame>
   );
 }

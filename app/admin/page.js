@@ -39,6 +39,7 @@ import {
   useUpdateAdminSettingsMutation,
 } from "@/lib/api/adminApi";
 import { useMediaUpload } from "@/lib/api/mediaApi";
+import { useGetNotificationsQuery } from "@/lib/api/notificationsApi";
 
 const KPI = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -101,6 +102,8 @@ export default function AdminHome() {
   const { data: settings } = useGetAdminSettingsQuery();
   const [updateSettings] = useUpdateAdminSettingsMutation();
   const { upload, uploading } = useMediaUpload("banners");
+  const { data: notifications } = useGetNotificationsQuery();
+  const unread = notifications?.unread ?? 0;
 
   const kpis = data?.kpis;
   const action = data?.actionRequired ?? {};
@@ -164,11 +167,16 @@ export default function AdminHome() {
               {dashboardBanner ? "Edit Banner" : "Add Banner"}
             </button>
             <Link
-              href="/admin/audit-log"
+              href="/admin/notifications"
               aria-label="Notifications"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
             >
               <Bell className="h-4 w-4 text-white" strokeWidth={1.75} />
+              {unread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-shop-accent-3 px-1 text-[9px] font-bold text-white">
+                  {unread}
+                </span>
+              )}
             </Link>
           </div>
         </div>
