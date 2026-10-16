@@ -58,7 +58,7 @@ export default function DesktopPushNotifications() {
       seenIds.current.add(n.id);
       const notification = new Notification(n.title, {
         body: n.body || undefined,
-        icon: "/images/logo.png",
+        icon: "/icon.png",
         tag: n.id,
       });
       notification.onclick = () => {
