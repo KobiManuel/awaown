@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import ReduxProvider from "@/app/Components/Providers/ReduxProvider";
 import PublicCommerceGate from "@/app/Components/Providers/PublicCommerceGate";
-import PublicWhatsAppButton from "@/app/Components/Providers/PublicWhatsAppButton";
+// import PublicWhatsAppButton from "@/app/Components/Providers/PublicWhatsAppButton";
 import StoreContextTracker from "@/app/Components/Providers/StoreContextTracker";
 import GoogleAnalytics from "@/app/Components/Providers/GoogleAnalytics";
 import MetaPixel from "@/app/Components/Providers/MetaPixel";
@@ -70,7 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <MetaPixel />
           </Suspense>
           {children}
-          <PublicWhatsAppButton />
+          {/* <PublicWhatsAppButton /> */}
           <ModalRoot />
         </ReduxProvider>
       </body>
