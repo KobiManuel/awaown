@@ -11,6 +11,7 @@ import { ThemePreviewContext } from "@/app/Components/Dashboard/ThemePreviewCont
 import StorePattern from "@/app/Components/PartnerStore/StorePattern";
 import MerchantTermsGate from "@/app/Components/Legal/MerchantTermsGate";
 import PartnerTermsGate from "@/app/Components/Legal/PartnerTermsGate";
+import ProductReviewGate from "@/app/Components/Merchant/ProductReviewGate";
 import { useAuthBootstrap } from "@/lib/api/useAuthBootstrap";
 import { markTermsAccepted } from "@/lib/store/authSlice";
 import { useAcceptMerchantTermsMutation } from "@/lib/api/merchantApi";
@@ -73,6 +74,18 @@ const AppFrame = ({
     profile &&
     !profile.termsAcceptedAt;
 
+  // Legacy-vendor product review (see MerchantProfile.productsNeedReview,
+  // set by the one-off migration backfill). Gated on termsAcceptedAt already
+  // being set so this never shows alongside (or before) needsTerms above -
+  // a merchant who needs both always clears terms first.
+  const needsProductReview =
+    role === "merchant" &&
+    authed &&
+    onboardingComplete &&
+    profile &&
+    !!profile.termsAcceptedAt &&
+    !!profile.productsNeedReview;
+
   const handleAcceptTerms = async () => {
     setTermsError("");
     try {
@@ -119,6 +132,10 @@ const AppFrame = ({
     ) : (
       <PartnerTermsGate onAccept={handleAcceptTerms} submitting={submitting} error={termsError} />
     );
+  }
+
+  if (needsProductReview) {
+    return <ProductReviewGate />;
   }
 
   return (
