@@ -20,9 +20,23 @@ export default function ImagePickerSlot({
   title = "Crop the photo",
   aspect = 1,
   alt = "",
+  // Optional controlled-open pair, for a parent rendering several of these
+  // as siblings (one per colour, one per combination row) - without it, each
+  // slot opened its menu independently, so clicking a second thumbnail left
+  // the first one's menu open behind it instead of closing it. Omit both to
+  // keep a standalone slot fully self-managed, as before.
+  isOpen,
+  onOpenChange,
 }) {
   const { pickAndCrop, uploading, modal } = useImageCropUpload("products");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const controlled = isOpen !== undefined;
+  const menuOpen = controlled ? isOpen : uncontrolledOpen;
+  const setMenuOpen = (next) => {
+    const value = typeof next === "function" ? next(menuOpen) : next;
+    if (controlled) onOpenChange?.(value);
+    else setUncontrolledOpen(value);
+  };
   const fileRef = useRef(null);
 
   const uploadNew = async (e) => {

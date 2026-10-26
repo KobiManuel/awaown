@@ -399,6 +399,9 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
   const [bundleItems, setBundleItems] = useState(init.bundleItems);
   const [bundleItemTitle, setBundleItemTitle] = useState("");
   const [bundleItemImage, setBundleItemImage] = useState(null);
+  // Which bundle item's "use a product photo" menu is open, if any - shared
+  // across the list so opening one closes any other already open.
+  const [openBundleImageId, setOpenBundleImageId] = useState(null);
 
   const [offerCommission, setOfferCommission] = useState(init.offerCommission);
   const [partnerProfitAmount, setPartnerProfitAmount] = useState(
@@ -1129,6 +1132,10 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
                         sources={productImages}
                         size="h-11 w-11"
                         title="Crop the item photo"
+                        isOpen={openBundleImageId === item.id}
+                        onOpenChange={(open) =>
+                          setOpenBundleImageId(open ? item.id : null)
+                        }
                       />
                       <span className="flex-1 text-[12.5px] font-medium text-shop-heading">
                         {item.title}

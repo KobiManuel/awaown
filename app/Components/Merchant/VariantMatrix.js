@@ -25,6 +25,10 @@ export default function VariantMatrix({
   const [bulkStock, setBulkStock] = useState("");
   const [selected, setSelected] = useState(() => new Set());
   const [showExcluded, setShowExcluded] = useState(false);
+  // Which row's "use a product photo" menu is open, if any - shared across
+  // every ComboRow so opening one closes any other already open instead of
+  // stacking both on screen at once.
+  const [openImageSig, setOpenImageSig] = useState(null);
 
   const usableAxes = useMemo(
     () =>
@@ -216,6 +220,8 @@ export default function VariantMatrix({
             checked={selected.has(r.sig)}
             onToggleSelect={() => toggleSelect(r.sig)}
             onPatch={(next) => patch(r.sig, next)}
+            imageMenuOpen={openImageSig === r.sig}
+            onImageMenuOpenChange={(open) => setOpenImageSig(open ? r.sig : null)}
           />
         ))}
       </div>
@@ -246,6 +252,8 @@ export default function VariantMatrix({
                   checked={selected.has(r.sig)}
                   onToggleSelect={() => toggleSelect(r.sig)}
                   onPatch={(next) => patch(r.sig, next)}
+                  imageMenuOpen={openImageSig === r.sig}
+                  onImageMenuOpenChange={(open) => setOpenImageSig(open ? r.sig : null)}
                 />
               ))}
             </div>
@@ -266,6 +274,8 @@ function ComboRow({
   checked,
   onToggleSelect,
   onPatch,
+  imageMenuOpen,
+  onImageMenuOpenChange,
 }) {
   const excluded = !!combo.excluded;
   return (
@@ -289,6 +299,8 @@ function ComboRow({
         sources={productImages}
         size="h-11 w-11"
         title="Crop this combination's photo"
+        isOpen={imageMenuOpen}
+        onOpenChange={onImageMenuOpenChange}
       />
       <div className="flex min-w-[120px] flex-1 flex-wrap items-center gap-1.5">
         {usableAxes.map((axis) => {

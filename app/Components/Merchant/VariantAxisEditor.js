@@ -38,6 +38,10 @@ export default function VariantAxisEditor({
   const [text, setText] = useState("");
   const [colorOpen, setColorOpen] = useState(false);
   const colorBoxRef = useRef(null);
+  // Which value's "use a product photo" menu is open, if any - lifted here
+  // (rather than left to each ImagePickerSlot) so opening one closes any
+  // other that was already open instead of stacking both on screen at once.
+  const [openImageIndex, setOpenImageIndex] = useState(null);
 
   const takenLabels = useMemo(
     () => new Set(axis.values.map((v) => v.label.toLowerCase())),
@@ -267,6 +271,8 @@ export default function VariantAxisEditor({
                 size="h-14 w-14"
                 title={`Crop the ${v.label} photo`}
                 alt={v.label}
+                isOpen={openImageIndex === i}
+                onOpenChange={(open) => setOpenImageIndex(open ? i : null)}
               />
               <span className="max-w-[56px] truncate text-[10px] text-shop-text/70">
                 {v.label}
