@@ -21,6 +21,7 @@ import {
   MapPin,
   Play,
   PackageSearch,
+  PackageX,
 } from "lucide-react";
 import {
   resolveVariant,
@@ -155,9 +156,12 @@ function ProductDetail() {
   const pickAxis = (key, value) =>
     setSelected((s) => ({ ...(s || {}), [key]: value }));
 
-  // A value on `axisKey` is offered only if some in-stock combination carries
-  // it *and* is consistent with the choices already made on the other axes.
-  const axisValueAvailable = (axisKey, value) => {
+  // A value on `axisKey` is offered only if some combination carries it *and*
+  // is consistent with the choices already made on the other axes - a stock
+  // check used to gate this too, but an out-of-stock option must stay
+  // clickable (see the Out of Stock section below); only a combination the
+  // merchant never created at all is actually disabled.
+  const axisValueExists = (axisKey, value) => {
     const list = product?.variants ?? [];
     return list.some((v) => {
       const ov = v.options ?? v.optionValues ?? {};
@@ -165,7 +169,55 @@ function ProductDetail() {
       for (const [k, val] of Object.entries(selected || {})) {
         if (k !== axisKey && ov[k] !== val) return false;
       }
-      return v.inStock !== false;
+      return true;
+    });
+  };
+
+  const colorAxisKeys = useMemo(
+    () => (product?.variantAxes ?? []).filter(isColorAxis).map((a) => a.key),
+    [product?.variantAxes],
+  );
+
+  // Picking a colour always jumps the gallery to that colour's own photo,
+  // even if the rest of the current selection doesn't add up to one exact
+  // combination (e.g. that colour + the already-chosen size doesn't exist) -
+  // resolveVariant's own fallback in that case can land on an unrelated
+  // variant's image otherwise.
+  const pickColorAxis = (key, value) => {
+    pickAxis(key, value);
+    const match = (product?.variants ?? []).find((v) => {
+      const ov = v.options ?? v.optionValues ?? {};
+      return ov[key] === value && v.image;
+    });
+    if (match) {
+      setActiveImg(match.image);
+      setShowVideo(false);
+    }
+  };
+
+  // Tapping a thumbnail always drives the colour picker too: a photo that
+  // belongs to exactly one colour activates that colour's button, and a
+  // shared/generic photo (not any one variant's own image) clears the colour
+  // choice instead of leaving a stale button looking selected.
+  const pickImage = (img) => {
+    setActiveImg(img);
+    setShowVideo(false);
+    if (!colorAxisKeys.length) return;
+    const matches = (product?.variants ?? []).filter((v) => v.image === img);
+    setSelected((s) => {
+      const copy = { ...(s || {}) };
+      for (const key of colorAxisKeys) {
+        if (!matches.length) {
+          delete copy[key];
+          continue;
+        }
+        const values = new Set(
+          matches.map((v) => (v.options ?? v.optionValues ?? {})[key]),
+        );
+        if (values.size === 1) copy[key] = [...values][0];
+        else delete copy[key];
+      }
+      return copy;
     });
   };
 
@@ -428,6 +480,13 @@ function ProductDetail() {
                   />
                 )
               )}
+              {outOfStock && !showVideo && (
+                <div className="absolute inset-0 z-[3] flex items-center justify-center bg-black/35">
+                  <span className="rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-shop-heading">
+                    Out of stock
+                  </span>
+                </div>
+              )}
             </div>
 
             {(gallery.length > 1 || product.videoUrl) && (
@@ -436,10 +495,7 @@ function ProductDetail() {
                   <button
                     key={img}
                     type="button"
-                    onClick={() => {
-                      setActiveImg(img);
-                      setShowVideo(false);
-                    }}
+                    onClick={() => pickImage(img)}
                     aria-label="View photo"
                     className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border-2 bg-shop-bg transition-colors ${
                       !showVideo && img === shownImg
@@ -586,7 +642,19 @@ function ProductDetail() {
             </div>
 
             {product.hasVariants && product.variantAxes?.length > 0 && (
-              <div className="flex flex-col gap-4">
+              <div
+                className={
+                  outOfStock
+                    ? "flex flex-col gap-3 rounded-[12px] border border-shop-accent-3/30 bg-shop-accent-3/5 p-3.5"
+                    : "flex flex-col gap-4"
+                }
+              >
+                {outOfStock && (
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-shop-accent-3">
+                    <PackageX className="h-4 w-4" />
+                    Out of stock
+                  </p>
+                )}
                 {product.variantAxes.map((axis) => {
                   const isColor = isColorAxis(axis);
                   const chosen = selected?.[axis.key];
@@ -604,14 +672,20 @@ function ProductDetail() {
                       <div className="flex flex-wrap gap-2">
                         {axis.options.map((o) => {
                           const active = chosen === o.value;
-                          const available = axisValueAvailable(axis.key, o.value);
+                          // Only a combination the merchant never created at
+                          // all is disabled - an out-of-stock one stays
+                          // clickable so its photo (and the Out of Stock
+                          // panel above) can still be previewed; purchase is
+                          // blocked separately, by the Add to Cart/Buy Now
+                          // buttons below.
+                          const exists = axisValueExists(axis.key, o.value);
                           if (isColor) {
                             return (
                               <button
                                 key={o.value}
                                 type="button"
-                                disabled={!available}
-                                onClick={() => pickAxis(axis.key, o.value)}
+                                disabled={!exists}
+                                onClick={() => pickColorAxis(axis.key, o.value)}
                                 title={o.label}
                                 aria-label={o.label}
                                 className={`relative h-9 w-9 rounded-full border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-25 ${
@@ -634,7 +708,7 @@ function ProductDetail() {
                             <button
                               key={o.value}
                               type="button"
-                              disabled={!available}
+                              disabled={!exists}
                               onClick={() => pickAxis(axis.key, o.value)}
                               className={`flex items-center gap-2 rounded-[10px] border p-1.5 pr-3 text-left text-[12.5px] font-medium text-shop-heading transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
                                 active
@@ -666,27 +740,31 @@ function ProductDetail() {
                     Pick an option for each of the above to continue.
                   </p>
                 )}
+                {outOfStock && (
+                  <p className="text-[12px] text-shop-text/70">
+                    This option is currently unavailable. Pick a different one
+                    above, or ask to be notified when it&apos;s back.
+                  </p>
+                )}
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-shop-heading">Quantity</p>
-              <p
-                className={`text-[12px] ${
-                  outOfStock ? "font-semibold text-shop-accent-3" : "text-shop-text/70"
-                }`}
-              >
-                {product.hideStock
-                  ? outOfStock
-                    ? "Out of stock"
-                    : "In stock"
-                  : stockLeft == null || stockLeft > 10
+            {/* Out of stock is already stated by the Out of Stock panel above
+                (variant products) or the swapped-in button below (simple
+                products) - this row only needs to appear when there's an
+                actual quantity to show. */}
+            {!outOfStock && (
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-semibold text-shop-heading">Quantity</p>
+                <p className="text-[12px] text-shop-text/70">
+                  {product.hideStock
                     ? "In stock"
-                    : stockLeft > 0
-                      ? `Only ${stockLeft} left`
-                      : "Out of stock"}
-              </p>
-            </div>
+                    : stockLeft == null || stockLeft > 10
+                      ? "In stock"
+                      : `Only ${stockLeft} left`}
+                </p>
+              </div>
+            )}
 
             {!outOfStock && (
               <div className="flex items-center gap-3 self-start rounded-full border border-shop-border px-1.5 py-1.5">
