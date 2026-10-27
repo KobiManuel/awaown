@@ -18,7 +18,9 @@ import {
 import { errorMessage } from "@/lib/api/errorMessage";
 
 const SUPER_ALIASES = ["super_admin", "Super Admin", "SUPER_ADMIN", "superadmin"];
+const ADMIN_ALIASES = ["administrator", "Administrator", "ADMINISTRATOR"];
 const isSuperRole = (r) => SUPER_ALIASES.includes((r ?? "").trim());
+const isAdminRole = (r) => ADMIN_ALIASES.includes((r ?? "").trim());
 
 function roleLabel(id) {
   return TEAM_ROLES.find((r) => r.id === id)?.label || id;
@@ -37,10 +39,15 @@ export default function AdminTeamPage() {
   const [resendInvite, resendState] = useResendTeamInviteMutation();
 
   const members = data ?? [];
-  const amSuper = isSuperRole(useSelector((s) => s.auth.profile?.teamRole));
+  const myRole = useSelector((s) => s.auth.profile?.teamRole);
+  const amSuper = isSuperRole(myRole);
+  const amAdmin = isAdminRole(myRole);
   const assignableRoles = amSuper
     ? TEAM_ROLES
     : TEAM_ROLES.filter((r) => !isSuperRole(r.id));
+  // A Super Admin can remove anyone; an Administrator can remove anyone
+  // except a Super Admin - mirrors AdminService.removeTeamMember().
+  const canRemove = (member) => amSuper || (amAdmin && !isSuperRole(member.teamRole));
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -207,7 +214,7 @@ export default function AdminTeamPage() {
                 >
                   <Mail className="h-4 w-4" />
                 </button>
-                {amSuper && (
+                {canRemove(member) && (
                   <button
                     type="button"
                     aria-label="Remove from team"

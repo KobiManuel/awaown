@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, X } from "lucide-react";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
@@ -57,11 +58,13 @@ export function ConfirmProvider({ children }) {
   return (
     <ConfirmCtx.Provider value={confirm}>
       {children}
-      {opts && (
-        <div
-          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 lg:items-center lg:p-4"
-          onClick={cancel}
-        >
+      {opts &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 lg:items-center lg:p-4"
+            onClick={cancel}
+          >
           <div
             className="w-full max-w-[420px] rounded-t-[20px] bg-white p-5 font-shop lg:rounded-[16px]"
             onClick={(e) => e.stopPropagation()}
@@ -131,8 +134,9 @@ export function ConfirmProvider({ children }) {
               </button>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </ConfirmCtx.Provider>
   );
 }
