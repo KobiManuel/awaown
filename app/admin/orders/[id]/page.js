@@ -21,6 +21,8 @@ import {
   useGetAdminOrderQuery,
   useAdvanceAdminOrderMutation,
   useDecideRefundMutation,
+  useIssueRefundMutation,
+  useCancelAdminOrderMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
@@ -37,6 +39,44 @@ export default function AdminOrderDetailPage() {
   const { data: order, isLoading, isError } = useGetAdminOrderQuery(id);
   const [advance, advanceState] = useAdvanceAdminOrderMutation();
   const [decideRefund, decideState] = useDecideRefundMutation();
+  const [issueRefund, issueState] = useIssueRefundMutation();
+  const [cancelOrder, cancelState] = useCancelAdminOrderMutation();
+  const [refundOpen, setRefundOpen] = React.useState(false);
+  const [refundAmount, setRefundAmount] = React.useState("");
+  const [refundReason, setRefundReason] = React.useState("");
+  const openRefundForm = () => {
+    setRefundAmount(String(order.refundableRemaining));
+    setRefundReason("");
+    setRefundOpen(true);
+  };
+  const submitRefund = async () => {
+    const amt = Math.trunc(Number(refundAmount));
+    if (!Number.isFinite(amt) || amt <= 0 || amt > order.refundableRemaining) {
+      showToast(`Enter an amount up to ${formatPrice(order.refundableRemaining)}`);
+      return;
+    }
+    if (!refundReason.trim()) {
+      showToast("A reason is required");
+      return;
+    }
+    const isFull = amt === order.refundableRemaining;
+    const res = await confirm({
+      title: `Refund ${formatPrice(amt)}?`,
+      message: isFull
+        ? "This refunds the full remaining balance to the customer (card or wallet) and ends this order."
+        : `This is a partial refund. ${formatPrice(order.refundableRemaining - amt)} stays refundable afterward and the order continues as normal.`,
+      confirmLabel: "Issue refund",
+      tone: "danger",
+    });
+    if (!res) return;
+    try {
+      await issueRefund({ reference: id, amount: amt, reason: refundReason.trim() }).unwrap();
+      showToast(isFull ? "Refund issued & customer credited" : "Partial refund issued");
+      setRefundOpen(false);
+    } catch (e) {
+      showToast(errorMessage(e));
+    }
+  };
   const decide = async (approve) => {
     const res = await confirm({
       title: approve ? `Approve refund for ${id}?` : `Decline refund for ${id}?`,
@@ -50,6 +90,29 @@ export default function AdminOrderDetailPage() {
     try {
       await decideRefund({ id: order.refund.id, approve }).unwrap();
       showToast(approve ? "Refund approved & customer credited" : "Refund declined");
+    } catch (e) {
+      showToast(errorMessage(e));
+    }
+  };
+  const cancelThisOrder = async () => {
+    const res = await confirm({
+      title: `Cancel ${id}?`,
+      message:
+        order.status === "PENDING_PAYMENT"
+          ? "Nothing was charged yet, so this just cancels the order."
+          : "The customer is refunded in full (card or wallet) and every item's stock is put back. This can't be undone.",
+      confirmLabel: "Cancel order",
+      tone: "danger",
+      reason: {
+        label: "Reason (the customer is told why)",
+        required: true,
+        placeholder: "e.g. Out of stock, merchant can't fulfil this",
+      },
+    });
+    if (!res) return;
+    try {
+      await cancelOrder({ reference: id, reason: res.reason }).unwrap();
+      showToast("Order cancelled");
     } catch (e) {
       showToast(errorMessage(e));
     }
@@ -186,7 +249,78 @@ export default function AdminOrderDetailPage() {
             </button>
           </div>
         )}
+
+        {order.refundableRemaining > 0 && (
+          <div className="border-t border-shop-border pt-3">
+            {!refundOpen ? (
+              <button
+                type="button"
+                onClick={openRefundForm}
+                className="w-full rounded-[8px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading"
+              >
+                Issue refund{hasRefund ? " (top up)" : ""}
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                <div>
+                  <label className="text-[11.5px] font-medium text-shop-heading">
+                    Amount (up to {formatPrice(order.refundableRemaining)})
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={order.refundableRemaining}
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    className="mt-1 w-full rounded-[8px] border border-shop-border p-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11.5px] font-medium text-shop-heading">Reason</label>
+                  <textarea
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    rows={2}
+                    placeholder="Shown to the customer by email"
+                    className="mt-1 w-full resize-none rounded-[8px] border border-shop-border p-2.5 text-[12.5px] text-shop-heading outline-none focus:border-shop-accent-1"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRefundOpen(false)}
+                    className="flex-1 rounded-[8px] border border-shop-border py-2.5 text-[12.5px] font-semibold text-shop-heading"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={issueState.isLoading}
+                    onClick={submitRefund}
+                    className="flex-1 rounded-[8px] bg-shop-accent-1 py-2.5 text-[12.5px] font-semibold text-white disabled:opacity-60"
+                  >
+                    Issue refund
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Cancel order */}
+      {order.cancellable && (
+        <div className="mx-4 lg:mx-8">
+          <button
+            type="button"
+            disabled={cancelState.isLoading}
+            onClick={cancelThisOrder}
+            className="w-full rounded-[10px] border border-red-200 py-3 text-[13px] font-semibold text-shop-accent-3 disabled:opacity-60"
+          >
+            Cancel order
+          </button>
+        </div>
+      )}
 
       {/* Advance status */}
       {next && (
