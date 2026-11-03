@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2, FileDown } from "lucide-react";
+import { Package, Star, BadgeCheck, X, Trash2, Store, User, Pencil, Loader2, FileDown, Search } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import { PRODUCT_CATEGORIES } from "@/lib/merchant-data";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
@@ -451,6 +451,25 @@ const isOnSale = (p) => !!p.compareAtPrice && p.compareAtPrice > p.price;
 const saleDiscountPct = (p) =>
   Math.round((1 - p.price / p.compareAtPrice) * 100);
 
+// p.stock already reflects the true variant-sum for a variable product (kept
+// in sync whenever a merchant edits variants) - one number works for every
+// product type except digital, which has no inventory to track at all.
+const LOW_STOCK_THRESHOLD = 5;
+const stockLabel = (p) =>
+  p.deliveryType === "DIGITAL"
+    ? "Unlimited"
+    : p.stock <= 0
+      ? "Out of stock"
+      : `${p.stock} in stock`;
+const stockTone = (p) =>
+  p.deliveryType === "DIGITAL"
+    ? "text-shop-text/60"
+    : p.stock <= 0
+      ? "text-shop-accent-3"
+      : p.stock <= LOW_STOCK_THRESHOLD
+        ? "text-amber-600"
+        : "text-shop-text/60";
+
 export default function AdminProductsPage() {
   const showToast = useToast();
   const confirm = useConfirm();
@@ -458,12 +477,21 @@ export default function AdminProductsPage() {
   const [setApproval] = useSetAdminProductApprovalMutation();
   const [tab, setTab] = useState("PENDING");
   const [detailProduct, setDetailProduct] = useState(null);
+  const [search, setSearch] = useState("");
 
   const products = data?.items ?? [];
-  const filtered =
+  const byTab =
     tab === "ON_SALE"
       ? products.filter(isOnSale)
       : products.filter((p) => (p.approvalStatus || "APPROVED") === tab);
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? byTab.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          (p.storeName || "").toLowerCase().includes(q),
+      )
+    : byTab;
   const liveCount = products.filter(
     (p) => p.status === "ACTIVE" && (p.approvalStatus || "APPROVED") === "APPROVED",
   ).length;
@@ -532,6 +560,18 @@ export default function AdminProductsPage() {
         </p>
       </div>
 
+      <div className="px-4 lg:px-8">
+        <div className="flex items-center gap-2 rounded-[10px] border border-shop-border px-3 py-2">
+          <Search className="h-4 w-4 shrink-0 text-shop-text/50" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by product or store name..."
+            className="w-full bg-transparent text-[12.5px] text-shop-heading outline-none placeholder:text-shop-text/40"
+          />
+        </div>
+      </div>
+
       <div className="flex gap-2 px-4 lg:px-8">
         {TABS.map((t) => (
           <button
@@ -592,6 +632,14 @@ export default function AdminProductsPage() {
                     {" · "}
                     {p.category || "-"}
                   </p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-shop-text/60">
+                    <Store className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{p.storeName}</span>
+                    <span>·</span>
+                    <span className={`shrink-0 font-medium ${stockTone(p)}`}>
+                      {stockLabel(p)}
+                    </span>
+                  </p>
                   {p.rejectionReason && (
                     <p className="mt-0.5 text-[10.5px] text-shop-accent-3">Reason: {p.rejectionReason}</p>
                   )}
@@ -645,9 +693,11 @@ export default function AdminProductsPage() {
           ))}
           {filtered.length === 0 && (
             <p className="col-span-2 py-10 text-center text-[13px] text-shop-text">
-              {tab === "ON_SALE"
-                ? "No products are on sale right now."
-                : `No ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} products.`}
+              {q
+                ? "No products match your search."
+                : tab === "ON_SALE"
+                  ? "No products are on sale right now."
+                  : `No ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} products.`}
             </p>
           )}
         </div>
