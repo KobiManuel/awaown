@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2, Trash2, Pencil } from "lucide-react";
+import { Tag, Plus, Mail, ImagePlus, X, Send, Loader2, Trash2, Pencil, ChevronDown } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -14,6 +14,7 @@ import {
   useDeleteAdminCouponMutation,
   useGetAdminCampaignsQuery,
   useGetAdminCampaignQuery,
+  useGetAdminCampaignRecipientsQuery,
   useSendAdminCampaignMutation,
   useGetAdminCustomersQuery,
   useGetAdminPurchasingCustomersQuery,
@@ -133,6 +134,17 @@ export default function AdminMarketingPage() {
   const [body, setBody] = useState("");
   const [campaignImages, setCampaignImages] = useState([]);
   const [viewingCampaignId, setViewingCampaignId] = useState(null);
+  const [excludedEmails, setExcludedEmails] = useState(() => new Set());
+  const [recipientsOpen, setRecipientsOpen] = useState(false);
+  const { data: audienceMembers, isFetching: membersLoading } =
+    useGetAdminCampaignRecipientsQuery(audience, { skip: !campaignOpen });
+
+  // Switching audience makes the previous exclusion list meaningless (it was
+  // keyed to a different set of people) - start fresh each time.
+  const selectAudience = (id) => {
+    setAudience(id);
+    setExcludedEmails(new Set());
+  };
 
   const kpis = overview?.kpis;
   const audienceCount = (id) => {
@@ -234,6 +246,15 @@ export default function AdminMarketingPage() {
     }
   };
 
+  const toggleRecipient = (email) => {
+    setExcludedEmails((prev) => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
+      return next;
+    });
+  };
+
   const addCampaignImages = async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
@@ -256,6 +277,7 @@ export default function AdminMarketingPage() {
         body: body.trim(),
         audience,
         images: campaignImages,
+        excludedEmails: Array.from(excludedEmails),
       }).unwrap();
       const count = result?.[0]?.recipientCount ?? audienceCount(audience);
       showToast(
@@ -267,6 +289,8 @@ export default function AdminMarketingPage() {
       setBody("");
       setCampaignImages([]);
       setAudience("everyone");
+      setExcludedEmails(new Set());
+      setRecipientsOpen(false);
       setCampaignOpen(false);
     } catch (err) {
       showToast(errorMessage(err));
@@ -495,7 +519,7 @@ export default function AdminMarketingPage() {
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => setAudience(a.id)}
+                  onClick={() => selectAudience(a.id)}
                   className={`rounded-full border px-3.5 py-2 text-[12px] font-semibold ${
                     audience === a.id
                       ? "border-shop-accent-1 bg-shop-accent-1 text-white"
@@ -505,6 +529,79 @@ export default function AdminMarketingPage() {
                   {a.label} ({audienceCount(a.id).toLocaleString()})
                 </button>
               ))}
+            </div>
+            <div className="-mt-1 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setRecipientsOpen((v) => !v)}
+                className="flex items-center justify-between rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[12px] font-semibold text-shop-heading"
+              >
+                <span>
+                  {membersLoading
+                    ? "Loading recipients…"
+                    : `${(audienceMembers?.length ?? 0) - excludedEmails.size} of ${(audienceMembers?.length ?? 0).toLocaleString()} will receive this`}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-shop-text/50 transition-transform ${
+                    recipientsOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {recipientsOpen && (
+                <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-[8px] border border-shop-border bg-white p-1.5">
+                  {membersLoading ? (
+                    <p className="p-2 text-[11.5px] text-shop-text/50">
+                      Loading…
+                    </p>
+                  ) : (audienceMembers ?? []).length === 0 ? (
+                    <p className="p-2 text-[11.5px] text-shop-text/50">
+                      No one in this audience yet.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between gap-2 border-b border-shop-border px-2 pb-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setExcludedEmails(new Set())}
+                          className="text-[11px] font-semibold text-shop-accent-1"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExcludedEmails(
+                              new Set(audienceMembers.map((m) => m.email)),
+                            )
+                          }
+                          className="text-[11px] font-semibold text-shop-text/60"
+                        >
+                          Select none
+                        </button>
+                      </div>
+                      {audienceMembers.map((m) => (
+                        <label
+                          key={m.email}
+                          className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 text-[12px] text-shop-heading hover:bg-shop-bg"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!excludedEmails.has(m.email)}
+                            onChange={() => toggleRecipient(m.email)}
+                            className="h-3.5 w-3.5 shrink-0 accent-shop-accent-1"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {m.name}
+                          </span>
+                          <span className="shrink-0 truncate text-[10.5px] text-shop-text/50">
+                            {m.email}
+                          </span>
+                        </label>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <input
               value={subject}
