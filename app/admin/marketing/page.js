@@ -41,6 +41,19 @@ const AUDIENCES = [
   { id: "subscribers", label: "Newsletter Subscribers" },
 ];
 
+const AUDIENCE_LABEL = Object.fromEntries(
+  AUDIENCES.map((a) => [a.id, a.label]),
+);
+
+// Campaign.audience is stored comma-joined when more than one category was
+// picked (see AdminService.sendCampaign) - map each id back to its label.
+function formatAudience(idsCsv) {
+  return (idsCsv || "")
+    .split(",")
+    .map((id) => AUDIENCE_LABEL[id.trim()] || id.trim().replace(/_/g, " "))
+    .join(", ");
+}
+
 function CampaignDetailModal({ id, onClose }) {
   useBodyScrollLock(true);
   const { data, isLoading } = useGetAdminCampaignQuery(id);
@@ -63,7 +76,7 @@ function CampaignDetailModal({ id, onClose }) {
               <p className="text-[11.5px] text-shop-text/60">
                 Sent to {data.recipientCount.toLocaleString()} recipient
                 {data.recipientCount === 1 ? "" : "s"} ·{" "}
-                <span className="capitalize">{data.audience.replace(/_/g, " ")}</span> ·{" "}
+                <span>{formatAudience(data.audience)}</span> ·{" "}
                 {new Date(data.sentAt).toLocaleString("en-NG", {
                   day: "numeric",
                   month: "short",
@@ -129,7 +142,7 @@ export default function AdminMarketingPage() {
   const [expiresAt, setExpiresAt] = useState("");
 
   const [campaignOpen, setCampaignOpen] = useState(false);
-  const [audience, setAudience] = useState("everyone");
+  const [audiences, setAudiences] = useState(["everyone"]);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [campaignImages, setCampaignImages] = useState([]);
@@ -137,12 +150,17 @@ export default function AdminMarketingPage() {
   const [excludedEmails, setExcludedEmails] = useState(() => new Set());
   const [recipientsOpen, setRecipientsOpen] = useState(false);
   const { data: audienceMembers, isFetching: membersLoading } =
-    useGetAdminCampaignRecipientsQuery(audience, { skip: !campaignOpen });
+    useGetAdminCampaignRecipientsQuery(audiences.join(","), {
+      skip: !campaignOpen || audiences.length === 0,
+    });
 
-  // Switching audience makes the previous exclusion list meaningless (it was
-  // keyed to a different set of people) - start fresh each time.
-  const selectAudience = (id) => {
-    setAudience(id);
+  // Several categories can be combined in one send, e.g. Customers +
+  // Partners. Changing the selection makes the previous exclusion list
+  // meaningless (it was keyed to a different set of people) - start fresh.
+  const toggleAudience = (id) => {
+    setAudiences((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
     setExcludedEmails(new Set());
   };
 
@@ -267,7 +285,7 @@ export default function AdminMarketingPage() {
 
   const send = async (e) => {
     e.preventDefault();
-    if (!subject.trim() || !body.trim()) return;
+    if (!subject.trim() || !body.trim() || audiences.length === 0) return;
     try {
       // Sending happens in the background after this resolves - the
       // freshly-created campaign (most recent) carries the real,
@@ -275,11 +293,13 @@ export default function AdminMarketingPage() {
       const result = await sendCampaign({
         subject: subject.trim(),
         body: body.trim(),
-        audience,
+        audiences,
         images: campaignImages,
         excludedEmails: Array.from(excludedEmails),
       }).unwrap();
-      const count = result?.[0]?.recipientCount ?? audienceCount(audience);
+      const count =
+        result?.[0]?.recipientCount ??
+        (audienceMembers?.length ?? 0) - excludedEmails.size;
       showToast(
         count
           ? `Campaign queued for ${count.toLocaleString()} recipients`
@@ -288,7 +308,7 @@ export default function AdminMarketingPage() {
       setSubject("");
       setBody("");
       setCampaignImages([]);
-      setAudience("everyone");
+      setAudiences(["everyone"]);
       setExcludedEmails(new Set());
       setRecipientsOpen(false);
       setCampaignOpen(false);
@@ -513,15 +533,17 @@ export default function AdminMarketingPage() {
             onSubmit={send}
             className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-shop-bg p-4"
           >
-            <span className="text-[12px] font-semibold text-shop-heading">Send to</span>
+            <span className="text-[12px] font-semibold text-shop-heading">
+              Send to (tap to combine categories)
+            </span>
             <div className="-mt-1.5 flex flex-wrap gap-2">
               {AUDIENCES.map((a) => (
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => selectAudience(a.id)}
+                  onClick={() => toggleAudience(a.id)}
                   className={`rounded-full border px-3.5 py-2 text-[12px] font-semibold ${
-                    audience === a.id
+                    audiences.includes(a.id)
                       ? "border-shop-accent-1 bg-shop-accent-1 text-white"
                       : "border-shop-border bg-white text-shop-text"
                   }`}
@@ -657,7 +679,12 @@ export default function AdminMarketingPage() {
             </div>
             <button
               type="submit"
-              disabled={!subject.trim() || !body.trim() || sendState.isLoading}
+              disabled={
+                !subject.trim() ||
+                !body.trim() ||
+                audiences.length === 0 ||
+                sendState.isLoading
+              }
               className="flex items-center justify-center gap-1.5 rounded-[8px] bg-shop-accent-1 py-2.5 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-accent-1/40"
             >
               {sendState.isLoading ? (
@@ -689,8 +716,8 @@ export default function AdminMarketingPage() {
                   <p className="text-[13px] font-semibold text-shop-heading">
                     {c.subject}
                   </p>
-                  <span className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10.5px] font-semibold capitalize text-shop-accent-1">
-                    {c.audience.replace(/_/g, " ")}
+                  <span className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10.5px] font-semibold text-shop-accent-1">
+                    {formatAudience(c.audience)}
                   </span>
                 </div>
                 <p className="line-clamp-2 text-[11.5px] text-shop-text/70">
