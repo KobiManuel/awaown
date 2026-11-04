@@ -13,10 +13,14 @@ import {
   useSaveAdminCouponMutation,
   useDeleteAdminCouponMutation,
   useGetAdminCampaignsQuery,
+  useGetAdminCampaignQuery,
   useSendAdminCampaignMutation,
+  useGetAdminCustomersQuery,
+  useGetAdminPurchasingCustomersQuery,
 } from "@/lib/api/adminApi";
 import { useMediaUpload } from "@/lib/api/mediaApi";
 import { errorMessage } from "@/lib/api/errorMessage";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const MAX_CAMPAIGN_IMAGES = 4;
 
@@ -29,10 +33,73 @@ const STATUS_TONE = {
 const AUDIENCES = [
   { id: "everyone", label: "Everyone" },
   { id: "customers", label: "Customers" },
+  { id: "signed_up_customers", label: "Signed Up Customers" },
+  { id: "purchasing_customers", label: "Purchasers" },
   { id: "merchants", label: "Merchants" },
   { id: "partners", label: "Partners" },
   { id: "subscribers", label: "Newsletter Subscribers" },
 ];
+
+function CampaignDetailModal({ id, onClose }) {
+  useBodyScrollLock(true);
+  const { data, isLoading } = useGetAdminCampaignQuery(id);
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[88vh] w-full max-w-[560px] flex-col gap-3 overflow-y-auto rounded-t-[20px] bg-white p-5 lg:rounded-[16px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[14px] font-semibold text-shop-heading">
+              {data?.subject ?? "Campaign"}
+            </p>
+            {data && (
+              <p className="text-[11.5px] text-shop-text/60">
+                Sent to {data.recipientCount.toLocaleString()} recipient
+                {data.recipientCount === 1 ? "" : "s"} ·{" "}
+                <span className="capitalize">{data.audience.replace(/_/g, " ")}</span> ·{" "}
+                {new Date(data.sentAt).toLocaleString("en-NG", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-shop-bg"
+          >
+            <X className="h-4 w-4 text-shop-heading" />
+          </button>
+        </div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+          What recipients saw
+        </p>
+        {isLoading || !data ? (
+          <div className="flex h-[420px] items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-shop-text/40" />
+          </div>
+        ) : (
+          <iframe
+            title="Campaign email preview"
+            srcDoc={data.preview?.html ?? ""}
+            className="h-[420px] w-full rounded-[10px] border border-shop-border bg-white"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminMarketingPage() {
   const showToast = useToast();
@@ -47,6 +114,8 @@ export default function AdminMarketingPage() {
     useGetAdminCampaignsQuery(undefined, { pollingInterval: 5000 });
   const [sendCampaign, sendState] = useSendAdminCampaignMutation();
   const { upload, uploading } = useMediaUpload("campaigns");
+  const { data: signedUpData } = useGetAdminCustomersQuery();
+  const { data: purchasingData } = useGetAdminPurchasingCustomersQuery();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCouponId, setEditingCouponId] = useState(null);
@@ -63,9 +132,14 @@ export default function AdminMarketingPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [campaignImages, setCampaignImages] = useState([]);
+  const [viewingCampaignId, setViewingCampaignId] = useState(null);
 
   const kpis = overview?.kpis;
   const audienceCount = (id) => {
+    if (id === "signed_up_customers") {
+      return signedUpData?.summary?.total ?? signedUpData?.items?.length ?? 0;
+    }
+    if (id === "purchasing_customers") return purchasingData?.items?.length ?? 0;
     if (!kpis) return 0;
     if (id === "merchants") return kpis.merchants;
     if (id === "partners") return kpis.partners;
@@ -508,16 +582,18 @@ export default function AdminMarketingPage() {
             </p>
           ) : (
             campaigns.map((c) => (
-              <div
+              <button
+                type="button"
                 key={c.id}
-                className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5"
+                onClick={() => setViewingCampaignId(c.id)}
+                className="flex flex-col gap-1.5 rounded-[14px] border border-shop-border bg-white p-3.5 text-left hover:border-shop-accent-1"
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[13px] font-semibold text-shop-heading">
                     {c.subject}
                   </p>
                   <span className="shrink-0 rounded-full bg-shop-accent-1-light px-2 py-0.5 text-[10.5px] font-semibold capitalize text-shop-accent-1">
-                    {c.audience}
+                    {c.audience.replace(/_/g, " ")}
                   </span>
                 </div>
                 <p className="line-clamp-2 text-[11.5px] text-shop-text/70">
@@ -548,11 +624,18 @@ export default function AdminMarketingPage() {
                     year: "numeric",
                   })}
                 </p>
-              </div>
+              </button>
             ))
           )}
         </div>
       </div>
+
+      {viewingCampaignId && (
+        <CampaignDetailModal
+          id={viewingCampaignId}
+          onClose={() => setViewingCampaignId(null)}
+        />
+      )}
     </div>
   );
 }
