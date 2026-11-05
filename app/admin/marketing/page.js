@@ -258,12 +258,20 @@ export default function AdminMarketingPage() {
     { skip: !campaignOpen || audiences.length === 0 },
   );
 
-  // Several categories can be combined in one send, e.g. Customers +
-  // Partners.
+  // Several specific categories can be combined in one send, e.g. Customers
+  // + Partners - but "Everyone" already covers every category, so it's
+  // exclusive: picking it drops anything else, and picking anything else
+  // while it's active drops it instead of adding to it.
   const toggleAudience = (id) => {
-    setAudiences((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setAudiences((prev) => {
+      if (id === "everyone") {
+        return prev.length === 1 && prev[0] === "everyone" ? [] : ["everyone"];
+      }
+      const withoutEveryone = prev.filter((x) => x !== "everyone");
+      return withoutEveryone.includes(id)
+        ? withoutEveryone.filter((x) => x !== id)
+        : [...withoutEveryone, id];
+    });
   };
 
   const toggleSection = (id) => {
