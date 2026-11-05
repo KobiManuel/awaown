@@ -8,7 +8,6 @@ import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
-  useGetAdminOverviewQuery,
   useGetAdminCouponsQuery,
   useSaveAdminCouponMutation,
   useDeleteAdminCouponMutation,
@@ -16,8 +15,6 @@ import {
   useGetAdminCampaignQuery,
   useGetAdminCampaignRecipientsQuery,
   useSendAdminCampaignMutation,
-  useGetAdminCustomersQuery,
-  useGetAdminPurchasingCustomersQuery,
 } from "@/lib/api/adminApi";
 import { useMediaUpload } from "@/lib/api/mediaApi";
 import { errorMessage } from "@/lib/api/errorMessage";
@@ -52,6 +49,112 @@ function formatAudience(idsCsv) {
     .split(",")
     .map((id) => AUDIENCE_LABEL[id.trim()] || id.trim().replace(/_/g, " "))
     .join(", ");
+}
+
+// Counts come from the same /admin/campaigns/recipients call the section
+// below renders - one source of truth, so a pill's number never drifts from
+// what the expanded checklist actually shows.
+function AudiencePill({ id, label, selected, onToggle }) {
+  const { data: members } = useGetAdminCampaignRecipientsQuery(id);
+  const count = members?.length ?? 0;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`rounded-full border px-3.5 py-2 text-[12px] font-semibold ${
+        selected
+          ? "border-shop-accent-1 bg-shop-accent-1 text-white"
+          : "border-shop-border bg-white text-shop-text"
+      }`}
+    >
+      {label} ({count.toLocaleString()})
+    </button>
+  );
+}
+
+function AudienceSection({
+  id,
+  label,
+  excludedEmails,
+  onToggleRecipient,
+  onSelectAll,
+  onSelectNone,
+  open,
+  onToggleOpen,
+}) {
+  const { data: members, isFetching } = useGetAdminCampaignRecipientsQuery(id);
+  const total = members?.length ?? 0;
+  const excludedHere = (members ?? []).filter((m) =>
+    excludedEmails.has(m.email),
+  ).length;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={onToggleOpen}
+        className="flex items-center justify-between rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[12px] font-semibold text-shop-heading"
+      >
+        <span>
+          {isFetching
+            ? `Loading ${label}…`
+            : `${(total - excludedHere).toLocaleString()} of ${total.toLocaleString()} (${label}) will receive this`}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-shop-text/50 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-[8px] border border-shop-border bg-white p-1.5">
+          {isFetching ? (
+            <p className="p-2 text-[11.5px] text-shop-text/50">Loading…</p>
+          ) : total === 0 ? (
+            <p className="p-2 text-[11.5px] text-shop-text/50">
+              No one in this category yet.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-2 border-b border-shop-border px-2 pb-1.5">
+                <button
+                  type="button"
+                  onClick={() => onSelectAll(members)}
+                  className="text-[11px] font-semibold text-shop-accent-1"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectNone(members)}
+                  className="text-[11px] font-semibold text-shop-text/60"
+                >
+                  Select none
+                </button>
+              </div>
+              {members.map((m) => (
+                <label
+                  key={m.email}
+                  className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 text-[12px] text-shop-heading hover:bg-shop-bg"
+                >
+                  <input
+                    type="checkbox"
+                    checked={!excludedEmails.has(m.email)}
+                    onChange={() => onToggleRecipient(m.email)}
+                    className="h-3.5 w-3.5 shrink-0 accent-shop-accent-1"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{m.name}</span>
+                  <span className="shrink-0 truncate text-[10.5px] text-shop-text/50">
+                    {m.email}
+                  </span>
+                </label>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function CampaignDetailModal({ id, onClose }) {
@@ -118,7 +221,6 @@ function CampaignDetailModal({ id, onClose }) {
 export default function AdminMarketingPage() {
   const showToast = useToast();
   const confirm = useConfirm();
-  const { data: overview } = useGetAdminOverviewQuery();
   const { data: coupons, isLoading: couponsLoading } = useGetAdminCouponsQuery();
   const [saveCoupon, saveCouponState] = useSaveAdminCouponMutation();
   const [deleteCoupon] = useDeleteAdminCouponMutation();
@@ -128,8 +230,6 @@ export default function AdminMarketingPage() {
     useGetAdminCampaignsQuery(undefined, { pollingInterval: 5000 });
   const [sendCampaign, sendState] = useSendAdminCampaignMutation();
   const { upload, uploading } = useMediaUpload("campaigns");
-  const { data: signedUpData } = useGetAdminCustomersQuery();
-  const { data: purchasingData } = useGetAdminPurchasingCustomersQuery();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCouponId, setEditingCouponId] = useState(null);
@@ -148,34 +248,47 @@ export default function AdminMarketingPage() {
   const [campaignImages, setCampaignImages] = useState([]);
   const [viewingCampaignId, setViewingCampaignId] = useState(null);
   const [excludedEmails, setExcludedEmails] = useState(() => new Set());
-  const [recipientsOpen, setRecipientsOpen] = useState(false);
-  const { data: audienceMembers, isFetching: membersLoading } =
-    useGetAdminCampaignRecipientsQuery(audiences.join(","), {
-      skip: !campaignOpen || audiences.length === 0,
-    });
+  const [openSections, setOpenSections] = useState(() => new Set());
+  // Only used to estimate the toast's recipient count right after sending,
+  // before the real server-computed count comes back - the actual picker UI
+  // is one AudienceSection per selected category (each audience's exact
+  // count/roster, not this union), so counts never drift between the two.
+  const { data: audienceMembers } = useGetAdminCampaignRecipientsQuery(
+    audiences.join(","),
+    { skip: !campaignOpen || audiences.length === 0 },
+  );
 
   // Several categories can be combined in one send, e.g. Customers +
-  // Partners. Changing the selection makes the previous exclusion list
-  // meaningless (it was keyed to a different set of people) - start fresh.
+  // Partners.
   const toggleAudience = (id) => {
     setAudiences((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
-    setExcludedEmails(new Set());
   };
 
-  const kpis = overview?.kpis;
-  const audienceCount = (id) => {
-    if (id === "signed_up_customers") {
-      return signedUpData?.summary?.total ?? signedUpData?.items?.length ?? 0;
-    }
-    if (id === "purchasing_customers") return purchasingData?.items?.length ?? 0;
-    if (!kpis) return 0;
-    if (id === "merchants") return kpis.merchants;
-    if (id === "partners") return kpis.partners;
-    if (id === "customers") return kpis.customers;
-    if (id === "subscribers") return kpis.subscribers ?? 0;
-    return kpis.customers + kpis.merchants + kpis.partners;
+  const toggleSection = (id) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllInAudience = (members) => {
+    setExcludedEmails((prev) => {
+      const next = new Set(prev);
+      members.forEach((m) => next.delete(m.email));
+      return next;
+    });
+  };
+
+  const selectNoneInAudience = (members) => {
+    setExcludedEmails((prev) => {
+      const next = new Set(prev);
+      members.forEach((m) => next.add(m.email));
+      return next;
+    });
   };
 
   const resetCouponForm = () => {
@@ -310,7 +423,7 @@ export default function AdminMarketingPage() {
       setCampaignImages([]);
       setAudiences(["everyone"]);
       setExcludedEmails(new Set());
-      setRecipientsOpen(false);
+      setOpenSections(new Set());
       setCampaignOpen(false);
     } catch (err) {
       showToast(errorMessage(err));
@@ -538,92 +651,29 @@ export default function AdminMarketingPage() {
             </span>
             <div className="-mt-1.5 flex flex-wrap gap-2">
               {AUDIENCES.map((a) => (
-                <button
+                <AudiencePill
                   key={a.id}
-                  type="button"
-                  onClick={() => toggleAudience(a.id)}
-                  className={`rounded-full border px-3.5 py-2 text-[12px] font-semibold ${
-                    audiences.includes(a.id)
-                      ? "border-shop-accent-1 bg-shop-accent-1 text-white"
-                      : "border-shop-border bg-white text-shop-text"
-                  }`}
-                >
-                  {a.label} ({audienceCount(a.id).toLocaleString()})
-                </button>
+                  id={a.id}
+                  label={a.label}
+                  selected={audiences.includes(a.id)}
+                  onToggle={() => toggleAudience(a.id)}
+                />
               ))}
             </div>
             <div className="-mt-1 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setRecipientsOpen((v) => !v)}
-                className="flex items-center justify-between rounded-[8px] border border-shop-border bg-white px-3.5 py-2.5 text-[12px] font-semibold text-shop-heading"
-              >
-                <span>
-                  {membersLoading
-                    ? "Loading recipients…"
-                    : `${(audienceMembers?.length ?? 0) - excludedEmails.size} of ${(audienceMembers?.length ?? 0).toLocaleString()} will receive this`}
-                </span>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-shop-text/50 transition-transform ${
-                    recipientsOpen ? "rotate-180" : ""
-                  }`}
+              {audiences.map((id) => (
+                <AudienceSection
+                  key={id}
+                  id={id}
+                  label={AUDIENCE_LABEL[id] ?? id}
+                  excludedEmails={excludedEmails}
+                  onToggleRecipient={toggleRecipient}
+                  onSelectAll={selectAllInAudience}
+                  onSelectNone={selectNoneInAudience}
+                  open={openSections.has(id)}
+                  onToggleOpen={() => toggleSection(id)}
                 />
-              </button>
-              {recipientsOpen && (
-                <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-[8px] border border-shop-border bg-white p-1.5">
-                  {membersLoading ? (
-                    <p className="p-2 text-[11.5px] text-shop-text/50">
-                      Loading…
-                    </p>
-                  ) : (audienceMembers ?? []).length === 0 ? (
-                    <p className="p-2 text-[11.5px] text-shop-text/50">
-                      No one in this audience yet.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between gap-2 border-b border-shop-border px-2 pb-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setExcludedEmails(new Set())}
-                          className="text-[11px] font-semibold text-shop-accent-1"
-                        >
-                          Select all
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExcludedEmails(
-                              new Set(audienceMembers.map((m) => m.email)),
-                            )
-                          }
-                          className="text-[11px] font-semibold text-shop-text/60"
-                        >
-                          Select none
-                        </button>
-                      </div>
-                      {audienceMembers.map((m) => (
-                        <label
-                          key={m.email}
-                          className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 text-[12px] text-shop-heading hover:bg-shop-bg"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!excludedEmails.has(m.email)}
-                            onChange={() => toggleRecipient(m.email)}
-                            className="h-3.5 w-3.5 shrink-0 accent-shop-accent-1"
-                          />
-                          <span className="min-w-0 flex-1 truncate">
-                            {m.name}
-                          </span>
-                          <span className="shrink-0 truncate text-[10.5px] text-shop-text/50">
-                            {m.email}
-                          </span>
-                        </label>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
             <input
               value={subject}
