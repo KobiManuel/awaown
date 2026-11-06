@@ -29,7 +29,7 @@ import {
   useGuestPreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { startPaystackCheckout } from "@/lib/paystack";
+import { startPaystackCheckout, usePaystackReturnReset } from "@/lib/paystack";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import { trackMetaEvent } from "@/lib/metaPixel";
 
@@ -93,6 +93,10 @@ function CheckoutInner() {
   const [couponError, setCouponError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // The redirect to Paystack never unmounts this page - clear the stuck
+  // spinner if the shopper comes back via the browser's own back button
+  // (cancelled, or just changed their mind) instead of the callback page.
+  usePaystackReturnReset(() => setBusy(false));
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setAddressState = (e) => {

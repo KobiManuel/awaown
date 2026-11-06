@@ -18,7 +18,7 @@ import {
   usePreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { startPaystackCheckout } from "@/lib/paystack";
+import { startPaystackCheckout, usePaystackReturnReset } from "@/lib/paystack";
 import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
@@ -63,6 +63,10 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // The redirect to Paystack never unmounts this page - clear the stuck
+  // spinner if the shopper comes back via the browser's own back button
+  // (cancelled, or just changed their mind) instead of the callback page.
+  usePaystackReturnReset(() => setBusy(false));
 
   const buyNowLine = useMemo(() => {
     if (!isBuyNow || !bnProduct) return null;

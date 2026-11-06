@@ -15,7 +15,7 @@ import {
   useGuestPreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { startPaystackCheckout } from "@/lib/paystack";
+import { startPaystackCheckout, usePaystackReturnReset } from "@/lib/paystack";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import { trackMetaEvent } from "@/lib/metaPixel";
@@ -62,6 +62,10 @@ export default function PartnerStoreCheckoutPage() {
   const [payment, setPayment] = useState("CARD");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // The redirect to Paystack never unmounts this page - clear the stuck
+  // spinner if the shopper comes back via the browser's own back button
+  // (cancelled, or just changed their mind) instead of the callback page.
+  usePaystackReturnReset(() => setBusy(false));
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
   const [couponError, setCouponError] = useState("");

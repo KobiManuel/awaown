@@ -8,7 +8,7 @@ import {
   useVerifyWalletTopUpMutation,
 } from "@/lib/api/walletApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { startPaystackCheckout } from "@/lib/paystack";
+import { startPaystackCheckout, usePaystackReturnReset } from "@/lib/paystack";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import ModalShell from "./ModalShell";
 
@@ -26,6 +26,12 @@ const TopUpModal = () => {
   const [error, setError] = useState("");
   const [topUp] = useTopUpWalletMutation();
   const [verifyTopUp] = useVerifyWalletTopUpMutation();
+  // The redirect to Paystack never unmounts this modal - drop back to the
+  // amount step if the shopper comes back via the browser's own back button
+  // (cancelled, or just changed their mind) instead of the callback page.
+  usePaystackReturnReset(() =>
+    setStep((s) => (s === "processing" ? "amount" : s)),
+  );
 
   const handleCustomAmount = (digits) => {
     setCustomAmount(digits);
