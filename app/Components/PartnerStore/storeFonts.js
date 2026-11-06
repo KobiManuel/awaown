@@ -39,7 +39,15 @@ const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500"] });
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700"] });
 const outfit = Outfit({ subsets: ["latin"], weight: ["500", "600"] });
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["600", "700"] });
-const merriweather = Merriweather({ subsets: ["latin"], weight: ["400", "700"] });
+// Two single-weight instances, not one two-weight one - the same Turbopack
+// Google-Fonts metadata bug noted above for Montserrat ("next/font/google
+// queries have exactly one entry") also hits Merriweather, intermittently
+// (it built fine locally but failed on Vercel - see the 2026-11-06 deploy
+// failure). Splitting by weight sidesteps the bug and happens to match how
+// Merriweather is actually used anyway: regular for body text, bold for
+// headings - see the "editorial"/"classic-serif" STORE_FONTS pairings.
+const merriweatherBody = Merriweather({ subsets: ["latin"], weight: ["400"] });
+const merriweatherHeading = Merriweather({ subsets: ["latin"], weight: ["700"] });
 const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: ["400"] });
 const josefinSans = Josefin_Sans({ subsets: ["latin"], weight: ["500", "600"] });
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500"] });
@@ -58,7 +66,8 @@ export const STORE_FONT_FAMILIES = {
   sora,
   outfit,
   cormorant,
-  merriweather,
+  merriweatherBody,
+  merriweatherHeading,
   bebasNeue,
   josefinSans,
   dmSans,
