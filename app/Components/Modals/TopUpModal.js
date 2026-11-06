@@ -8,7 +8,7 @@ import {
   useVerifyWalletTopUpMutation,
 } from "@/lib/api/walletApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { openPaystackPopup } from "@/lib/paystack";
+import { startPaystackCheckout } from "@/lib/paystack";
 import MoneyInput from "@/app/Components/Inputs/MoneyInput";
 import ModalShell from "./ModalShell";
 
@@ -39,14 +39,13 @@ const TopUpModal = () => {
     try {
       const res = await topUp(amount).unwrap();
 
-      // Live gateway → inline popup (desktop) with hosted-page fallback.
-      if (res?.provider === "paystack" && res.accessCode) {
+      if (res?.provider === "paystack" && res.authorizationUrl) {
         try {
           sessionStorage.setItem("awaown_wallet_topup", res.reference);
         } catch {}
-        const outcome = await openPaystackPopup({
+        await startPaystackCheckout({
           accessCode: res.accessCode,
-          fallbackUrl: res.authorizationUrl,
+          authorizationUrl: res.authorizationUrl,
           onSuccess: async () => {
             try {
               await verifyTopUp(res.reference).unwrap();
@@ -64,16 +63,6 @@ const TopUpModal = () => {
             setStep("amount");
           },
         });
-        if (outcome === "redirected") return;
-        return;
-      }
-
-      // Older redirect-only response, or non-Paystack
-      if (res?.authorizationUrl) {
-        try {
-          sessionStorage.setItem("awaown_wallet_topup", res.reference);
-        } catch {}
-        window.location.href = res.authorizationUrl;
         return;
       }
 

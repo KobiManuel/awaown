@@ -15,7 +15,7 @@ import {
   useGuestPreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { openPaystackPopup } from "@/lib/paystack";
+import { startPaystackCheckout } from "@/lib/paystack";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import { trackMetaEvent } from "@/lib/metaPixel";
@@ -194,10 +194,18 @@ export default function PartnerStoreCheckoutPage() {
       const reference = res.reference;
       const pay = res.payment;
 
-      if (pay?.provider === "paystack" && pay.accessCode) {
-        await openPaystackPopup({
+      if (pay?.provider === "paystack" && pay.authorizationUrl) {
+        // The redirect takes the browser away entirely - stash what
+        // /store/[code]/checkout/callback needs to finish up before it does.
+        try {
+          sessionStorage.setItem("awaown_pending_order", reference);
+          sessionStorage.setItem("awaown_pending_phone", form.phone.trim());
+          if (onlyItemId) sessionStorage.setItem("awaown_pending_item", onlyItemId);
+          else sessionStorage.removeItem("awaown_pending_item");
+        } catch {}
+        await startPaystackCheckout({
           accessCode: pay.accessCode,
-          fallbackUrl: pay.authorizationUrl,
+          authorizationUrl: pay.authorizationUrl,
           onSuccess: () => finishOrder(reference),
           onCancel: () => {
             setBusy(false);
@@ -208,10 +216,6 @@ export default function PartnerStoreCheckoutPage() {
             setError(err?.message || "Payment could not be completed.");
           },
         });
-        return;
-      }
-      if (pay?.provider === "paystack" && pay.authorizationUrl) {
-        window.location.href = pay.authorizationUrl;
         return;
       }
 

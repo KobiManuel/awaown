@@ -18,7 +18,7 @@ import {
   usePreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { openPaystackPopup } from "@/lib/paystack";
+import { startPaystackCheckout } from "@/lib/paystack";
 import { readBuyNow, clearBuyNow } from "@/lib/express-checkout";
 import StoreThemeShell from "@/app/Components/PartnerStore/StoreThemeShell";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
@@ -170,13 +170,13 @@ export default function CheckoutPage() {
     router.push(`/dashboard/orders/${reference}?placed=true`);
   };
 
-  const openPaystack = async (accessUrl, accessCode, reference) => {
+  const payForOrder = async (authorizationUrl, accessCode, reference) => {
     try {
       sessionStorage.setItem("awaown_pending_order", reference);
     } catch {}
-    await openPaystackPopup({
+    await startPaystackCheckout({
       accessCode,
-      fallbackUrl: accessUrl,
+      authorizationUrl,
       onSuccess: () => finishOrder(reference),
       onCancel: () => {
         setBusy(false);
@@ -224,15 +224,8 @@ export default function CheckoutPage() {
       const reference = res.reference;
       const pay = res.payment;
 
-      if (pay?.provider === "paystack" && pay.accessCode) {
-        await openPaystack(pay.authorizationUrl, pay.accessCode, reference);
-        return;
-      }
       if (pay?.provider === "paystack" && pay.authorizationUrl) {
-        try {
-          sessionStorage.setItem("awaown_pending_order", reference);
-        } catch {}
-        window.location.href = pay.authorizationUrl;
+        await payForOrder(pay.authorizationUrl, pay.accessCode, reference);
         return;
       }
 

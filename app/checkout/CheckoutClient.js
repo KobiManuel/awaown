@@ -29,7 +29,7 @@ import {
   useGuestPreviewCouponMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { openPaystackPopup } from "@/lib/paystack";
+import { startPaystackCheckout } from "@/lib/paystack";
 import FezDeliveryBanner from "@/app/Components/Delivery/FezDeliveryBanner";
 import { trackMetaEvent } from "@/lib/metaPixel";
 
@@ -247,10 +247,16 @@ function CheckoutInner() {
       const reference = res.reference;
       const pay = res.payment;
 
-      if (pay?.provider === "paystack" && pay.accessCode) {
-        await openPaystackPopup({
+      if (pay?.provider === "paystack" && pay.authorizationUrl) {
+        // The redirect takes the browser away entirely - stash what
+        // /checkout/callback needs to finish up before it does.
+        try {
+          sessionStorage.setItem("awaown_pending_order", reference);
+          sessionStorage.setItem("awaown_pending_phone", form.phone.trim());
+        } catch {}
+        await startPaystackCheckout({
           accessCode: pay.accessCode,
-          fallbackUrl: pay.authorizationUrl,
+          authorizationUrl: pay.authorizationUrl,
           onSuccess: () => finishOrder(reference),
           onCancel: () => {
             setBusy(false);
@@ -261,10 +267,6 @@ function CheckoutInner() {
             setError(err?.message || "Payment could not be completed.");
           },
         });
-        return;
-      }
-      if (pay?.provider === "paystack" && pay.authorizationUrl) {
-        window.location.href = pay.authorizationUrl;
         return;
       }
 

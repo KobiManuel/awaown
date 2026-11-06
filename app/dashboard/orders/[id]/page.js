@@ -28,7 +28,7 @@ import {
   useCancelOrderMutation,
 } from "@/lib/api/ordersApi";
 import { errorMessage } from "@/lib/api/errorMessage";
-import { openPaystackPopup } from "@/lib/paystack";
+import { startPaystackCheckout } from "@/lib/paystack";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { useDigitalDownload } from "@/lib/useDigitalDownload";
 
@@ -216,10 +216,10 @@ function OrderDetailContent() {
       } catch {
         /* ignore */
       }
-      if (pay.provider === "paystack" && pay.accessCode) {
-        await openPaystackPopup({
+      if (pay.provider === "paystack" && pay.authorizationUrl) {
+        await startPaystackCheckout({
           accessCode: pay.accessCode,
-          fallbackUrl: pay.authorizationUrl,
+          authorizationUrl: pay.authorizationUrl,
           onSuccess: async () => {
             try {
               await confirmPayment(order.reference).unwrap();
@@ -233,10 +233,6 @@ function OrderDetailContent() {
             setPayBusy(false);
           },
         });
-        return;
-      }
-      if (pay.authorizationUrl) {
-        window.location.href = pay.authorizationUrl;
         return;
       }
       // mock gateway
