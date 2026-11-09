@@ -28,6 +28,27 @@ const STATUS_TONE = {
   EXPIRED: "bg-shop-bg text-shop-text",
 };
 
+// Same switch used on the admin Settings page - on/off is the actual
+// Active/Scheduled control; the status badge next to it is read-only.
+const Toggle = ({ on, onClick, disabled = false, "aria-label": ariaLabel }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    aria-label={ariaLabel}
+    aria-pressed={on}
+    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+      on ? "bg-shop-accent-1" : "bg-shop-border"
+    }`}
+  >
+    <span
+      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left] duration-200 ${
+        on ? "left-[22px]" : "left-0.5"
+      }`}
+    />
+  </button>
+);
+
 const AUDIENCES = [
   { id: "everyone", label: "Everyone" },
   { id: "customers", label: "Customers" },
@@ -602,14 +623,17 @@ export default function AdminMarketingPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={c.status === "EXPIRED"}
-                    onClick={() => cycleCouponStatus(c)}
-                    className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize disabled:cursor-not-allowed ${STATUS_TONE[c.status]}`}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold capitalize ${STATUS_TONE[c.status]}`}
                   >
                     {c.status.toLowerCase()}
-                  </button>
+                  </span>
+                  <Toggle
+                    on={c.status === "ACTIVE"}
+                    disabled={c.status === "EXPIRED"}
+                    onClick={() => cycleCouponStatus(c)}
+                    aria-label={`${c.status === "ACTIVE" ? "Deactivate" : "Activate"} coupon ${c.code}`}
+                  />
                   <button
                     type="button"
                     aria-label={`Edit coupon ${c.code}`}
