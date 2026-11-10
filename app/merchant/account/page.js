@@ -68,6 +68,7 @@ export default function MerchantAccountPage() {
   useEffect(() => {
     if (store && !draft) {
       setDraft({
+        storeName: store.storeName ?? "",
         bio: store.bio ?? "",
         bannerUrl: store.bannerUrl ?? null,
         logoUrl: store.logoUrl ?? null,
@@ -84,6 +85,7 @@ export default function MerchantAccountPage() {
     store &&
     draft &&
     JSON.stringify({
+      storeName: store.storeName ?? "",
       bio: store.bio ?? "",
       bannerUrl: store.bannerUrl ?? null,
       logoUrl: store.logoUrl ?? null,
@@ -93,6 +95,7 @@ export default function MerchantAccountPage() {
     }) !== JSON.stringify(draft);
   const detailsComplete = draft?.state && draft?.address && draft?.phone;
   const phoneValid = !draft?.phone || isValidNigerianPhone(draft.phone);
+  const storeNameValid = !!draft?.storeName?.trim();
 
   const pickImage = async (e, key) => {
     const file = e.target.files?.[0];
@@ -106,6 +109,10 @@ export default function MerchantAccountPage() {
   };
 
   const save = async () => {
+    if (!storeNameValid) {
+      showToast("Store name can't be empty");
+      return;
+    }
     try {
       await updateStore(draft).unwrap();
       showToast("Store changes saved");
@@ -230,6 +237,17 @@ export default function MerchantAccountPage() {
               The logo is your store&apos;s profile picture. Use a square image
               of your brand mark, not a product photo.
             </p>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-semibold text-shop-heading">
+                Store Name
+              </span>
+              <input
+                value={draft.storeName}
+                onChange={(e) => set({ storeName: e.target.value })}
+                placeholder="Your store's name"
+                className="w-full rounded-[10px] border border-shop-border px-3 py-2.5 text-[12.5px] text-shop-heading placeholder:text-shop-text/50 focus:border-shop-accent-1 focus:outline-none"
+              />
+            </label>
             <textarea
               value={draft.bio}
               onChange={(e) => set({ bio: e.target.value })}
@@ -296,7 +314,7 @@ export default function MerchantAccountPage() {
           <button
             type="button"
             onClick={save}
-            disabled={!dirty || saving || !phoneValid}
+            disabled={!dirty || saving || !phoneValid || !storeNameValid}
             className="mx-4 flex items-center justify-center gap-1.5 rounded-[10px] bg-shop-accent-1 py-3 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-shop-border disabled:text-shop-text/60 lg:mx-0"
           >
             {saving ? (

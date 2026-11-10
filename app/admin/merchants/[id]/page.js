@@ -19,6 +19,14 @@ const VERIFICATION_TONE = {
   UNVERIFIED: "bg-shop-bg text-shop-text",
 };
 
+// A DRAFT product's approvalStatus is always the inert APPROVED default (it
+// was never submitted for review, so there's nothing to approve) - showing
+// it raw here read as "already approved" to admins looking at a brand-new,
+// unpublished product. Mirrors the status !== "DRAFT" guard the merchant's
+// own product list already uses before trusting approvalStatus.
+const productStatusLabel = (p) =>
+  p.status === "DRAFT" ? "Draft (not submitted)" : p.approvalStatus;
+
 const Stat = ({ label, value }) => (
   <div className="flex flex-col gap-1 rounded-[12px] border border-shop-border bg-white p-3.5">
     <p className="text-[15px] font-bold text-shop-heading">{value}</p>
@@ -167,7 +175,7 @@ export default function AdminMerchantDetailPage() {
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">{p.title}</p>
                 <p className="text-[11px] text-shop-text/60">
-                  {formatPrice(p.price)} · {p.approvalStatus}
+                  {formatPrice(p.price)} · {productStatusLabel(p)}
                 </p>
               </div>
             </div>
