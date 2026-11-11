@@ -12,7 +12,7 @@ import {
   Truck,
 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
-import { statusMeta, ORDER_STEPS } from "@/lib/order-status";
+import { statusMeta, shipmentStatusMeta, ORDER_STEPS } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -170,6 +170,10 @@ export default function AdminOrderDetailPage() {
   );
   const escrowReleased = !!order.escrowReleasedAt;
   const hasRefund = !!order.refund;
+  const shipments = order.shipments ?? [];
+  const shipmentByMerchantId = new Map(
+    shipments.filter((s) => s.merchantId).map((s) => [s.merchantId, s]),
+  );
 
   return (
     <div className="flex flex-col gap-5 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
@@ -387,6 +391,41 @@ export default function AdminOrderDetailPage() {
         </div>
       </div>
 
+      {/* Per-merchant shipping - the status above is the order's single
+          shared column (least-advanced leg); this shows each merchant's
+          actual leg so a part-shipped order isn't read as fully shipped. */}
+      {shipments.length > 0 && (
+        <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
+          <p className="text-[13px] font-semibold text-shop-heading">
+            Shipping{shipments.length > 1 ? ` (${shipments.length} merchants)` : ""}
+          </p>
+          {shipments.map((s) => {
+            const sMeta = shipmentStatusMeta(s.status);
+            return (
+              <div
+                key={s.id}
+                className="flex items-center justify-between gap-3 border-t border-shop-border pt-3 first:border-t-0 first:pt-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[12.5px] font-medium text-shop-heading">
+                    {s.merchantName ?? "Merchant"}
+                  </p>
+                  <p className="text-[11px] text-shop-text/60">
+                    {s.carrier}
+                    {s.waybill ? ` · ${s.waybill}` : ""}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${sMeta.tone}`}
+                >
+                  {sMeta.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Customer + address */}
       <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
         <div className="flex items-start gap-3">
@@ -426,33 +465,49 @@ export default function AdminOrderDetailPage() {
       {/* Items */}
       <div className="mx-4 flex flex-col gap-3 rounded-[14px] border border-shop-border p-4 lg:mx-8">
         <p className="text-[13px] font-semibold text-shop-heading">Items</p>
-        {order.items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
-              {item.image && (
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  fill
-                  className="object-contain p-1.5"
-                  sizes="56px"
-                />
-              )}
-            </div>
-            <div className="flex-1">
-              <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
-                {item.title}
+        {order.items.map((item) => {
+          const itemShipment = item.merchantId
+            ? shipmentByMerchantId.get(item.merchantId)
+            : null;
+          const itemMeta = itemShipment ? shipmentStatusMeta(itemShipment.status) : null;
+          return (
+            <div key={item.id} className="flex items-center gap-3">
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[8px] bg-shop-bg">
+                {item.image && (
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-contain p-1.5"
+                    sizes="56px"
+                  />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="line-clamp-1 text-[12.5px] font-medium text-shop-heading">
+                  {item.title}
+                </p>
+                {item.variantLabel && (
+                  <p className="text-[11px] text-shop-text/60">{item.variantLabel}</p>
+                )}
+                <p className="text-[11px] text-shop-text/70">
+                  Qty: {item.qty}
+                  {item.merchantName ? ` · ${item.merchantName}` : ""}
+                </p>
+                {shipments.length > 1 && itemMeta && (
+                  <span
+                    className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${itemMeta.tone}`}
+                  >
+                    {itemMeta.label}
+                  </span>
+                )}
+              </div>
+              <p className="text-[12.5px] font-semibold text-shop-heading">
+                {formatPrice(item.price * item.qty)}
               </p>
-              {item.variantLabel && (
-                <p className="text-[11px] text-shop-text/60">{item.variantLabel}</p>
-              )}
-              <p className="text-[11px] text-shop-text/70">Qty: {item.qty}</p>
             </div>
-            <p className="text-[12.5px] font-semibold text-shop-heading">
-              {formatPrice(item.price * item.qty)}
-            </p>
-          </div>
-        ))}
+          );
+        })}
         <div className="mt-1 flex flex-col gap-1.5 border-t border-shop-border pt-3 text-[12.5px]">
           <Row label="Subtotal" value={formatPrice(order.subtotal)} />
           <Row label="Shipping" value={formatPrice(order.shipping)} />

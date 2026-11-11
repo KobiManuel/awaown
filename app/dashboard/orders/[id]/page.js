@@ -12,7 +12,7 @@ import {
   Download,
 } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
-import { statusMeta, ORDER_STEPS } from "@/lib/order-status";
+import { statusMeta, shipmentStatusMeta, ORDER_STEPS } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -162,6 +162,9 @@ function OrderDetailContent() {
     "delivered",
   ];
   const shipments = order.shipments ?? [];
+  const shipmentByMerchantId = new Map(
+    shipments.filter((s) => s.merchantId).map((s) => [s.merchantId, s]),
+  );
   const troubledShipment = shipments.find((s) =>
     ["returned", "failed", "cancelled"].includes(s.status),
   );
@@ -396,6 +399,34 @@ function OrderDetailContent() {
 
       {showDeliveryBanner && <FezDeliveryBanner status={deliveryStatus} />}
 
+      {/* deliveryStatus above collapses every merchant's leg into one
+          "furthest along" phrase on purpose (see its comment) - when legs
+          have actually diverged, this additionally spells out which
+          merchant's items have moved and which haven't. */}
+      {shipments.length > 1 &&
+        new Set(shipments.map((s) => s.status)).size > 1 && (
+          <div className="mx-4 flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
+            <p className="text-[12px] font-semibold text-shop-heading">
+              Shipped separately
+            </p>
+            {shipments.map((s) => {
+              const sMeta = shipmentStatusMeta(s.status);
+              return (
+                <div key={s.id} className="flex items-center justify-between gap-3">
+                  <p className="truncate text-[11.5px] text-shop-text/80">
+                    {s.merchantName ?? "A merchant"}
+                  </p>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${sMeta.tone}`}
+                  >
+                    {sMeta.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       <div className="mx-4 flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
         <ShieldCheck
           className="h-5 w-5 shrink-0 text-shop-accent-1"
@@ -483,6 +514,23 @@ function OrderDetailContent() {
                     </p>
                   )}
                   <p className="text-[11px] text-shop-text/70">Qty: {item.qty}</p>
+                  {shipments.length > 1 &&
+                    item.merchantId &&
+                    shipmentByMerchantId.has(item.merchantId) && (
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          shipmentStatusMeta(
+                            shipmentByMerchantId.get(item.merchantId).status,
+                          ).tone
+                        }`}
+                      >
+                        {
+                          shipmentStatusMeta(
+                            shipmentByMerchantId.get(item.merchantId).status,
+                          ).label
+                        }
+                      </span>
+                    )}
                 </div>
                 <span className="text-[12.5px] font-semibold text-shop-heading">
                   {formatPrice(item.price * item.qty)}
