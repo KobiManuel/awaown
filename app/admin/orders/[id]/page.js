@@ -12,7 +12,12 @@ import {
   Truck,
 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
-import { statusMeta, shipmentStatusMeta, ORDER_STEPS } from "@/lib/order-status";
+import {
+  statusMeta,
+  shipmentStatusMeta,
+  shipmentProgress,
+  ORDER_STEPS,
+} from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import { useConfirm } from "@/app/Components/Admin/ConfirmDialog";
@@ -174,6 +179,7 @@ export default function AdminOrderDetailPage() {
   const shipmentByMerchantId = new Map(
     shipments.filter((s) => s.merchantId).map((s) => [s.merchantId, s]),
   );
+  const shipProgress = shipmentProgress(shipments);
 
   return (
     <div className="flex flex-col gap-5 pb-10 font-shop lg:mx-auto lg:w-full lg:max-w-[720px]">
@@ -346,17 +352,34 @@ export default function AdminOrderDetailPage() {
         <p className="text-[13px] font-semibold text-shop-heading">Delivery Tracking</p>
         <div className="flex flex-col">
           {ORDER_STEPS.map((stepDef, i) => {
-            const done = i <= currentStep;
+            // The Shipped step otherwise just asserts "done" off the first
+            // SHIPPED event this order ever had, which goes stale once real
+            // per-merchant shipment data disagrees (e.g. a status that was
+            // corrected back, or legs that haven't all moved yet) - fall back
+            // to the live shipments instead of trusting history for this one.
+            const isShippedStep = stepDef.key === "SHIPPED";
+            const done =
+              isShippedStep && shipProgress.total > 0
+                ? i <= currentStep && shipProgress.allMoved
+                : i <= currentStep;
             const at = timelineAt.get(stepDef.key);
             return (
               <div key={stepDef.key} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                      done ? "bg-shop-accent-1 text-white" : "bg-shop-bg text-shop-text/40"
+                      done
+                        ? "bg-shop-accent-1 text-white"
+                        : isShippedStep && shipProgress.partial
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-shop-bg text-shop-text/40"
                     }`}
                   >
-                    {done ? <Check className="h-3.5 w-3.5" /> : null}
+                    {done ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : isShippedStep && shipProgress.partial ? (
+                      <Truck className="h-3.5 w-3.5" />
+                    ) : null}
                   </span>
                   {i < ORDER_STEPS.length - 1 && (
                     <span
@@ -368,12 +391,19 @@ export default function AdminOrderDetailPage() {
                 <div className="pb-5">
                   <p
                     className={`text-[13px] font-medium ${
-                      done ? "text-shop-heading" : "text-shop-text/50"
+                      done || (isShippedStep && shipProgress.partial)
+                        ? "text-shop-heading"
+                        : "text-shop-text/50"
                     }`}
                   >
                     {stepDef.label}
                   </p>
-                  {at && (
+                  {isShippedStep && shipProgress.partial && (
+                    <p className="text-[11px] font-medium text-amber-700">
+                      {shipProgress.movedCount} of {shipProgress.total} merchants shipped
+                    </p>
+                  )}
+                  {at && !(isShippedStep && shipProgress.partial) && (
                     <p className="text-[11px] text-shop-text/60">
                       {new Date(at).toLocaleString("en-NG", {
                         day: "numeric",

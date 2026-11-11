@@ -10,9 +10,15 @@ import {
   Loader2,
   KeyRound,
   Download,
+  Truck,
 } from "lucide-react";
 import { formatPrice } from "@/lib/dashboard-data";
-import { statusMeta, shipmentStatusMeta, ORDER_STEPS } from "@/lib/order-status";
+import {
+  statusMeta,
+  shipmentStatusMeta,
+  shipmentProgress,
+  ORDER_STEPS,
+} from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -165,6 +171,7 @@ function OrderDetailContent() {
   const shipmentByMerchantId = new Map(
     shipments.filter((s) => s.merchantId).map((s) => [s.merchantId, s]),
   );
+  const shipProgress = shipmentProgress(shipments);
   const troubledShipment = shipments.find((s) =>
     ["returned", "failed", "cancelled"].includes(s.status),
   );
@@ -297,7 +304,14 @@ function OrderDetailContent() {
         </p>
         <div className="flex flex-col">
           {ORDER_STEPS.map((step, i) => {
-            const done = i <= furthest;
+            // Shipped otherwise just reflects whether this order ever had a
+            // SHIPPED event historically - fall back to the live shipments
+            // when they disagree (not all merchants' legs have moved yet).
+            const isShippedStep = step.key === "SHIPPED";
+            const done =
+              isShippedStep && shipProgress.total > 0
+                ? i <= furthest && shipProgress.allMoved
+                : i <= furthest;
             return (
               <div key={step.key} className="flex gap-3">
                 <div className="flex flex-col items-center">
@@ -305,10 +319,16 @@ function OrderDetailContent() {
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
                       done
                         ? "bg-shop-accent-1 text-white"
-                        : "bg-shop-bg text-shop-text/40"
+                        : isShippedStep && shipProgress.partial
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-shop-bg text-shop-text/40"
                     }`}
                   >
-                    {done ? <Check className="h-3.5 w-3.5" /> : null}
+                    {done ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : isShippedStep && shipProgress.partial ? (
+                      <Truck className="h-3.5 w-3.5" />
+                    ) : null}
                   </span>
                   {i < ORDER_STEPS.length - 1 && (
                     <span
@@ -322,12 +342,19 @@ function OrderDetailContent() {
                 <div className="pb-5">
                   <p
                     className={`text-[13px] font-medium ${
-                      done ? "text-shop-heading" : "text-shop-text/50"
+                      done || (isShippedStep && shipProgress.partial)
+                        ? "text-shop-heading"
+                        : "text-shop-text/50"
                     }`}
                   >
                     {step.label}
                   </p>
-                  {eventAt[step.key] && (
+                  {isShippedStep && shipProgress.partial && (
+                    <p className="text-[11px] font-medium text-amber-700">
+                      {shipProgress.movedCount} of {shipProgress.total} merchants shipped
+                    </p>
+                  )}
+                  {eventAt[step.key] && !(isShippedStep && shipProgress.partial) && (
                     <p className="text-[11px] text-shop-text/60">
                       {new Date(eventAt[step.key]).toLocaleString("en-NG", {
                         day: "numeric",
