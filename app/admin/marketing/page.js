@@ -180,7 +180,14 @@ function AudienceSection({
 
 function CampaignDetailModal({ id, onClose }) {
   useBodyScrollLock(true);
-  const { data, isLoading } = useGetAdminCampaignQuery(id);
+  // Opens trickle in over hours as recipients actually read their inbox -
+  // a light poll while the modal's open lets the count/list update on its
+  // own, same reasoning as the campaigns list's own poll for sentCount.
+  const { data, isLoading } = useGetAdminCampaignQuery(id, {
+    pollingInterval: 10000,
+  });
+  const recipients = data?.recipients ?? [];
+  const openedCount = data?.openedCount ?? 0;
 
   return (
     <div
@@ -233,6 +240,57 @@ function CampaignDetailModal({ id, onClose }) {
             srcDoc={data.preview?.html ?? ""}
             className="h-[420px] w-full rounded-[10px] border border-shop-border bg-white"
           />
+        )}
+
+        {!isLoading && data && recipients.length > 0 && (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-shop-text/60">
+                Opens
+              </p>
+              <p className="text-[11.5px] font-semibold text-shop-heading">
+                {openedCount.toLocaleString()} of{" "}
+                {recipients.length.toLocaleString()} opened
+                {recipients.length
+                  ? ` (${Math.round((openedCount / recipients.length) * 100)}%)`
+                  : ""}
+              </p>
+            </div>
+            <p className="text-[10.5px] text-shop-text/50">
+              Based on a tracking pixel - approximate, not a precise read
+              receipt. Some mail clients (notably Apple Mail) pre-fetch
+              images for every recipient regardless of whether they actually
+              read it, which can inflate this number.
+            </p>
+            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-[8px] border border-shop-border bg-white p-1.5">
+              {recipients.map((r) => (
+                <div
+                  key={r.email}
+                  className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 text-[12px] text-shop-heading"
+                >
+                  <span className="min-w-0 flex-1 truncate">
+                    {r.name || r.email}
+                  </span>
+                  <span className="shrink-0 truncate text-[10.5px] text-shop-text/50">
+                    {r.email}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      r.openedAt
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-shop-bg text-shop-text/60"
+                    }`}
+                  >
+                    {r.openedAt
+                      ? `Opened${r.openCount > 1 ? ` ×${r.openCount}` : ""}`
+                      : r.sentAt
+                        ? "Not opened yet"
+                        : "Not sent yet"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
