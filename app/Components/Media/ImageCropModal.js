@@ -158,8 +158,8 @@ export default function ImageCropModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 font-shop">
-      <div className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-4 overflow-hidden rounded-[16px] bg-white p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-2 font-shop sm:p-4">
+      <div className="flex h-[94vh] w-full max-w-[560px] flex-col gap-4 overflow-hidden rounded-[16px] bg-white p-4 sm:h-[92vh]">
         <div className="flex items-center justify-between">
           <p className="text-[14px] font-semibold text-shop-heading">{title}</p>
           <button
