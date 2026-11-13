@@ -7,8 +7,11 @@ import ReactCrop, {
   convertToPixelCrop,
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
-import { Loader2, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
 
 /**
  * Photo-editor style cropper. The full image is shown and the user drags /
@@ -45,6 +48,12 @@ export default function ImageCropModal({
   const [crop, setCrop] = useState(null);
   const [completedCrop, setCompletedCrop] = useState(null);
   const [busy, setBusy] = useState(false);
+  // The image's rendered size (px) the first time it loads, at zoom 1 - the
+  // same "fits the modal" size the old fixed layout always used. Zoom then
+  // scales from this fixed baseline instead of the image's current size, so
+  // repeated small drags of the slider can't compound into runaway growth.
+  const [baseSize, setBaseSize] = useState(null);
+  const [zoom, setZoom] = useState(1);
   const imgRef = useRef(null);
   useBodyScrollLock(true);
 
@@ -53,6 +62,8 @@ export default function ImageCropModal({
     const u = URL.createObjectURL(file);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(u);
+    setBaseSize(null);
+    setZoom(1);
     return () => URL.revokeObjectURL(u);
   }, [file]);
 
@@ -66,11 +77,42 @@ export default function ImageCropModal({
     [aspect],
   );
 
-  const onImageLoad = (e) => seedCrop(e.currentTarget);
+  const onImageLoad = (e) => {
+    const el = e.currentTarget;
+    // Only the very first load (before any zoom-driven inline size is
+    // applied) reflects the natural "fits the modal" size - once baseSize
+    // is set, the img's size comes from the zoom style below instead, so
+    // this never overwrites it with an already-zoomed measurement.
+    if (!baseSize) setBaseSize({ width: el.width, height: el.height });
+    seedCrop(el);
+  };
 
   const reset = () => {
+    setZoom(1);
     if (imgRef.current) seedCrop(imgRef.current);
   };
+
+  // crop/completedCrop stay in sync automatically on zoom: `crop` is stored
+  // in percent (resolution-independent), but completedCrop is cached pixel
+  // coordinates from the last drag, which go stale the moment the image's
+  // underlying pixel size changes - the browser doesn't re-fire onComplete
+  // just because the element resized. Recompute it against the image's
+  // post-zoom size so "Use photo" crops the region actually on screen.
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el || !crop || !el.width || !el.height) return;
+    setCompletedCrop(convertToPixelCrop(crop, el.width, el.height));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
+
+  const imgStyle = baseSize
+    ? {
+        width: baseSize.width * zoom,
+        height: baseSize.height * zoom,
+        maxWidth: "none",
+        maxHeight: "none",
+      }
+    : undefined;
 
   const apply = async () => {
     const img = imgRef.current;
@@ -143,7 +185,6 @@ export default function ImageCropModal({
               aspect={aspect || undefined}
               keepSelection
               ruleOfThirds
-              className="max-h-[60vh]"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -151,10 +192,32 @@ export default function ImageCropModal({
                 src={url}
                 alt=""
                 onLoad={onImageLoad}
-                className="max-h-[60vh] w-auto select-none"
+                style={imgStyle}
+                className={
+                  baseSize ? "select-none" : "max-h-[60vh] w-auto select-none"
+                }
               />
             </ReactCrop>
           )}
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <ZoomOut className="h-4 w-4 shrink-0 text-shop-text/60" />
+          <input
+            type="range"
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
+            step={0.05}
+            value={zoom}
+            disabled={!baseSize}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            className="h-1.5 flex-1 cursor-pointer accent-shop-accent-1 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Zoom"
+          />
+          <ZoomIn className="h-4 w-4 shrink-0 text-shop-text/60" />
+          <span className="w-9 shrink-0 text-right text-[11px] text-shop-text/60">
+            {Math.round(zoom * 100)}%
+          </span>
         </div>
 
         <div className="flex gap-2">
