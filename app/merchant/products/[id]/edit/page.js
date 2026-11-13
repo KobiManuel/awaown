@@ -36,8 +36,24 @@ export default function EditMerchantProductPage() {
             : "Product updated",
       );
       router.push("/merchant/products");
+      return true;
     } catch (err) {
       showToast(errorMessage(err));
+      return false;
+    }
+  };
+
+  // Fire-and-forget: called when the form unmounts (navigated away, etc.)
+  // with unsaved edits still on it, only while this product is still a
+  // DRAFT (ProductForm only calls it where the manual "Save draft" button
+  // would already be shown - never on an already-live product). No
+  // navigation here - the user's already leaving on their own.
+  const handleAutoSaveDraft = async (body) => {
+    try {
+      await update({ id: product.productId, ...body }).unwrap();
+      showToast("Your draft was saved automatically");
+    } catch {
+      showToast("Couldn't auto-save your draft - it wasn't saved");
     }
   };
 
@@ -77,6 +93,7 @@ export default function EditMerchantProductPage() {
       product={product}
       submitting={saving}
       onSubmit={handleSubmit}
+      onAutoSaveDraft={handleAutoSaveDraft}
     />
   );
 }

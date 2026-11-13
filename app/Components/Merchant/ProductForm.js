@@ -340,9 +340,16 @@ function seed(product) {
 /**
  * The one product form used for both /merchant/products/new and
  * /merchant/products/[id]/edit. The parent handles the API call + navigation
- * via `onSubmit(body, { asDraft })`.
+ * via `onSubmit(body, { asDraft })`. `onAutoSaveDraft(body)` is optional -
+ * called instead, with no navigation, when the form unmounts with unsaved
+ * work still on it (see the autosave-on-exit effect near the bottom).
  */
-export default function ProductForm({ product = null, submitting, onSubmit }) {
+export default function ProductForm({
+  product = null,
+  submitting,
+  onSubmit,
+  onAutoSaveDraft,
+}) {
   const showToast = useToast();
   const init = useMemo(() => seed(product), []); // eslint-disable-line
 
@@ -617,35 +624,50 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
           : "Save Changes";
   const showDraftBtn = isCreate || isDraft;
 
+  const liveState = {
+    title,
+    description,
+    category,
+    deliveryType,
+    digitalFile,
+    video,
+    processingTime,
+    images,
+    productType,
+    price,
+    onSale,
+    discountType,
+    discountAmount,
+    discountPercent,
+    stock,
+    weight,
+    offerCommission,
+    partnerProfitAmount,
+    hideStock,
+    backInStockAlerts,
+    axes,
+    combos,
+    bundleItems,
+  };
+
+  // Snapshots kept current after every render so the autosave-on-exit
+  // effect below, whose cleanup closure is created once on mount, can still
+  // read whatever was last on the screen instead of what existed at mount.
+  const liveStateRef = React.useRef(liveState);
+  const canDraftRef = React.useRef(false);
+  React.useEffect(() => {
+    liveStateRef.current = liveState;
+    canDraftRef.current = showDraftBtn && !addressBlocked;
+  });
+  // Set right after a real save succeeds, so leaving the page immediately
+  // afterward (the parent's onSubmit navigates away on success) doesn't
+  // ALSO fire an autosave for data that's already been saved for real.
+  const hasFinishedRef = React.useRef(false);
+
   const submit = async (asDraft) => {
     if (submitting) return;
     if (asDraft ? !title.trim() : !isValid) return;
 
-    const liveState = {
-      title,
-      description,
-      category,
-      deliveryType,
-      digitalFile,
-      video,
-      processingTime,
-      images,
-      productType,
-      price,
-      onSale,
-      discountType,
-      discountAmount,
-      discountPercent,
-      stock,
-      weight,
-      offerCommission,
-      partnerProfitAmount,
-      hideStock,
-      backInStockAlerts,
-      axes,
-      combos,
-      bundleItems,
-    };
     const liveBody = buildBody(liveState);
     // On create there's no "original" to diff against - send everything. On
     // edit, only send what the merchant actually changed, so an untouched
@@ -659,8 +681,33 @@ export default function ProductForm({ product = null, submitting, onSubmit }) {
     // re-approval rule can tell an inventory-only change from a real one.
     body.status = asDraft ? "DRAFT" : isDraft ? "ACTIVE" : undefined;
 
-    await onSubmit(body, { asDraft });
+    const ok = await onSubmit(body, { asDraft });
+    if (ok) hasFinishedRef.current = true;
   };
+
+  // Autosave-on-exit: whichever way the merchant leaves (back button, a nav
+  // link, closing the tab's SPA route) without clicking Publish/Save, this
+  // unmount cleanup fires exactly once and saves whatever they'd typed as a
+  // draft - but only where the manual "Save as draft"/"Save draft" button
+  // above would itself have been available (a brand-new, not-yet-created
+  // product, or an existing product that's still a DRAFT). An already-live
+  // product is never silently drafted just because the merchant navigated
+  // away mid-edit - that would take a real listing offline. Empty deps:
+  // this must register once on mount and read the latest values through
+  // the refs above, not whatever was true on the render that registered it.
+  React.useEffect(() => {
+    return () => {
+      if (hasFinishedRef.current || !canDraftRef.current) return;
+      const latest = liveStateRef.current;
+      if (!latest.title.trim()) return;
+      const liveBody = buildBody(latest);
+      const body = isCreate ? liveBody : diffBody(liveBody, buildBody(init));
+      if (!isCreate && Object.keys(body).length === 0) return;
+      body.status = "DRAFT";
+      onAutoSaveDraft?.(body);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pricePlaceholder = hasVariants ? "15,000" : "15,000";
 
