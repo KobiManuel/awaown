@@ -46,7 +46,6 @@ import {
   slugValue,
 } from "@/lib/variant-options";
 
-const MAX_AXES = 3;
 // Mirrors the server-side cap in backend/src/media/media.service.ts - checked
 // here too so a merchant finds out immediately, not after an upload attempt.
 const MAX_DIGITAL_FILE_MB = 50;
@@ -514,8 +513,7 @@ export default function ProductForm({
 
   const updateAxis = (id, patch) =>
     setAxes((list) => list.map((a) => (a.id === id ? { ...a, ...patch } : a)));
-  const addAxis = () =>
-    setAxes((list) => (list.length < MAX_AXES ? [...list, newAxis()] : list));
+  const addAxis = () => setAxes((list) => [...list, newAxis()]);
   const removeAxis = (id) =>
     setAxes((list) =>
       list.length > 1 ? list.filter((a) => a.id !== id) : list,
@@ -1319,16 +1317,14 @@ export default function ProductForm({
                       productImages={productImages}
                     />
                   ))}
-                  {axes.length < MAX_AXES && (
-                    <button
-                      type="button"
-                      onClick={addAxis}
-                      className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add another variant type
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={addAxis}
+                    className="flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-shop-accent-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add another variant type
+                  </button>
                 </div>
 
                 <VariantMatrix
