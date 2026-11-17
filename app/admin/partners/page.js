@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BadgeCheck, Ban, Play, ChevronRight, Trash2, Search, Download, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -23,9 +24,13 @@ const VERIFICATION_TONE = {
   UNVERIFIED: "bg-shop-bg text-shop-text",
 };
 
-export default function AdminPartnersPage() {
+function AdminPartnersInner() {
   const showToast = useToast();
   const confirm = useConfirm();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const verificationFilter =
+    searchParams.get("verification") === "PENDING" ? "PENDING" : "";
   const { data, isLoading } = useGetAdminPartnersQuery();
   const [setStatus] = useSetAdminPartnerStatusMutation();
   const [reviewKyc] = useReviewAdminPartnerKycMutation();
@@ -39,13 +44,21 @@ export default function AdminPartnersPage() {
     showToast(ok ? "Partners exported" : "Couldn't export partners");
   };
 
+  const setVerificationFilter = (value) => {
+    router.replace(
+      value ? `/admin/partners?verification=${value}` : "/admin/partners",
+    );
+  };
+
   const allPartners = data?.items ?? [];
-  const partners = allPartners.filter(
-    (p) =>
-      !q ||
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      (p.storeName || "").toLowerCase().includes(q.toLowerCase()),
-  );
+  const partners = allPartners
+    .filter((p) => !verificationFilter || p.verification === verificationFilter)
+    .filter(
+      (p) =>
+        !q ||
+        p.name.toLowerCase().includes(q.toLowerCase()) ||
+        (p.storeName || "").toLowerCase().includes(q.toLowerCase()),
+    );
 
   const act = async (fn, ok) => {
     try {
@@ -151,6 +164,26 @@ export default function AdminPartnersPage() {
         />
       </div>
 
+      <div className="flex gap-2 px-4 lg:px-8">
+        {[
+          { value: "", label: "All" },
+          { value: "PENDING", label: "Pending verification" },
+        ].map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setVerificationFilter(f.value)}
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+              verificationFilter === f.value
+                ? "bg-shop-accent-1 text-white"
+                : "bg-shop-bg text-shop-text hover:bg-shop-accent-1-light"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="px-4 lg:px-8">
           <SkeletonRows count={4} />
@@ -160,7 +193,9 @@ export default function AdminPartnersPage() {
           <div className="flex items-center justify-between">
             <p className="text-[13px] font-semibold text-shop-heading">Partners</p>
             <p className="text-[12px] font-medium text-shop-text/60">
-              {q ? `${partners.length} of ${allPartners.length}` : `${allPartners.length} total`}
+              {q || verificationFilter
+                ? `${partners.length} of ${allPartners.length}`
+                : `${allPartners.length} total`}
             </p>
           </div>
           {partners.map((p) => (
@@ -280,11 +315,23 @@ export default function AdminPartnersPage() {
           ))}
           {partners.length === 0 && (
             <p className="py-10 text-center text-[13px] text-shop-text">
-              {q ? "No partners found." : "No partners yet."}
+              {q
+                ? "No partners found."
+                : verificationFilter
+                  ? "No partners pending verification."
+                  : "No partners yet."}
             </p>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminPartnersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminPartnersInner />
+    </Suspense>
   );
 }

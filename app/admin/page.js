@@ -82,13 +82,27 @@ const MANAGE_LINKS = [
 ];
 
 const ACTION_LABELS = {
-  pendingVerifications: { label: "Verifications to review", href: "/admin/merchants" },
+  pendingVerifications: { label: "Verifications to review", href: "/admin/merchants?verification=PENDING" },
   pendingRefunds: { label: "Refunds to decide", href: "/admin/finance?focus=refunds" },
   openComplaints: { label: "Open complaints", href: "/admin/support" },
   failedPayments: { label: "Failed payments", href: "/admin/finance?focus=failedPayments" },
   pendingProducts: { label: "Products awaiting approval", href: "/admin/products" },
   pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/finance?focus=payouts" },
 };
+
+// "Verifications to review" combines pending merchant + partner KYC into one
+// count, but they live on two different list pages - send the card to
+// whichever one the pending verification is actually on, instead of always
+// landing on the merchant list with nothing to go on.
+function actionHref(key, action) {
+  if (key === "pendingVerifications") {
+    if (!action.pendingMerchantKyc && action.pendingPartnerKyc) {
+      return "/admin/partners?verification=PENDING";
+    }
+    return "/admin/merchants?verification=PENDING";
+  }
+  return ACTION_LABELS[key].href;
+}
 
 export default function AdminHome() {
   const showToast = useToast();
@@ -237,7 +251,7 @@ export default function AdminHome() {
             return (
               <Link
                 key={key}
-                href={meta.href}
+                href={actionHref(key, action)}
                 className={`flex flex-col gap-1 rounded-[12px] border p-3.5 ${
                   count > 0 ? "border-amber-300 bg-amber-50" : "border-shop-border bg-white"
                 }`}

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BadgeCheck, Ban, Play, ChevronRight, Trash2, MapPin, Search, Download, Loader2 } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
@@ -22,9 +23,13 @@ const VERIFICATION_TONE = {
   UNVERIFIED: "bg-shop-bg text-shop-text",
 };
 
-export default function AdminMerchantsPage() {
+function AdminMerchantsInner() {
   const showToast = useToast();
   const confirm = useConfirm();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const verificationFilter =
+    searchParams.get("verification") === "PENDING" ? "PENDING" : "";
   const { data, isLoading } = useGetAdminMerchantsQuery();
   const [setStatus] = useSetAdminMerchantStatusMutation();
   const [reviewKyc] = useReviewAdminMerchantKycMutation();
@@ -38,13 +43,21 @@ export default function AdminMerchantsPage() {
     showToast(ok ? "Merchants exported" : "Couldn't export merchants");
   };
 
+  const setVerificationFilter = (value) => {
+    router.replace(
+      value ? `/admin/merchants?verification=${value}` : "/admin/merchants",
+    );
+  };
+
   const allMerchants = data?.items ?? [];
-  const merchants = allMerchants.filter(
-    (m) =>
-      !q ||
-      m.storeName.toLowerCase().includes(q.toLowerCase()) ||
-      m.owner.toLowerCase().includes(q.toLowerCase()),
-  );
+  const merchants = allMerchants
+    .filter((m) => !verificationFilter || m.verification === verificationFilter)
+    .filter(
+      (m) =>
+        !q ||
+        m.storeName.toLowerCase().includes(q.toLowerCase()) ||
+        m.owner.toLowerCase().includes(q.toLowerCase()),
+    );
 
   const act = async (fn, ok) => {
     try {
@@ -156,6 +169,26 @@ export default function AdminMerchantsPage() {
         />
       </div>
 
+      <div className="flex gap-2 px-4 lg:px-8">
+        {[
+          { value: "", label: "All" },
+          { value: "PENDING", label: "Pending verification" },
+        ].map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setVerificationFilter(f.value)}
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+              verificationFilter === f.value
+                ? "bg-shop-accent-1 text-white"
+                : "bg-shop-bg text-shop-text hover:bg-shop-accent-1-light"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="px-4 lg:px-8">
           <SkeletonRows count={4} />
@@ -165,7 +198,9 @@ export default function AdminMerchantsPage() {
           <div className="flex items-center justify-between">
             <p className="text-[13px] font-semibold text-shop-heading">Merchants</p>
             <p className="text-[12px] font-medium text-shop-text/60">
-              {q ? `${merchants.length} of ${allMerchants.length}` : `${allMerchants.length} total`}
+              {q || verificationFilter
+                ? `${merchants.length} of ${allMerchants.length}`
+                : `${allMerchants.length} total`}
             </p>
           </div>
           {merchants.map((m) => (
@@ -289,11 +324,23 @@ export default function AdminMerchantsPage() {
           ))}
           {merchants.length === 0 && (
             <p className="py-10 text-center text-[13px] text-shop-text">
-              {q ? "No merchants found." : "No merchants yet."}
+              {q
+                ? "No merchants found."
+                : verificationFilter
+                  ? "No merchants pending verification."
+                  : "No merchants yet."}
             </p>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminMerchantsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminMerchantsInner />
+    </Suspense>
   );
 }
