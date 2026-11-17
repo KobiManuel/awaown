@@ -17,6 +17,7 @@ import {
   statusMeta,
   shipmentStatusMeta,
   shipmentProgress,
+  MOVING_SHIPMENT_STATUSES,
   ORDER_STEPS,
 } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -27,6 +28,7 @@ import DisputeModal from "@/app/Components/Orders/DisputeModal";
 import {
   useGetOrderQuery,
   useConfirmDeliveryMutation,
+  useConfirmShipmentDeliveryMutation,
   useConfirmPaymentMutation,
   useDisputeOrderMutation,
   useSimulateFulfilmentMutation,
@@ -88,6 +90,9 @@ function OrderDetailContent() {
     );
   }, [justPlaced, order]);
   const [confirmDelivery, confirmState] = useConfirmDeliveryMutation();
+  const [confirmShipmentDelivery, confirmShipmentState] =
+    useConfirmShipmentDeliveryMutation();
+  const [confirmingShipmentId, setConfirmingShipmentId] = useState(null);
   const [confirmPayment] = useConfirmPaymentMutation();
   const [disputeOrder, disputeState] = useDisputeOrderMutation();
   const [disputeOpen, setDisputeOpen] = useState(false);
@@ -196,6 +201,21 @@ function OrderDetailContent() {
       showToast("Received - payment released to the seller");
     } catch (err) {
       showToast(errorMessage(err));
+    }
+  };
+
+  const doConfirmShipment = async (shipmentId) => {
+    setConfirmingShipmentId(shipmentId);
+    try {
+      await confirmShipmentDelivery({
+        reference: order.reference,
+        shipmentId,
+      }).unwrap();
+      showToast("Received - payment released to this seller");
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      setConfirmingShipmentId(null);
     }
   };
 
@@ -427,32 +447,57 @@ function OrderDetailContent() {
       {showDeliveryBanner && <FezDeliveryBanner status={deliveryStatus} />}
 
       {/* deliveryStatus above collapses every merchant's leg into one
-          "furthest along" phrase on purpose (see its comment) - when legs
-          have actually diverged, this additionally spells out which
-          merchant's items have moved and which haven't. */}
-      {shipments.length > 1 &&
-        new Set(shipments.map((s) => s.status)).size > 1 && (
-          <div className="mx-4 flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
-            <p className="text-[12px] font-semibold text-shop-heading">
-              Shipped separately
-            </p>
-            {shipments.map((s) => {
-              const sMeta = shipmentStatusMeta(s.status);
-              return (
-                <div key={s.id} className="flex items-center justify-between gap-3">
-                  <p className="truncate text-[11.5px] text-shop-text/80">
+          "furthest along" phrase on purpose (see its comment). Each
+          merchant's leg arrives and gets confirmed independently - this
+          spells out every merchant's own status and, once that leg has
+          actually moved, lets the customer confirm and release just that
+          merchant's escrow without waiting on anyone else's delivery. */}
+      {shipments.length > 1 && (
+        <div className="mx-4 flex flex-col gap-2.5 rounded-[12px] border border-shop-border p-3.5">
+          <p className="text-[12px] font-semibold text-shop-heading">
+            Shipped separately
+          </p>
+          {shipments.map((s) => {
+            const sMeta = shipmentStatusMeta(s.status);
+            const sReleased = !!s.escrowReleasedAt;
+            const sConfirmable =
+              !sReleased && MOVING_SHIPMENT_STATUSES.includes(s.status);
+            const sBusy =
+              confirmShipmentState.isLoading && confirmingShipmentId === s.id;
+            return (
+              <div
+                key={s.id}
+                className="flex items-center justify-between gap-3 border-b border-shop-border/60 pb-2.5 last:border-0 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[11.5px] font-medium text-shop-heading">
                     {s.merchantName ?? "A merchant"}
                   </p>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${sMeta.tone}`}
+                    className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${sMeta.tone}`}
                   >
-                    {sMeta.label}
+                    {sReleased ? "Payment released" : sMeta.label}
                   </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                {sConfirmable && (
+                  <button
+                    type="button"
+                    onClick={() => doConfirmShipment(s.id)}
+                    disabled={sBusy}
+                    className="shrink-0 rounded-[8px] bg-shop-accent-1 px-3 py-2 text-[11.5px] font-semibold text-white disabled:opacity-70"
+                  >
+                    {sBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      "Mark as received"
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mx-4 flex items-start gap-3 rounded-[12px] bg-shop-bg p-3.5">
         <ShieldCheck
@@ -475,7 +520,7 @@ function OrderDetailContent() {
 
       {(canConfirm || canRefund || DEV) && order.status !== "ESCROW_RELEASED" && (
         <div className="mx-4 flex flex-col gap-2">
-          {canConfirm && (
+          {canConfirm && shipments.length <= 1 && (
             <button
               type="button"
               onClick={doConfirm}

@@ -16,6 +16,7 @@ import {
   statusMeta,
   shipmentStatusMeta,
   shipmentProgress,
+  MOVING_SHIPMENT_STATUSES,
   ORDER_STEPS,
 } from "@/lib/order-status";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -25,15 +26,21 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetAdminOrderQuery,
   useAdvanceAdminOrderMutation,
+  useAdvanceAdminShipmentMutation,
   useDecideRefundMutation,
   useIssueRefundMutation,
   useCancelAdminOrderMutation,
 } from "@/lib/api/adminApi";
 import { errorMessage } from "@/lib/api/errorMessage";
 
+// SHIPPED/DELIVERED deliberately aren't here any more - those are now
+// per-shipment actions (see the Shipping section below) since forcing them
+// here moved Order.status without ever touching the Shipment rows that the
+// Shipping section and the Shipped timeline step actually read from, which
+// is what caused "I clicked mark as shipped but the badge didn't update".
+// DELIVERED -> ESCROW_RELEASED stays as a genuine manual whole-order
+// override (releasing escrow early, outside the normal per-shipment flow).
 const NEXT_STATUS = {
-  PROCESSING: "SHIPPED",
-  SHIPPED: "DELIVERED",
   DELIVERED: "ESCROW_RELEASED",
 };
 
@@ -43,6 +50,8 @@ export default function AdminOrderDetailPage() {
   const confirm = useConfirm();
   const { data: order, isLoading, isError } = useGetAdminOrderQuery(id);
   const [advance, advanceState] = useAdvanceAdminOrderMutation();
+  const [advanceShipment, advanceShipmentState] = useAdvanceAdminShipmentMutation();
+  const [advancingShipmentId, setAdvancingShipmentId] = React.useState(null);
   const [decideRefund, decideState] = useDecideRefundMutation();
   const [issueRefund, issueState] = useIssueRefundMutation();
   const [cancelOrder, cancelState] = useCancelAdminOrderMutation();
@@ -138,6 +147,23 @@ export default function AdminOrderDetailPage() {
       showToast(`${id} → ${to.toLowerCase().replace(/_/g, " ")}`);
     } catch (e) {
       showToast(errorMessage(e));
+    }
+  };
+
+  const stepShipment = async (shipmentId, to, merchantName) => {
+    const res = await confirm({
+      title: `Mark ${merchantName ?? "this merchant"}'s shipment as "${to}"?`,
+      message: "The customer is notified of the status change.",
+    });
+    if (!res) return;
+    setAdvancingShipmentId(shipmentId);
+    try {
+      await advanceShipment({ reference: id, shipmentId, to }).unwrap();
+      showToast(`${merchantName ?? "Shipment"} marked ${to}`);
+    } catch (e) {
+      showToast(errorMessage(e));
+    } finally {
+      setAdvancingShipmentId(null);
     }
   };
 
@@ -431,25 +457,52 @@ export default function AdminOrderDetailPage() {
           </p>
           {shipments.map((s) => {
             const sMeta = shipmentStatusMeta(s.status);
+            const sMoving = MOVING_SHIPMENT_STATUSES.includes(s.status);
+            const sDelivered = s.status === "delivered";
+            const sCancelled = s.status === "cancelled";
+            const sBusy =
+              advanceShipmentState.isLoading && advancingShipmentId === s.id;
             return (
               <div
                 key={s.id}
-                className="flex items-center justify-between gap-3 border-t border-shop-border pt-3 first:border-t-0 first:pt-0"
+                className="flex flex-col gap-2 border-t border-shop-border pt-3 first:border-t-0 first:pt-0"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-[12.5px] font-medium text-shop-heading">
-                    {s.merchantName ?? "Merchant"}
-                  </p>
-                  <p className="text-[11px] text-shop-text/60">
-                    {s.carrier}
-                    {s.waybill ? ` · ${s.waybill}` : ""}
-                  </p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[12.5px] font-medium text-shop-heading">
+                      {s.merchantName ?? "Merchant"}
+                    </p>
+                    <p className="text-[11px] text-shop-text/60">
+                      {s.carrier}
+                      {s.waybill ? ` · ${s.waybill}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${sMeta.tone}`}
+                  >
+                    {s.escrowReleasedAt ? "Escrow released" : sMeta.label}
+                  </span>
                 </div>
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${sMeta.tone}`}
-                >
-                  {sMeta.label}
-                </span>
+                {!sCancelled && !sDelivered && (
+                  <button
+                    type="button"
+                    disabled={sBusy}
+                    onClick={() =>
+                      stepShipment(
+                        s.id,
+                        sMoving ? "delivered" : "shipped",
+                        s.merchantName,
+                      )
+                    }
+                    className="self-start rounded-[8px] border border-shop-border px-3 py-1.5 text-[11.5px] font-semibold text-shop-heading disabled:opacity-60"
+                  >
+                    {sBusy
+                      ? "Updating…"
+                      : sMoving
+                        ? "Mark as delivered"
+                        : "Mark as shipped"}
+                  </button>
+                )}
               </div>
             );
           })}
