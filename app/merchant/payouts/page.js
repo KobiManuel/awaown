@@ -187,7 +187,7 @@ export default function MerchantPayoutsPage() {
                       {payout.failureReason}
                     </p>
                   )}
-                  {payout.status === "PROCESSING" && payout.failureReason && (
+                  {payout.status === "PROCESSING" && (
                     <button
                       type="button"
                       onClick={() => doRetry(payout.reference)}
