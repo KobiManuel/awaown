@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -14,15 +14,32 @@ function ShopContent() {
     searchParams.get("category") || "all",
   );
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+
+  // Reset back to page 1 whenever the filters change, so switching category
+  // or searching doesn't keep appending to a now-stale accumulated list.
+  useEffect(() => {
+    setPage(1);
+    setProducts([]);
+  }, [category, query]);
 
   const { data: categories, isLoading: catsLoading } = useGetCategoriesQuery();
   const { data, isLoading, isFetching, isError } = useGetProductsQuery({
     limit: 40,
+    page,
     ...(category !== "all" ? { category } : {}),
     ...(query ? { search: query } : {}),
   });
 
-  const products = data?.items ?? [];
+  useEffect(() => {
+    if (!data) return;
+    setProducts((prev) => (page === 1 ? data.items : [...prev, ...data.items]));
+    setTotal(data.total);
+  }, [data, page]);
+
+  const hasMore = data ? page < data.pageCount : false;
 
   return (
     <div className="flex flex-col gap-4 pb-4 font-shop lg:mx-auto lg:w-full lg:max-w-[1100px]">
@@ -78,7 +95,7 @@ function ShopContent() {
       </div>
 
       <div className="px-4 lg:px-8">
-        {isLoading ? (
+        {products.length === 0 && isLoading ? (
           <SkeletonProductGrid count={8} className="lg:grid-cols-4 lg:gap-5" />
         ) : isError ? (
           <p className="py-10 text-center text-[13px] text-red-600">
@@ -91,18 +108,30 @@ function ShopContent() {
         ) : (
           <>
             <p className="mb-3 text-[12px] text-shop-text/70">
-              {data.total} product{data.total === 1 ? "" : "s"}
-              {isFetching ? " · updating…" : ""}
+              {total} product{total === 1 ? "" : "s"}
+              {page === 1 && isFetching ? " · updating…" : ""}
             </p>
             <div
               className={`grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5 ${
-                isFetching ? "opacity-60" : ""
+                page === 1 && isFetching ? "opacity-60" : ""
               }`}
             >
               {products.map((product) => (
                 <AppProductCard key={product.id} product={product} />
               ))}
             </div>
+            {hasMore && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={isFetching}
+                  className="rounded-full border border-shop-border bg-white px-6 py-2.5 text-[13px] font-medium text-shop-heading transition-colors disabled:opacity-60"
+                >
+                  {isFetching ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

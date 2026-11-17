@@ -21,19 +21,37 @@ function ShopContent() {
 
   const [category, setCategory] = useState(urlCategory);
   const [query, setQuery] = useState(urlQuery);
+  const [page, setPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => setCategory(urlCategory), [urlCategory]);
   useEffect(() => setQuery(urlQuery), [urlQuery]);
 
+  // Reset back to page 1 whenever the filters change, so switching category
+  // or searching doesn't keep appending to a now-stale accumulated list.
+  useEffect(() => {
+    setPage(1);
+    setProducts([]);
+  }, [category, query, sort, onSale]);
+
   const { data: categories, isLoading: catsLoading } = useGetCategoriesQuery();
   const { data, isLoading, isFetching, isError } = useGetProductsQuery({
     limit: 48,
+    page,
     ...(category !== "all" ? { category } : {}),
     ...(query ? { search: query } : {}),
     ...(sort ? { sort } : {}),
     ...(onSale ? { onSale: true } : {}),
   });
-  const products = data?.items ?? [];
+
+  useEffect(() => {
+    if (!data) return;
+    setProducts((prev) => (page === 1 ? data.items : [...prev, ...data.items]));
+    setTotal(data.total);
+  }, [data, page]);
+
+  const hasMore = data ? page < data.pageCount : false;
 
   const pickCategory = (slug) => {
     setCategory(slug);
@@ -107,7 +125,7 @@ function ShopContent() {
         </div>
 
         <div className="mt-6">
-          {isLoading ? (
+          {products.length === 0 && isLoading ? (
             <SkeletonProductGrid count={12} className="lg:grid-cols-5 lg:gap-5" />
           ) : isError ? (
             <p className="py-10 text-center text-[13px] text-red-600">
@@ -120,18 +138,30 @@ function ShopContent() {
           ) : (
             <>
               <p className="mb-3 text-[12px] text-shop-text/70">
-                {data.total} product{data.total === 1 ? "" : "s"}
-                {isFetching ? " · updating…" : ""}
+                {total} product{total === 1 ? "" : "s"}
+                {page === 1 && isFetching ? " · updating…" : ""}
               </p>
               <div
                 className={`grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5 ${
-                  isFetching ? "opacity-60" : ""
+                  page === 1 && isFetching ? "opacity-60" : ""
                 }`}
               >
                 {products.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </div>
+              {hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={isFetching}
+                    className="rounded-full border border-shop-border bg-white px-6 py-2.5 text-[13px] font-medium text-shop-heading transition-colors hover:bg-shop-bg disabled:opacity-60"
+                  >
+                    {isFetching ? "Loading…" : "Load more"}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
