@@ -21,40 +21,44 @@ import {
 // Self-hosted via next/font (built at compile time). Avoids the runtime
 // cdnfonts loading issue the main site's Bai Jamjuree import hit. Isolated to
 // the partner storefront only; does not affect the rest of the app.
-const baiJamjuree = Bai_Jamjuree({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-const poppins = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"] });
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500"] });
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"] });
-const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"] });
-const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500"] });
-// Single weight only - Turbopack's Google Fonts resolver fails to build
-// Montserrat with more than one weight requested ("next/font/google queries
-// have exactly one entry"), a bug specific to this font's metadata under
-// Turbopack. Every other font in this file uses 2+ weights fine. Only ever
-// used for the "Geometric" theme's heading text, always rendered bold, so
-// this has no visible effect.
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["700"] });
-const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500"] });
-const sora = Sora({ subsets: ["latin"], weight: ["600", "700"] });
-const outfit = Outfit({ subsets: ["latin"], weight: ["500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["600", "700"] });
-// Two single-weight instances, not one two-weight one - the same Turbopack
-// Google-Fonts metadata bug noted above for Montserrat ("next/font/google
-// queries have exactly one entry") also hits Merriweather, intermittently
-// (it built fine locally but failed on Vercel - see the 2026-11-06 deploy
-// failure). Splitting by weight sidesteps the bug and happens to match how
-// Merriweather is actually used anyway: regular for body text, bold for
-// headings - see the "editorial"/"classic-serif" STORE_FONTS pairings.
-const merriweatherBody = Merriweather({ subsets: ["latin"], weight: ["400"] });
-const merriweatherHeading = Merriweather({ subsets: ["latin"], weight: ["700"] });
-const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: ["400"] });
-const josefinSans = Josefin_Sans({ subsets: ["latin"], weight: ["500", "600"] });
-const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500"] });
-const caveat = Caveat({ subsets: ["latin"], weight: ["600", "700"] });
+//
+// Every font below requests exactly one weight. Turbopack's Google Fonts
+// resolver intermittently fails to build any font requested with 2+ weights
+// ("next/font/google queries have exactly one entry") - first hit Montserrat
+// and Merriweather, then moved to Caveat, then Cormorant_Garamond and Outfit
+// on the next build with none of those three touched. It's a race, not
+// specific to any one font, so fixing it font-by-font as it recurs was never
+// going to hold - every font here is single-weight so the trigger condition
+// (a multi-weight query) never occurs. This matches how each font is already
+// used: heading fonts render font-bold (700) on the storefront page (and
+// font-semibold in the customize-page preview - a weight it has no file for,
+// so the preview renders the same bold face there too), body fonts render at
+// normal weight (400) with no override. "brand" (Bai Jamjuree) is the one
+// font used as both heading and body, so it's split into two single-weight
+// instances the same way Merriweather already was.
+const brandHeading = Bai_Jamjuree({ subsets: ["latin"], weight: "700" });
+const brandBody = Bai_Jamjuree({ subsets: ["latin"], weight: "400" });
+const poppins = Poppins({ subsets: ["latin"], weight: "700" });
+const inter = Inter({ subsets: ["latin"], weight: "400" });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: "700" });
+const lato = Lato({ subsets: ["latin"], weight: "400" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: "700" });
+const workSans = Work_Sans({ subsets: ["latin"], weight: "400" });
+const montserrat = Montserrat({ subsets: ["latin"], weight: "700" });
+const manrope = Manrope({ subsets: ["latin"], weight: "400" });
+const sora = Sora({ subsets: ["latin"], weight: "700" });
+const outfit = Outfit({ subsets: ["latin"], weight: "700" });
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: "700" });
+const merriweatherBody = Merriweather({ subsets: ["latin"], weight: "400" });
+const merriweatherHeading = Merriweather({ subsets: ["latin"], weight: "700" });
+const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: "400" });
+const josefinSans = Josefin_Sans({ subsets: ["latin"], weight: "700" });
+const dmSans = DM_Sans({ subsets: ["latin"], weight: "400" });
+const caveat = Caveat({ subsets: ["latin"], weight: "700" });
 
 export const STORE_FONT_FAMILIES = {
-  brand: baiJamjuree,
+  brandHeading,
+  brandBody,
   poppins,
   inter,
   playfair,
