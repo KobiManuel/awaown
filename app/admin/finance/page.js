@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Wallet, Banknote, AlertTriangle, Check, X, TrendingUp } from "lucide-react";
 import { formatPrice } from "@/lib/admin-data";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
@@ -13,6 +14,8 @@ import {
   useDecideRefundMutation,
   useDecidePayoutMutation,
   useDecideWithdrawalMutation,
+  useRetryAdminPayoutMutation,
+  useRetryAdminWithdrawalMutation,
   useFinalizePayoutOtpMutation,
   useFinalizeWithdrawalOtpMutation,
 } from "@/lib/api/adminApi";
@@ -95,12 +98,23 @@ function BalanceBreakdownModal({ kind, merchantBalances, onClose }) {
 }
 
 export default function AdminFinancePage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminFinancePageInner />
+    </Suspense>
+  );
+}
+
+function AdminFinancePageInner() {
   const showToast = useToast();
   const confirm = useConfirm();
+  const searchParams = useSearchParams();
   const { data, isLoading } = useGetAdminFinanceQuery();
   const [decide] = useDecideRefundMutation();
   const [decidePayout] = useDecidePayoutMutation();
   const [decideWithdrawal] = useDecideWithdrawalMutation();
+  const [retryPayout] = useRetryAdminPayoutMutation();
+  const [retryWithdrawal] = useRetryAdminWithdrawalMutation();
   const [finalizePayoutOtp] = useFinalizePayoutOtpMutation();
   const [finalizeWithdrawalOtp] = useFinalizeWithdrawalOtpMutation();
 
@@ -111,8 +125,28 @@ export default function AdminFinancePage() {
   const [otpDrafts, setOtpDrafts] = useState({});
   const failedPaymentsRef = useRef(null);
   const refundsRef = useRef(null);
+  const payoutsRef = useRef(null);
+  const withdrawalsRef = useRef(null);
   const scrollTo = (ref) =>
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // Deep link from the admin home dashboard's "Payouts & withdrawals to
+  // process" card (and similar) - /admin/finance?focus=payouts jumps
+  // straight to that section instead of landing on the top of the whole
+  // page with no indication of where to look.
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    const refByFocus = {
+      payouts: payoutsRef,
+      withdrawals: withdrawalsRef,
+      refunds: refundsRef,
+      failedPayments: failedPaymentsRef,
+    };
+    const ref = refByFocus[focus];
+    if (!ref) return;
+    const t = setTimeout(() => scrollTo(ref), 50);
+    return () => clearTimeout(t);
+  }, [searchParams]);
 
   const run = async (fn, ok) => {
     try {
@@ -172,6 +206,15 @@ export default function AdminFinancePage() {
       action === "paid" ? "Withdrawal marked paid" : "Withdrawal marked failed",
     );
   };
+
+  // Re-attempts the same Paystack transfer that produced p.failureReason -
+  // for when admin has just topped up the Paystack balance and wants to
+  // clear it right away, instead of waiting for the merchant to notice and
+  // retry it themselves (or in case they can't be reached at all).
+  const doRetryPayout = (p) =>
+    run(() => retryPayout(p.id).unwrap(), `Retrying payout ${p.id}…`);
+  const doRetryWithdrawal = (w) =>
+    run(() => retryWithdrawal(w.id).unwrap(), `Retrying withdrawal ${w.id}…`);
 
   const submitPayoutOtp = async (p) => {
     const otp = (otpDrafts[p.id] || "").trim();
@@ -339,6 +382,93 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
+      <div ref={payoutsRef} className="flex flex-col gap-2.5 px-4 lg:px-8">
+        <p className="text-[13px] font-semibold text-shop-heading">Merchant Payouts</p>
+        <div className="flex flex-col gap-2">
+          {isLoading ? (
+            <SkeletonRows count={2} />
+          ) : payouts.length === 0 ? (
+            <p className="py-3 text-center text-[12px] text-shop-text/60">No payouts yet.</p>
+          ) : (
+            payouts.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-medium text-shop-heading">{p.merchant}</p>
+                  <p className="text-[11px] text-shop-text/70">
+                    {p.id} · {formatPrice(p.net)} net
+                  </p>
+                  {p.failureReason && (
+                    <p className="mt-1 text-[11px] text-shop-accent-3">
+                      {p.failureReason}
+                    </p>
+                  )}
+                  {p.status === "AWAITING_OTP" && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <input
+                        value={otpDrafts[p.id] || ""}
+                        onChange={(e) =>
+                          setOtpDrafts((d) => ({ ...d, [p.id]: e.target.value }))
+                        }
+                        placeholder="OTP code"
+                        className="w-24 rounded-[6px] border border-shop-border px-2 py-1 text-[11px] outline-none focus:border-shop-accent-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => submitPayoutOtp(p)}
+                        className="rounded-[6px] bg-shop-accent-1 px-2 py-1 text-[11px] font-semibold text-white"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {p.status === "PROCESSING" || p.status === "AWAITING_OTP" ? (
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    {p.status === "AWAITING_OTP" && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                        Awaiting OTP
+                      </span>
+                    )}
+                    <div className="flex gap-2">
+                      {p.status === "PROCESSING" && p.failureReason && (
+                        <button
+                          type="button"
+                          onClick={() => doRetryPayout(p)}
+                          className="rounded-[6px] bg-shop-accent-1 px-2.5 py-1 text-[11px] font-semibold text-white"
+                        >
+                          Retry
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => markPayout(p, "paid")}
+                        className="rounded-[6px] bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white"
+                      >
+                        Mark paid
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => markPayout(p, "failed")}
+                        className="rounded-[6px] border border-shop-border px-2.5 py-1 text-[11px] font-semibold text-shop-heading"
+                      >
+                        Failed
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-[10.5px] font-medium capitalize text-shop-text/60">
+                    {p.status.toLowerCase()}
+                  </span>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-2.5 px-4 lg:px-8">
         <p className="flex items-center justify-between text-[13px] font-semibold text-shop-heading">
           <span>Escrow Released to Sellers</span>
@@ -492,80 +622,7 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 px-4 lg:px-8">
-        <p className="text-[13px] font-semibold text-shop-heading">Merchant Payouts</p>
-        <div className="flex flex-col gap-2">
-          {isLoading ? (
-            <SkeletonRows count={2} />
-          ) : payouts.length === 0 ? (
-            <p className="py-3 text-center text-[12px] text-shop-text/60">No payouts yet.</p>
-          ) : (
-            payouts.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between gap-3 rounded-[14px] border border-shop-border bg-white p-3.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-[12.5px] font-medium text-shop-heading">{p.merchant}</p>
-                  <p className="text-[11px] text-shop-text/70">
-                    {p.id} · {formatPrice(p.net)} net
-                  </p>
-                  {p.status === "AWAITING_OTP" && (
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <input
-                        value={otpDrafts[p.id] || ""}
-                        onChange={(e) =>
-                          setOtpDrafts((d) => ({ ...d, [p.id]: e.target.value }))
-                        }
-                        placeholder="OTP code"
-                        className="w-24 rounded-[6px] border border-shop-border px-2 py-1 text-[11px] outline-none focus:border-shop-accent-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => submitPayoutOtp(p)}
-                        className="rounded-[6px] bg-shop-accent-1 px-2 py-1 text-[11px] font-semibold text-white"
-                      >
-                        Confirm
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {p.status === "PROCESSING" || p.status === "AWAITING_OTP" ? (
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    {p.status === "AWAITING_OTP" && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-                        Awaiting OTP
-                      </span>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => markPayout(p, "paid")}
-                        className="rounded-[6px] bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white"
-                      >
-                        Mark paid
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => markPayout(p, "failed")}
-                        className="rounded-[6px] border border-shop-border px-2.5 py-1 text-[11px] font-semibold text-shop-heading"
-                      >
-                        Failed
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-[10.5px] font-medium capitalize text-shop-text/60">
-                    {p.status.toLowerCase()}
-                  </span>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
+      <div ref={withdrawalsRef} className="flex flex-col gap-2.5 px-4 pb-4 lg:px-8">
         <p className="text-[13px] font-semibold text-shop-heading">Partner Withdrawals</p>
         <div className="flex flex-col gap-2">
           {isLoading ? (
@@ -583,6 +640,11 @@ export default function AdminFinancePage() {
                   <p className="text-[11px] text-shop-text/70">
                     {w.id} · {formatPrice(w.amount)}
                   </p>
+                  {w.failureReason && (
+                    <p className="mt-1 text-[11px] text-shop-accent-3">
+                      {w.failureReason}
+                    </p>
+                  )}
                   {w.status === "AWAITING_OTP" && (
                     <div className="mt-2 flex items-center gap-1.5">
                       <input
@@ -611,6 +673,15 @@ export default function AdminFinancePage() {
                       </span>
                     )}
                     <div className="flex gap-2">
+                      {w.status === "PENDING" && w.failureReason && (
+                        <button
+                          type="button"
+                          onClick={() => doRetryWithdrawal(w)}
+                          className="rounded-[6px] bg-shop-accent-1 px-2.5 py-1 text-[11px] font-semibold text-white"
+                        >
+                          Retry
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => markWithdrawal(w, "paid")}

@@ -14,7 +14,12 @@ import { formatPrice } from "@/lib/merchant-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
-import { useGetMerchantPayoutsQuery } from "@/lib/api/merchantApi";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import {
+  useGetMerchantPayoutsQuery,
+  useRetryMerchantPayoutMutation,
+} from "@/lib/api/merchantApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 
 const STATUS_TONE = {
   PROCESSING: "text-amber-600",
@@ -24,7 +29,18 @@ const STATUS_TONE = {
 
 export default function MerchantPayoutsPage() {
   const dispatch = useDispatch();
+  const showToast = useToast();
   const { data, isLoading } = useGetMerchantPayoutsQuery();
+  const [retryPayout, retryState] = useRetryMerchantPayoutMutation();
+
+  const doRetry = async (reference) => {
+    try {
+      await retryPayout(reference).unwrap();
+      showToast("Retrying your payout…");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   const verified = data?.verification === "VERIFIED";
   const pending = data?.verification === "PENDING";
@@ -166,6 +182,21 @@ export default function MerchantPayoutsPage() {
                     · requested {formatPrice(payout.amount)} · fee{" "}
                     {formatPrice(payout.fee)}
                   </p>
+                  {payout.failureReason && (
+                    <p className="mt-1 text-[11px] text-shop-accent-3">
+                      {payout.failureReason}
+                    </p>
+                  )}
+                  {payout.status === "PROCESSING" && payout.failureReason && (
+                    <button
+                      type="button"
+                      onClick={() => doRetry(payout.reference)}
+                      disabled={retryState.isLoading}
+                      className="mt-1.5 rounded-[6px] bg-shop-accent-1 px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-[13px] font-semibold text-shop-heading">

@@ -83,11 +83,11 @@ const MANAGE_LINKS = [
 
 const ACTION_LABELS = {
   pendingVerifications: { label: "Verifications to review", href: "/admin/merchants" },
-  pendingRefunds: { label: "Refunds to decide", href: "/admin/finance" },
+  pendingRefunds: { label: "Refunds to decide", href: "/admin/finance?focus=refunds" },
   openComplaints: { label: "Open complaints", href: "/admin/support" },
-  failedPayments: { label: "Failed payments", href: "/admin/finance" },
+  failedPayments: { label: "Failed payments", href: "/admin/finance?focus=failedPayments" },
   pendingProducts: { label: "Products awaiting approval", href: "/admin/products" },
-  pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/finance" },
+  pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/finance?focus=payouts" },
 };
 
 export default function AdminHome() {

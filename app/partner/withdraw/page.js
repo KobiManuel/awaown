@@ -14,10 +14,13 @@ import { formatPrice } from "@/lib/partner-data";
 import { openModal, MODAL_TYPES } from "@/lib/store/modalSlice";
 import AppHeader from "@/app/Components/Dashboard/AppHeader";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { useToast } from "@/app/Components/Dashboard/ToastContext";
 import {
   useGetPartnerWithdrawalsQuery,
   useGetPartnerEarningsQuery,
+  useRetryWithdrawalMutation,
 } from "@/lib/api/partnerApi";
+import { errorMessage } from "@/lib/api/errorMessage";
 
 const STATUS_TONE = {
   PENDING: "bg-amber-100 text-amber-700",
@@ -27,8 +30,19 @@ const STATUS_TONE = {
 
 export default function PartnerWithdrawPage() {
   const dispatch = useDispatch();
+  const showToast = useToast();
   const { data, isLoading } = useGetPartnerWithdrawalsQuery();
   const { data: earnings } = useGetPartnerEarningsQuery();
+  const [retryWithdrawal, retryState] = useRetryWithdrawalMutation();
+
+  const doRetry = async (reference) => {
+    try {
+      await retryWithdrawal(reference).unwrap();
+      showToast("Retrying your withdrawal…");
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  };
 
   const verified = data?.verification === "VERIFIED";
   const pending = data?.verification === "PENDING";
@@ -143,6 +157,21 @@ export default function PartnerWithdrawPage() {
                       year: "numeric",
                     })}
                   </p>
+                  {w.failureReason && (
+                    <p className="mt-1 text-[11px] text-shop-accent-3">
+                      {w.failureReason}
+                    </p>
+                  )}
+                  {w.status === "PENDING" && w.failureReason && (
+                    <button
+                      type="button"
+                      onClick={() => doRetry(w.reference)}
+                      disabled={retryState.isLoading}
+                      className="mt-1.5 rounded-[6px] bg-shop-accent-1 px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-[13px] font-semibold text-shop-heading">
