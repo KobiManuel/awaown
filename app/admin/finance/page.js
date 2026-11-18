@@ -433,7 +433,7 @@ function AdminFinancePageInner() {
                       </span>
                     )}
                     <div className="flex gap-2">
-                      {p.status === "PROCESSING" && (
+                      {p.status === "PROCESSING" && p.failureReason && (
                         <button
                           type="button"
                           onClick={() => doRetryPayout(p)}
@@ -673,7 +673,7 @@ function AdminFinancePageInner() {
                       </span>
                     )}
                     <div className="flex gap-2">
-                      {w.status === "PENDING" && (
+                      {w.status === "PENDING" && w.failureReason && (
                         <button
                           type="button"
                           onClick={() => doRetryWithdrawal(w)}

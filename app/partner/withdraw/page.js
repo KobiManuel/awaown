@@ -162,7 +162,7 @@ export default function PartnerWithdrawPage() {
                       {w.failureReason}
                     </p>
                   )}
-                  {w.status === "PENDING" && (
+                  {w.status === "PENDING" && w.failureReason && (
                     <button
                       type="button"
                       onClick={() => doRetry(w.reference)}

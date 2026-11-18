@@ -83,11 +83,11 @@ const MANAGE_LINKS = [
 
 const ACTION_LABELS = {
   pendingVerifications: { label: "Verifications to review", href: "/admin/merchants?verification=PENDING" },
-  pendingRefunds: { label: "Refunds to decide", href: "/admin/finance?focus=refunds" },
+  pendingRefunds: { label: "Refunds to decide", href: "/admin/refunds" },
   openComplaints: { label: "Open complaints", href: "/admin/support" },
-  failedPayments: { label: "Failed payments", href: "/admin/finance?focus=failedPayments" },
+  failedPayments: { label: "Failed payments", href: "/admin/failed-payments" },
   pendingProducts: { label: "Products awaiting approval", href: "/admin/products" },
-  pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/finance?focus=payouts" },
+  pendingPayoutsAndWithdrawals: { label: "Payouts & withdrawals to process", href: "/admin/payouts" },
 };
 
 // "Verifications to review" combines pending merchant + partner KYC into one
