@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Loader2, ImagePlus, Plus, Trash2, Quote, X, Search } from "lucide-react";
+import { Loader2, ImagePlus, Plus, Trash2, Quote, X, Search, Link2 } from "lucide-react";
 import {
   formatPrice,
   homepageContentDefaults,
@@ -195,6 +195,18 @@ function HeroEditor({ data, onChange, visible, onToggleVisible }) {
           <div key={i} className="group relative aspect-[1100/495] w-full overflow-hidden rounded-[10px] bg-shop-bg">
             <Image src={slide.image} alt="" fill className="object-cover" />
             <ImageEditButton onPick={(url) => updateSlide(i, { image: url })} aspect={1100 / 495} />
+            <div className="pointer-events-none absolute left-3 top-3 z-10">
+              <ProductLinkButton
+                slug={slide.productSlug}
+                title={slide.productTitle}
+                onPick={(p) =>
+                  updateSlide(i, { productId: p.id, productSlug: p.slug, productTitle: p.title })
+                }
+                onClear={() =>
+                  updateSlide(i, { productId: null, productSlug: null, productTitle: null })
+                }
+              />
+            </div>
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-center gap-2 px-6 text-white">
               <div className="pointer-events-auto">
                 <InlineText
@@ -242,6 +254,18 @@ function ThreeBannerEditor({ data, onChange, visible, onToggleVisible }) {
           <div key={i} className="group relative aspect-[446/180] w-full overflow-hidden rounded-[12px] bg-shop-bg">
             <Image src={b.image} alt="" fill className="object-cover" />
             <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} aspect={446 / 180} />
+            <div className="pointer-events-none absolute left-2 top-2 z-10">
+              <ProductLinkButton
+                slug={b.productSlug}
+                title={b.productTitle}
+                onPick={(p) =>
+                  updateBanner(i, { productId: p.id, productSlug: p.slug, productTitle: p.title })
+                }
+                onClear={() =>
+                  updateBanner(i, { productId: null, productSlug: null, productTitle: null })
+                }
+              />
+            </div>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1 px-4 text-right text-shop-heading">
               <div className="pointer-events-auto">
                 <InlineText
@@ -353,6 +377,42 @@ function ProductPickerModal({ onPick, onClose }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// Small badge used on the Hero and 3-Card banners so an admin can link a
+// slide/card to a specific product - the public-facing slider/row reads
+// productSlug off the same data to send the banner (image + its button)
+// there instead of the generic /shop link.
+function ProductLinkButton({ slug, title, onPick, onClear }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <span className="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex max-w-[140px] items-center gap-1 hover:text-shop-accent-1-light"
+        >
+          <Link2 className="h-3 w-3 shrink-0" />
+          <span className="truncate">{slug ? title : "Link to product"}</span>
+        </button>
+        {slug && (
+          <button type="button" onClick={onClear} aria-label="Unlink product">
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </span>
+      {open && (
+        <ProductPickerModal
+          onPick={(p) => {
+            onPick(p);
+            setOpen(false);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

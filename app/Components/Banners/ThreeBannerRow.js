@@ -12,12 +12,14 @@ const ThreeBannerRow = () => {
 
   return (
     <div className="mx-auto mt-8 grid w-full max-w-[1460px] grid-cols-1 gap-5 px-4 font-shop sm:grid-cols-3 md:mt-12 md:px-8">
-      {banners.map((b, i) => (
+      {banners.map((b, i) => {
+        const href = b.productSlug ? `/product/${b.productSlug}` : "/shop";
+        return (
         <div
           key={i}
           className="group relative aspect-[446/180] w-full overflow-hidden rounded-[12px] bg-shop-bg"
         >
-          <Link href="/shop" className="absolute inset-0 block overflow-hidden">
+          <Link href={href} className="absolute inset-0 block overflow-hidden">
             <img
               src={b.image}
               alt={b.heading}
@@ -41,14 +43,15 @@ const ThreeBannerRow = () => {
               </p>
             )}
             <Link
-              href="/shop"
+              href={href}
               className="pointer-events-auto mt-1 w-fit text-[12px] font-semibold underline decoration-2 underline-offset-4 hover:text-shop-accent-1 sm:text-[13px]"
             >
               Shop Now
             </Link>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
