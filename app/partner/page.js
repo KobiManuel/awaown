@@ -22,8 +22,10 @@ import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import {
   useGetPartnerOverviewQuery,
+  useGetPartnerRevenueQuery,
   useSavePartnerCustomizationMutation,
 } from "@/lib/api/partnerApi";
+import RevenueChart from "@/app/Components/Dashboard/RevenueChart";
 
 const StatCard = ({ icon: Icon, label, value, href }) => {
   const Wrapper = href ? Link : "div";
@@ -44,6 +46,9 @@ const StatCard = ({ icon: Icon, label, value, href }) => {
 export default function PartnerHome() {
   const showToast = useToast();
   const { data, isLoading } = useGetPartnerOverviewQuery();
+  const [revenueRange, setRevenueRange] = useState("7d");
+  const { data: revenueData, isFetching: revenueLoading } =
+    useGetPartnerRevenueQuery(revenueRange);
   const [saveCustomization] = useSavePartnerCustomizationMutation();
   const [copied, setCopied] = useState(false);
   const {
@@ -208,6 +213,16 @@ export default function PartnerHome() {
             />
           </>
         )}
+      </div>
+
+      <div className="px-4 lg:px-8">
+        <RevenueChart
+          title="Profit"
+          days={revenueData?.days}
+          range={revenueRange}
+          onRangeChange={setRevenueRange}
+          isLoading={revenueLoading}
+        />
       </div>
 
       <div className="mx-4 flex flex-col gap-3 rounded-[16px] bg-gradient-to-br from-shop-accent-1 to-shop-accent-2 p-5 text-white lg:mx-8">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
-import { formatPrice } from "@/lib/merchant-data";
+import { formatPrice } from "@/lib/shop-data";
 
 const RANGES = [
   { value: "3d", label: "3 days" },
@@ -31,7 +31,21 @@ function compactPrice(n) {
   return `₦${n}`;
 }
 
-export default function RevenueChart({ days, range, onRangeChange, isLoading }) {
+// A fixed, plausible-looking wave in the same plot bounds as the real chart
+// (same WIDTH/HEIGHT/PAD) so the loading state has the chart's actual shape
+// instead of a flat block, and nothing jumps when the real data lands.
+const SKELETON_LINE_PATH =
+  "M 44 118.6 L 134.67 85.8 L 225.33 126.8 L 316 61.2 L 406.67 102.2 L 497.33 44.8 L 588 77.6";
+const SKELETON_AREA_PATH = `${SKELETON_LINE_PATH} L 588 176 L 44 176 Z`;
+const SKELETON_LABEL_X = [44, 180, 316, 452, 588];
+
+export default function RevenueChart({
+  title = "Revenue",
+  days,
+  range,
+  onRangeChange,
+  isLoading,
+}) {
   const svgRef = useRef(null);
   const [hoverIndex, setHoverIndex] = useState(null);
 
@@ -95,7 +109,7 @@ export default function RevenueChart({ days, range, onRangeChange, isLoading }) 
     <div className="flex flex-col gap-3 rounded-[14px] border border-shop-border bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[13px] font-semibold text-shop-heading">Revenue</p>
+          <p className="text-[13px] font-semibold text-shop-heading">{title}</p>
           {!isLoading && (
             <p className="text-[11.5px] text-shop-text/60">
               {formatPrice(total)} total in this period
@@ -121,7 +135,55 @@ export default function RevenueChart({ days, range, onRangeChange, isLoading }) 
       </div>
 
       {isLoading ? (
-        <div className="h-[200px] w-full animate-pulse rounded-[10px] bg-shop-bg" />
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full">
+          {gridLines.map((g) => (
+            <line
+              key={g}
+              x1={PAD_LEFT}
+              x2={WIDTH - PAD_RIGHT}
+              y1={PAD_TOP + plotH - g * plotH}
+              y2={PAD_TOP + plotH - g * plotH}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+            />
+          ))}
+          {gridLines.map((g) => (
+            <rect
+              key={g}
+              x={PAD_LEFT - 36}
+              y={PAD_TOP + plotH - g * plotH - 4}
+              width="26"
+              height="8"
+              rx="2"
+              className="animate-pulse fill-shop-border/60"
+            />
+          ))}
+          {SKELETON_LABEL_X.map((x, i) => (
+            <rect
+              key={i}
+              x={x - 12}
+              y={HEIGHT - 12}
+              width="24"
+              height="7"
+              rx="2"
+              className="animate-pulse fill-shop-border/60"
+              style={{ animationDelay: `${i * 80}ms` }}
+            />
+          ))}
+          <path
+            d={SKELETON_AREA_PATH}
+            className="animate-pulse fill-shop-accent-1/10"
+          />
+          <path
+            d={SKELETON_LINE_PATH}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="animate-pulse text-shop-accent-1/40"
+          />
+        </svg>
       ) : points.length === 0 || total === 0 ? (
         <div className="flex h-[200px] w-full items-center justify-center text-[12.5px] text-shop-text/60">
           No revenue in this period.

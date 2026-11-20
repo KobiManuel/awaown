@@ -28,7 +28,7 @@ import {
 import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
-import RevenueChart from "@/app/Components/Merchant/RevenueChart";
+import RevenueChart from "@/app/Components/Dashboard/RevenueChart";
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
