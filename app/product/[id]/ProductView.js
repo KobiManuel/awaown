@@ -153,8 +153,18 @@ function ProductDetail() {
     [displayProduct, selected],
   );
 
-  const pickAxis = (key, value) =>
+  // Picking a non-colour axis (size, etc) doesn't know which photo goes with
+  // the new combination, so it drops the manual thumbnail/colour choice and
+  // lets the main image follow whatever resolveVariant() lands on. Colour
+  // picks and thumbnail taps (pickColorAxis, pickImage) set activeImg to a
+  // specific photo themselves right after calling this - this reset has to
+  // happen first, in the same handler, so it never fires after theirs and
+  // clobbers the photo they just explicitly chose.
+  const pickAxis = (key, value) => {
+    setActiveImg(null);
+    setShowVideo(false);
     setSelected((s) => ({ ...(s || {}), [key]: value }));
+  };
 
   // A value on `axisKey` is offered only if some combination carries it *and*
   // is consistent with the choices already made on the other axes - a stock
@@ -229,13 +239,6 @@ function ProductDetail() {
     const all = [resolved?.image, ...(product?.images ?? [])].filter(Boolean);
     return [...new Set(all)];
   }, [resolved?.image, product?.images]);
-
-  // Picking a different variety resets the manual thumbnail choice so the main
-  // image follows the variety again.
-  useEffect(() => {
-    setActiveImg(null); // eslint-disable-line react-hooks/set-state-in-effect
-    setShowVideo(false);
-  }, [resolved?.variantId]);
 
   const shownImg =
     activeImg && gallery.includes(activeImg) ? activeImg : resolved?.image ?? null;
