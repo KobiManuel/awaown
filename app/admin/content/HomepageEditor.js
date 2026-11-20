@@ -309,7 +309,7 @@ function ProductPickerModal({ onPick, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
+      className="pointer-events-auto fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
       onClick={onClose}
     >
       <div
@@ -341,7 +341,7 @@ function ProductPickerModal({ onPick, onClose }) {
           />
         </div>
 
-        <div className="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           {isLoading ? (
             <p className="py-8 text-center text-[12px] text-shop-text/60">
               Loading products…
@@ -567,6 +567,18 @@ function TwoBannerEditor({ data, onChange, visible, onToggleVisible }) {
           <div key={i} className="group relative aspect-[685/240] w-full overflow-hidden rounded-[12px] bg-shop-bg">
             <Image src={b.image} alt="" fill className="object-cover" />
             <ImageEditButton onPick={(url) => updateBanner(i, { image: url })} aspect={685 / 240} />
+            <div className="pointer-events-none absolute left-2 top-2 z-10">
+              <ProductLinkButton
+                slug={b.productSlug}
+                title={b.productTitle}
+                onPick={(p) =>
+                  updateBanner(i, { productId: p.id, productSlug: p.slug, productTitle: p.title })
+                }
+                onClear={() =>
+                  updateBanner(i, { productId: null, productSlug: null, productTitle: null })
+                }
+              />
+            </div>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1.5 px-6 text-right text-white">
               <div className="pointer-events-auto">
                 <InlineText
@@ -608,6 +620,16 @@ function OneBannerEditor({ data, onChange, visible, onToggleVisible }) {
       <div className="group relative aspect-[1400/220] w-full overflow-hidden rounded-[16px] bg-shop-bg">
         <Image src={data.image} alt="" fill className="object-cover" />
         <ImageEditButton onPick={(url) => onChange({ image: url })} aspect={1400 / 220} />
+        <div className="pointer-events-none absolute left-2 top-2 z-10">
+          <ProductLinkButton
+            slug={data.productSlug}
+            title={data.productTitle}
+            onPick={(p) =>
+              onChange({ productId: p.id, productSlug: p.slug, productTitle: p.title })
+            }
+            onClear={() => onChange({ productId: null, productSlug: null, productTitle: null })}
+          />
+        </div>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-center gap-1.5 px-8 text-right text-white">
           <div className="pointer-events-auto">
             <InlineText

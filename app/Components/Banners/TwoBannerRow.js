@@ -19,7 +19,7 @@ const TwoBannerRow = () => {
           subheading={b.subheading}
           heading={b.heading}
           buttonText={b.buttonText || "Shop Now"}
-          href="/shop"
+          href={b.productSlug ? `/product/${b.productSlug}` : "/shop"}
           align="right"
           textColor="text-white"
           aspect="aspect-[685/240]"

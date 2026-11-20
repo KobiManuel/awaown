@@ -17,7 +17,7 @@ const OneBannerRow = () => {
         subheading={b.subheading}
         heading={b.heading}
         buttonText={b.buttonText || "Shop Now"}
-        href="/shop"
+        href={b.productSlug ? `/product/${b.productSlug}` : "/shop"}
         align="right"
         textColor="text-white"
         aspect="aspect-[7/2] md:aspect-[1400/220]"
