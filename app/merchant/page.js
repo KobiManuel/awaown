@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -22,11 +22,13 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import {
   useGetMerchantOverviewQuery,
   useGetMerchantOrdersQuery,
+  useGetMerchantRevenueQuery,
   useUpdateMerchantStoreMutation,
 } from "@/lib/api/merchantApi";
 import BannerImageButton from "@/app/Components/Dashboard/BannerImageButton";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import RevenueChart from "@/app/Components/Merchant/RevenueChart";
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className="flex flex-col gap-2 rounded-[14px] border border-shop-border bg-white p-4">
@@ -41,6 +43,9 @@ const StatCard = ({ icon: Icon, label, value }) => (
 export default function MerchantHome() {
   const { data, isLoading } = useGetMerchantOverviewQuery();
   const { data: orders, isLoading: ordersLoading } = useGetMerchantOrdersQuery();
+  const [revenueRange, setRevenueRange] = useState("7d");
+  const { data: revenueData, isFetching: revenueLoading } =
+    useGetMerchantRevenueQuery(revenueRange);
   const [updateStore] = useUpdateMerchantStoreMutation();
   const showToast = useToast();
   const {
@@ -207,6 +212,15 @@ export default function MerchantHome() {
             />
           </>
         )}
+      </div>
+
+      <div className="px-4 lg:px-8">
+        <RevenueChart
+          days={revenueData?.days}
+          range={revenueRange}
+          onRangeChange={setRevenueRange}
+          isLoading={revenueLoading}
+        />
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-6 lg:px-8">
