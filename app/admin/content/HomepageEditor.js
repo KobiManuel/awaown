@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { Loader2, ImagePlus, Plus, Trash2, Quote, X, Search, Link2 } from "lucide-react";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/lib/api/adminApi";
 import { useImageCropUpload } from "@/app/Components/Media/useImageCropUpload";
 import { useToast } from "@/app/Components/Dashboard/ToastContext";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const LABEL = "text-[10.5px] font-semibold uppercase tracking-wide text-shop-text/60";
 
@@ -307,7 +309,19 @@ function ProductPickerModal({ onPick, onClose }) {
       )
     : products;
 
-  return (
+  useBodyScrollLock(true);
+
+  // Portaled to document.body - every call site renders this from inside a
+  // position:absolute badge wrapper (so the badge can sit on a banner image
+  // without blocking the rest of the card). That wrapper's own z-index turns
+  // it into a stacking context, which traps this modal's z-[120] inside it -
+  // from outside, the WHOLE subtree (modal included) only ever counts as
+  // that wrapper's much lower z-index, so another card's own badge/edit
+  // button (sitting in its own, unrelated stacking context) can still paint
+  // on top of it. A portal renders this directly under <body>, outside any
+  // of that, so its z-index is compared for real.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       className="pointer-events-auto fixed inset-0 z-[120] flex items-end justify-center bg-black/50 p-0 font-shop lg:items-center lg:p-4"
       onClick={onClose}
@@ -376,7 +390,8 @@ function ProductPickerModal({ onPick, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
